@@ -1,0 +1,45 @@
+/* Navigationbar.css */
+
+    .navbar {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 80%;
+        background-color: #333; /* Adjust to your theme color */
+        color: #fff;
+        padding: 10px;
+    } 
+
+  .navbar-top {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .navbar-top a {
+    color: #fff;
+    text-decoration: none;
+    padding: 10px;
+    transition: background-color 0.3s;
+  }
+
+  .navbar-top a:hover {
+    background-color: #555; /* Adjust to your hover color */
+  }
+
+  .navbar-bottom {
+    align-self: flex-start;
+  }
+
+  .navbar-bottom button {
+    background-color: #f44336; /* Adjust to your button color */
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .navbar-bottom button:hover {
+    background-color: #d32f2f; /* Adjust to your button hover color */
+  }

@@ -1,0 +1,41 @@
+.waiting-page-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* Full height */
+  background-color: #f4f4f4; /* Light background */
+}
+
+.waiting-page-message-box {
+  text-align: center;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+}
+
+.waiting-page-status-icon {
+  font-size: 100px; /* Bigger icon */
+  display: block;
+  margin-bottom: 10px;
+}
+
+.waiting-page-text {
+  font-size: 16px;
+  color: #333;
+}
+
+.waiting-page-button {
+  margin-top: 10px;
+  padding: 10px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.waiting-page-button:hover {
+  background-color: #0056b3;
+}

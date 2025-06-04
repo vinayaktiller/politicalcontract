@@ -1,0 +1,128 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+.main-container {
+  height: 100vh;
+  width: 100%;
+  background-color: rgb(221, 97, 5); /* Slightly muted orange */
+  display: flex;
+  flex-direction: column; /* Stack head and container */
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: fixed; /* Fix the headbar at the top */
+  top: 0;
+  left: 0;
+  height: 5vh;
+  width: 100%;
+  z-index: 120;
+  background-color: rgb(245, 245, 245); /* Light grey for softer contrast */
+  padding: 0 15px;
+  overflow: hidden; /* Prevent content overflow */
+}
+
+.head h2 {
+  font-size: 1.2rem; /* Reduce font size */
+  text-overflow: ellipsis; /* Add truncation for overflowing text */
+  white-space: nowrap; /* Prevent wrapping of text */
+  overflow: hidden; /* Hide overflowing text */
+  max-width: 70%; /* Ensure the title doesn’t overlap buttons */
+}
+
+.nav-toggle,
+.noti-toggle {
+  flex-shrink: 0; /* Ensure buttons don't shrink */
+}
+
+.container {
+  display: flex;
+  flex: 1; /* Take up remaining space */
+  margin-top: 5vh; 
+  overflow: hidden; 
+  position: relative;
+}
+
+.navbar {
+  width: 80%;
+  background-color: rgb(50, 50, 50); /* Darker shade for deeper contrast */
+  color: #fff;
+  padding: 10px;
+  height: calc(100vh - 5vh); /* Exclude head height */
+}
+
+.noti {
+  background-color: rgb(240, 240, 240); /* Softer background */
+  width: 80%; /* Adjust the width for design */
+  height: calc(100vh - 5vh); /* Exclude head height */
+  overflow-y: auto; /* Enable vertical scrolling */
+  color: black;
+  z-index: 101; /* Ensure it appears below head */
+  position: absolute;
+  right: 0;
+}
+
+.center {
+  background-color: #faf3e0; /* More balanced neutral tone */
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-y: auto; /* Allow content scrolling if needed */
+  padding: 0;
+  height: 100%; /* Ensure it takes up the full height of the parent div */
+  max-height: 100vh; /* Ensure it takes up the full viewport height */
+  position: relative; 
+  align-items: center;
+}
+
+@media (min-width: 600px) {
+  .nav-toggle {
+    display: none; /* Hide nav-toggle button on larger screens */
+  }
+
+  .navbar {
+    background-color: rgb(40, 40, 40); /* Slightly adjusted darker tone */
+    width: 30%; /* Set navbar to 30% for larger screens */
+    position: static;
+  }
+
+  .center {
+    width: 40%; /* Adjust width */
+  }
+  
+  .head h2 {
+    font-size: 1rem; /* Reduce font size further for small screens */
+  }
+}
+
+@media (min-width: 1200px) {
+  .noti-toggle {
+    display: none; /* Hide noti-toggle button on larger screens */
+  }
+
+  .navbar {
+    width: 20%; /* Reduce navbar width */
+    position: static;
+  }
+
+  .noti {
+    background-color: rgb(75, 142, 220); /* Softer blue tone */
+    width: 30%;
+    position: static;
+  }
+
+  .center {
+    width: 50%;
+  }
+}
