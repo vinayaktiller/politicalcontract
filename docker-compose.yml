@@ -18,6 +18,7 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=backend.settings
       - DATABASE_HOST=host.docker.internal  # Key change for local DB
+      - APP_ENV=local
     ports:
       - "8000:8000"
     depends_on:

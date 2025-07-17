@@ -19,9 +19,11 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import HttpResponse
 
 
 urlpatterns = [
+    path("", lambda request: HttpResponse("Welcome to Political Contract Backend")),
     path('admin/', admin.site.urls),
     path('api/geographies/', include('geographies.urls')),
     path('api/users/', include('users.urls')),
