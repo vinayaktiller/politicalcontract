@@ -15,6 +15,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 from datetime import timedelta
+from celery.schedules import crontab
 
 import logging
 
@@ -51,6 +52,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'pendingusers',
     'notifications',
+    'event',
+    'reports',
+    'activity_reports',
 
 ]
 
@@ -177,6 +181,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATIC_URL = 'static/'
 
@@ -195,7 +200,6 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [os.getenv('Frontendurl'), "https://45e8-2405-201-c057-c039-b159-12fc-9adc-48c0.ngrok-free.app",]
 
 CSRF_COOKIE_NAME = "csrftoken"
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -209,17 +213,16 @@ LOGGING = {
             'style': '{',
         },
     },
-    'filters': {
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        },
-    },
     'handlers': {
         'console': {
             'level': 'DEBUG',
-            'filters': ['require_debug_true'],
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+        },
+        'console_unfiltered': {  # New handler without debug filter
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
         },
     },
     'loggers': {
@@ -228,9 +231,9 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': False,
         },
-        'django.server': {  # Add this to capture API call logs
+        'django.server': {
             'handlers': ['console'],
-            'level': 'INFO',  # You can change this to DEBUG if needed
+            'level': 'INFO',
             'propagate': False,
         },
         'backend': {
@@ -238,9 +241,29 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        # Add these new loggers
+        'activity_reports': {
+            'handlers': ['console_unfiltered'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'activity_reports.consumers': {
+            'handlers': ['console_unfiltered'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'celery': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+    # Add root logger as safety net
+    'root': {
+        'handlers': ['console_unfiltered'],
+        'level': 'WARNING',
     }
 }
-
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
@@ -270,4 +293,29 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
+}
+
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+CELERY_TIMEZONE = 'Asia/Kolkata'
+CELERY_BEAT_SCHEDULE = {
+    'simulate-user-growth': {
+        'task': 'users.tasks.add_live_users',
+        'schedule':300.0,  
+    },
+    'generate-daily-report': {
+        'task': 'reports.tasks.generate_daily_report',
+        'schedule': crontab(minute=20, hour=0),  # Midnight every day
+        'options': {
+            'expires': 60 * 60 * 2,  # Expire after 2 hours
+        }
+    },
+    'simulate-activity-every-3-minutes': {
+        'task': 'activity_reports.tasks.simulate_realtime_activity',
+        'schedule': crontab(minute='*/3'),  # Every 3 minutes
+        'options': {
+            'expires': 120,  # Expire after 2 minutes if not run
+        }
+    },
+
 }

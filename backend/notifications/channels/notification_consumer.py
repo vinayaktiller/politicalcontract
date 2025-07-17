@@ -5,6 +5,7 @@ from asgiref.sync import sync_to_async
 from notifications.channels_handlers.initiation_notification_handler import handle_initiation_notification
 from notifications.channels_handlers.connection_notification_handler import handle_connection_notification
 from notifications.channels_handlers.connection_status_handler import handle_connection_status
+from notifications.channels_handlers.speaker_invitation_handler import handle_speaker_invitation
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,8 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 await handle_connection_notification(self, data)
             elif notification_type == "Connection_Status":
                 await handle_connection_status(self, data)
+            elif notification_type == "Group_Speaker_Invitation":
+                await handle_speaker_invitation(self, data)
 
             else:
                 raise ValueError(f"Unknown notification type: {notification_type}")

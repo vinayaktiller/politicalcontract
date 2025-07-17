@@ -1,0 +1,318 @@
+/* Mobile First (Default) */
+.group-speaker-invitation-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 20px 15px;
+  background-color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+
+.group-speaker-invitation-card {
+  position: relative;
+  background-color: #F5E9E3;
+  border: 1px solid #d1c0b5;
+  border-radius: 12px;
+  padding: 25px 20px;
+  margin: 70px auto 30px;
+  max-width: 100%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.GroupSpeakerInvitation-profile-container {
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.GroupSpeakerInvitation-profile-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #276A73;
+  background-color: white;
+}
+
+.GroupSpeakerInvitation-profile-name {
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+}
+
+.group-speaker-invitation-name {
+  font-size: 24px;
+  font-weight: 700;
+  margin-top: 60px;
+  margin-bottom: 15px;
+  color: #2c3e50;
+}
+
+.group-speaker-invitation-message {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #34495e;
+  margin-bottom: 20px;
+  padding: 0 10px;
+}
+
+.group-speaker-invitation-founder {
+  font-size: 15px;
+  font-style: italic;
+  color: #7f8c8d;
+  margin-bottom: 20px;
+}
+
+.group-speaker-invitation-status {
+  display: inline-block;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 25px;
+}
+
+.group-speaker-invitation-status.invited {
+  background-color: #fef9c3;
+  color: #854d0e;
+}
+
+.group-speaker-invitation-status.accepted {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.group-speaker-invitation-status.rejected {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.group-speaker-invitation-actions {
+  display: flex;
+  justify-content: center;
+  background-color: #155e75;
+  border-radius: 8px;
+  padding: 12px 0;
+  margin-top: 15px;
+}
+
+.group-speaker-invitation-action {
+  border: none;
+  background: none;
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+  padding: 5px 20px;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.group-speaker-invitation-action.accept {
+  color: #a7f3d0;
+}
+
+.group-speaker-invitation-action.reject {
+  color: #fecaca;
+}
+
+.group-speaker-invitation-action:active {
+  transform: scale(0.95);
+}
+
+.group-speaker-invitation-separator {
+  color: white;
+  font-size: 24px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.group-speaker-invitation-status-message {
+  background-color: #e2e8f0;
+  padding: 15px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #4b5563;
+  margin-top: 20px;
+  font-size: 16px;
+}
+
+.group-speaker-invitation-navigation {
+  display: flex;
+  justify-content: space-between;
+  max-width: 400px;
+  margin: 0 auto;
+  width: 100%;
+  gap: 15px;
+}
+
+.group-speaker-invitation-nav-button {
+  flex: 1;
+  padding: 12px 0;
+  background-color: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.group-speaker-invitation-nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.group-speaker-invitation-nav-button:not(:disabled):active {
+  background-color: #cbd5e1;
+}
+
+/* Tablet (min-width: 600px) */
+@media (min-width: 600px) {
+  .group-speaker-invitation-container {
+    padding: 30px 20px;
+    justify-content: center;
+  }
+  
+  .group-speaker-invitation-card {
+    max-width: 500px;
+    padding: 30px;
+    margin-top: 80px;
+  }
+  
+  .GroupSpeakerInvitation-profile-image {
+    width: 110px;
+    height: 110px;
+  }
+  
+  .group-speaker-invitation-name {
+    font-size: 26px;
+    margin-top: 65px;
+  }
+  
+  .group-speaker-invitation-message {
+    font-size: 17px;
+    padding: 0 15px;
+  }
+  
+  .group-speaker-invitation-founder {
+    font-size: 16px;
+  }
+  
+  .group-speaker-invitation-status {
+    font-size: 15px;
+    padding: 9px 18px;
+  }
+  
+  .group-speaker-invitation-action {
+    font-size: 20px;
+    padding: 5px 25px;
+  }
+  
+  .group-speaker-invitation-status-message {
+    font-size: 17px;
+  }
+  
+  .group-speaker-invitation-navigation {
+    max-width: 500px;
+  }
+  
+  .group-speaker-invitation-nav-button {
+    padding: 14px 0;
+    font-size: 17px;
+  }
+}
+
+/* Desktop (min-width: 900px) */
+@media (min-width: 900px) {
+  .group-speaker-invitation-container {
+    padding: 40px;
+  }
+  
+  .group-speaker-invitation-card {
+    max-width: 550px;
+    padding: 35px 40px;
+    margin-top: 90px;
+  }
+  
+  .GroupSpeakerInvitation-profile-image {
+    width: 120px;
+    height: 120px;
+    border-width: 4px;
+  }
+  
+  .group-speaker-invitation-name {
+    font-size: 28px;
+  }
+  
+  .group-speaker-invitation-message {
+    font-size: 18px;
+    margin-bottom: 25px;
+  }
+  
+  .group-speaker-invitation-founder {
+    font-size: 17px;
+    margin-bottom: 25px;
+  }
+  
+  .group-speaker-invitation-status {
+    font-size: 16px;
+    padding: 10px 20px;
+    margin-bottom: 30px;
+  }
+  
+  .group-speaker-invitation-actions {
+    padding: 15px 0;
+    margin-top: 20px;
+  }
+  
+  .group-speaker-invitation-action {
+    font-size: 22px;
+    padding: 5px 30px;
+  }
+  
+  .group-speaker-invitation-action:hover:not(:active) {
+    opacity: 0.9;
+  }
+  
+  .group-speaker-invitation-status-message {
+    font-size: 18px;
+    padding: 18px;
+  }
+  
+  .group-speaker-invitation-navigation {
+    max-width: 550px;
+  }
+  
+  .group-speaker-invitation-nav-button {
+    padding: 16px 0;
+    font-size: 18px;
+  }
+  
+  .group-speaker-invitation-nav-button:hover:not(:disabled) {
+    background-color: #d1d5db;
+  }
+}
+
+/* Large Desktop (min-width: 1200px) */
+@media (min-width: 1200px) {
+  .group-speaker-invitation-card {
+    max-width: 600px;
+  }
+  
+  .GroupSpeakerInvitation-profile-image {
+    width: 130px;
+    height: 130px;
+  }
+  
+  .group-speaker-invitation-name {
+    margin-top: 75px;
+  }
+}

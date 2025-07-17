@@ -53,5 +53,5 @@ export function useInitiatorValidation() {
     }
   };
 
-  return { initiatorDetails, error, validateInitiatorID, setInitiatorDetails, setError };
+  return { initiatorDetails, error, validateInitiatorID, setInitiatorDetails, setError};
 }

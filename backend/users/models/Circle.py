@@ -7,7 +7,7 @@ class Circle(models.Model):
     
     ONLINE_RELATION_CHOICES = [
         ('initiator', 'Initiator'),
-        ('initiates', 'Initiates'),
+        ('initiate', 'Initiate'),
         ('agent', 'Agent'),
         ('members', 'Members'),
         ('groupagent', 'Group Agent'),
@@ -16,7 +16,7 @@ class Circle(models.Model):
         ('audience', 'Audience'),
         ('shared_audience', 'Shared Audience'),
         ('connections', 'Connections'),
-        ('speakers', 'Speakers'),
+        ('multiplespeakers', 'Multiple Speakers'),
     ]
     
     OFFLINE_RELATION_CHOICES = [

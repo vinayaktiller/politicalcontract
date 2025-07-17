@@ -1,0 +1,98 @@
+.gub-box {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+  background-color: #fff;
+}
+
+.gub-box:hover {
+  transform: translateY(-3px);
+}
+
+.gub-header {
+  padding: 8px;
+  text-align: center;
+  background-color: #CF9B9B;
+  color: #2E2E2E;
+  font-weight: bold;
+}
+
+.gub-header.gub-origin {
+  background-color: gold;
+}
+
+.gub-body {
+  padding: 16px;
+  text-align: center;
+}
+
+.gub-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto 12px;
+  border: 2px solid #f0f0f0;
+}
+
+.gub-avatar-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  font-size: 32px;
+  font-weight: bold;
+  color: #aaa;
+  border: 2px solid #e0e0e0;
+}
+
+.gub-info {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.gub-name {
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: #333;
+  font-size: 16px;
+}
+
+.gub-id {
+  font-size: 13px;
+  color: #666;
+}
+
+.gub-stats-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  padding: 5px 0;
+  border-top: 1px solid #eee;
+  margin-top: 10px;
+}
+
+.gub-nav-arrow {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 0 8px;
+  color: #555;
+  user-select: none;
+}
+
+.gub-nav-arrow:hover {
+  color: #007bff;
+}
+
+.gub-stat {
+  flex-grow: 1;
+  font-weight: 500;
+}

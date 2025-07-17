@@ -8,7 +8,10 @@ const HomePage: React.FC = () => {
     <div>
       <h1>This is Home Page</h1>
       <button onClick={() => navigate('/make-connections')} className="navigate-btn">
-        Go to Connexion Verification
+        make connections
+      </button>
+      <button onClick={() => navigate('/group-registration')} className="navigate-btn">
+        create a group
       </button>
     </div>
   );

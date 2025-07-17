@@ -1,0 +1,102 @@
+.heartbeat-graph-container {
+  margin-top: 30px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 16px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.heartbeat-graph-container h3 {
+  margin-top: 0;
+  color: #2c3e50;
+  text-align: center;
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+.graph-scroll-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid #eee;
+  padding: 10px 0;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+.ecg-graph {
+  display: block;
+  background: #fff;
+  min-width: 600px; /* Ensures graph has enough space */
+}
+
+/* Realistic ECG animation */
+.ecg-graph path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: ecg-draw 30s linear forwards;
+}
+
+@keyframes ecg-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.date-label {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .heartbeat-graph-container {
+    padding: 12px;
+    margin-top: 20px;
+  }
+  
+  .graph-scroll-container {
+    padding: 8px 0;
+  }
+  
+  .heartbeat-graph-container h3 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+  }
+  
+  .ecg-graph {
+    min-width: 480px; /* Reduced for mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .heartbeat-graph-container {
+    padding: 10px;
+  }
+  
+  .ecg-graph {
+    min-width: 360px; /* Further reduced for small mobile */
+  }
+}
+
+/* Scrollbar styling */
+.graph-scroll-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.graph-scroll-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.graph-scroll-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.graph-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

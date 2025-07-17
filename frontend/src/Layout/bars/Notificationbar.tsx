@@ -105,6 +105,7 @@
 // };
 
 // export default NotificationBar;
+
 import '../css/NotificationBar.css';
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -121,36 +122,27 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { notifications, isConnected } = useSelector((state: RootState) => state.notifications);
-  console.log("notifications:", notifications);
 
-  // Keep original notification types exactly as received
+  // Add route for Group Speaker Invitation
   const notificationRoutes: Record<string, string> = {
     Initiation_Notification: "/Initiationnotifications",
     Connection_Notification: "/Connectionnotifications",
     Connection_Status: "/ConnectionStatusNotifications",
-
+    Group_Speaker_Invitation: "/GroupSpeakerInvitation"
   };
 
   const handleView = (notificationNumber: number) => {
     const notification = notifications.find(n => n.id === notificationNumber);
-    console.log("Selected notification:", notification);
     if (notification) {
-      // dispatch(sendWebSocketMessage(notification.notification_type, "update_seen_status", {
-      //   notificationId: notification.notification_number,
-      //   seen: true
-      // }));
-      
       const routeBase = notificationRoutes[notification.notification_type];
       const destination = routeBase 
         ? `${routeBase}/${notification.notification_number}`
         : `/notifications/${notificationNumber}`;
-      console.log(`Navigating to: ${destination}`);
       navigate(destination);
       toggleNotifications();
     }
   };
 
-  // Classify notifications by original types
   const classifyNotifications = (notificationGroup: Notification[]) => {
     return notificationGroup.reduce((acc, notification) => {
       const type = notification.notification_type;
@@ -161,7 +153,6 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
     }, {} as Record<string, Notification[]>);
   };
 
-  // Rest of the component remains the same...
   const newNotifications = notifications.filter(n => !n.notification_freshness);
   const oldNotifications = notifications.filter(n => n.notification_freshness);
   const groupedNewNotifications = classifyNotifications(newNotifications);
@@ -180,8 +171,8 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
       ) : (
         <div className="notification-lists">
           {Object.entries(groupedNewNotifications).map(([type, notifications]) => (
-            <div key={type} className={`notification-group ${type}-new-notifications`}>
-              <h4>New {type.replace('_', ' ')}</h4>
+            <div key={type} className={`notification-group ${type.toLowerCase().replace(/_/g, '-')}-new`}>
+              <h4>New {type.replace(/_/g, ' ')}</h4>
               <ul>
                 {notifications.map(notification => (
                   <li 
@@ -192,7 +183,7 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
                     <div className="notification-content">
                       <p className="message">{notification.notification_message}</p>
                       <div className="meta">
-                        <span className="type">{type.replace('_', ' ')}</span>
+                        <span className="type">{type.replace(/_/g, ' ')}</span>
                         {notification.created_at && (
                           <span className="time">
                             {new Date(notification.created_at).toLocaleDateString()}
@@ -207,8 +198,8 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
           ))}
 
           {Object.entries(groupedOldNotifications).map(([type, notifications]) => (
-            <div key={type} className={`notification-group ${type}-old-notifications`}>
-              <h4>Previous {type.replace('_', ' ')}</h4>
+            <div key={type} className={`notification-group ${type.toLowerCase().replace(/_/g, '-')}-old`}>
+              <h4>Previous {type.replace(/_/g, ' ')}</h4>
               <ul>
                 {notifications.map(notification => (
                   <li 
@@ -219,7 +210,7 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
                     <div className="notification-content">
                       <p className="message">{notification.notification_message}</p>
                       <div className="meta">
-                        <span className="type">{type.replace('_', ' ')}</span>
+                        <span className="type">{type.replace(/_/g, ' ')}</span>
                         {notification.created_at && (
                           <span className="time">
                             {new Date(notification.created_at).toLocaleDateString()}

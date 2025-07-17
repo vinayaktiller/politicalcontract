@@ -22,6 +22,7 @@ django.setup()
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from notifications.routing import websocket_urlpatterns
+from activity_reports.routing import websocket_urlpatterns as activity_websocket_urlpatterns
 # from users.channels.routing import websocket_urlpatterns
 
 application = ProtocolTypeRouter({
@@ -29,6 +30,7 @@ application = ProtocolTypeRouter({
     "websocket": AuthMiddlewareStack(
         URLRouter(
             websocket_urlpatterns
+            + activity_websocket_urlpatterns
         )
     ),
 })

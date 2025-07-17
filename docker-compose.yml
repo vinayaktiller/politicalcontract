@@ -7,14 +7,17 @@ services:
       dockerfile: Dockerfile
     container_name: django_app
     command: >
-      sh -c "python manage.py migrate &&
+      sh -c "/app/docker-entrypoint.sh &&
              daphne -b 0.0.0.0 -p 8000 backend.asgi:application"
     volumes:
       - ./backend:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
     env_file:
       - ./backend/.env
     environment:
-      - DJANGO_SETTINGS_MODULE=backend.settings  # ✅ This is the fix!
+      - DJANGO_SETTINGS_MODULE=backend.settings
+      - DATABASE_HOST=host.docker.internal  # Key change for local DB
     ports:
       - "8000:8000"
     depends_on:
@@ -35,11 +38,51 @@ services:
     container_name: react_frontend
     volumes:
       - ./frontend:/app
-      - /app/node_modules  # ✅ Prevents overwriting node_modules
+      - /app/node_modules
     ports:
       - "3000:3000"
     stdin_open: true
     tty: true
 
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: celery_worker
+    command: celery -A backend worker --loglevel=info
+    volumes:
+      - ./backend:/app
+      - media_volume:/app/media
+      - static_volume:/app/static
+    env_file:
+      - ./backend/.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=backend.settings
+      - DATABASE_HOST=host.docker.internal  # Key change for local DB
+    depends_on:
+      - backend
+      - redis
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: celery_beat
+    command: celery -A backend beat --loglevel=info
+    volumes:
+      - ./backend:/app
+      - media_volume:/app/media
+      - static_volume:/app/static
+    env_file:
+      - ./backend/.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=backend.settings
+      - DATABASE_HOST=host.docker.internal  # Key change for local DB
+    depends_on:
+      - backend
+      - redis
+
 volumes:
   redis_data:
+  static_volume:
+  media_volume:

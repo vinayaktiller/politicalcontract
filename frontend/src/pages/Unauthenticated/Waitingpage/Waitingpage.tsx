@@ -53,7 +53,7 @@ const WaitingPage: React.FC = () => {
             localStorage.setItem("user_id", data.generated_user_id.toString());
             console.log("🔹 Stored generated_user_id in local storage:", data.generated_user_id);
             dispatch(login({ user_email })); // Dispatch login action with user_email
-            navigate("/home");
+            navigate("/heartbeat");
 
             // window.location.reload();
           }

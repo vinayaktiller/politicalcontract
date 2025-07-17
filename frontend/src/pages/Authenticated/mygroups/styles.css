@@ -1,0 +1,216 @@
+/* groups.css */
+/* Base styles (mobile-first) */
+.groups-container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  margin: 0 auto;
+  width: 100%; /* Ensure it takes up the full width of the center div */
+  height: 100%; /* Ensure it takes up the full height of the center div */
+  font-size: 20px;
+  font-family: 'Inter', Arial, sans-serif; /* Apply Inter font */
+  background-color: white;
+  max-width: 100%; /* Remove or adjust as necessary */
+  max-height: 100vh;
+  padding: 1rem;
+}
+
+.groups-header {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #2d3748;
+}
+
+.groups-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.2rem;
+}
+
+.group-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.group-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.group-image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  background-color: #f0f2f5;
+}
+
+.group-image-placeholder {
+  width: 100%;
+  height: 160px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.group-info {
+  padding: 1.2rem;
+}
+
+.group-name {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1a202c;
+}
+
+.group-date {
+  font-size: 0.9rem;
+  color: #718096;
+  margin-bottom: 0.8rem;
+}
+
+.group-type-badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.unstarted .group-type-badge {
+  background-color: #fffaf0;
+  color: #dd6b20;
+  border: 1px solid #fbd38d;
+}
+
+.old .group-type-badge {
+  background-color: #f0fff4;
+  color: #38a169;
+  border: 1px solid #9ae6b4;
+}
+
+/* Loading state */
+.groups-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #4299e1;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error state */
+.groups-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  padding: 2rem;
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.retry-button {
+  margin-top: 1rem;
+  padding: 0.6rem 1.5rem;
+  background-color: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background-color: #3182ce;
+}
+
+/* Empty state */
+.groups-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  padding: 2rem;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.create-button {
+  margin-top: 1.5rem;
+  padding: 0.8rem 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.create-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Tablet styles */
+@media (min-width: 600px) {
+  .groups-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .groups-header {
+    font-size: 2.2rem;
+    margin-bottom: 2rem;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 900px) {
+  .groups-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .groups-container {
+    padding: 2rem;
+  }
+}

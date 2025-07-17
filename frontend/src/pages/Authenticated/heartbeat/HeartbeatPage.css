@@ -1,0 +1,409 @@
+.heartbeat-page {
+  text-align: center;
+  height: 95vh;
+  width: 100%;
+  position: relative;
+  background: #ffffff;
+  box-sizing: border-box;
+  padding: 30px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: auto;
+  overflow-x: hidden;
+}
+
+.heartbeat-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.heartbeat-header {
+  margin-bottom: 30px;
+}
+
+.heartbeat-title {
+  font-size: 2.2rem;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.heartbeat-subtitle {
+  font-size: 1.1rem;
+  color: #7f8c8d;
+  margin-bottom: 0;
+}
+
+.heartbeat-visual {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.heartbeat-visual.clickable {
+  cursor: pointer;
+}
+
+.heartbeat-visual.clickable:hover {
+  transform: scale(1.05);
+}
+
+.heartbeat-emoji {
+  font-size: 180px;
+  line-height: 1;
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+/* Heart states */
+.heartbeat-visual.inactive .heartbeat-emoji {
+  filter: grayscale(100%);
+  opacity: 0.7;
+}
+
+.heartbeat-visual.passive .heartbeat-emoji {
+  filter: saturate(1.5);
+}
+
+.heartbeat-visual.active .heartbeat-emoji {
+  filter: saturate(1.8);
+}
+
+.heartbeat-visual.hyperactive .heartbeat-emoji {
+  filter: saturate(2.0) brightness(1.1);
+}
+
+/* Animations */
+.heartbeat-visual.active .heartbeat-emoji,
+.heartbeat-visual.hyperactive .heartbeat-emoji {
+  animation: heartbeat 1.2s infinite;
+}
+
+.heartbeat-visual.passive .heartbeat-emoji {
+  animation: passiveHeartbeat 2.4s infinite;
+}
+
+/* Ripple effect for active/hyperactive states */
+.heartbeat-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid rgba(231, 76, 60, 0.7);
+  opacity: 0;
+  animation: ripple 1.5s infinite ease-out;
+}
+
+.ripple-2 {
+  animation-delay: 0.5s;
+}
+
+.ripple-3 {
+  animation-delay: 1s;
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  5% { transform: scale(1.1); }
+  10% { transform: scale(1); }
+  15% { transform: scale(1.15); }
+  50% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes passiveHeartbeat {
+  0% { transform: scale(1); }
+  10% { transform: scale(1.08); }
+  20% { transform: scale(1); }
+  30% { transform: scale(1.1); }
+  70% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ripple {
+  0% { 
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.7;
+    width: 100%;
+    height: 100%;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.6);
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.heartbeat-status {
+  min-height: 80px;
+  margin: 25px 0;
+  flex-shrink: 0;
+}
+
+.heartbeat-message {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+.heartbeat-streak {
+  font-size: 1.1rem;
+  color: #3498db;
+  font-weight: 500;
+}
+
+.heartbeat-footer {
+  margin-top: auto;
+  padding-top: 30px;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  padding: 20px 10px 10px;
+}
+
+.heartbeat-footer p {
+  margin: 5px 0;
+}
+
+.heartbeat-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.heartbeat-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(52, 152, 219, 0.2);
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.heartbeat-error {
+  color: #e74c3c;
+  font-size: 1.1rem;
+}
+
+/* Fire effect for hyperactive state */
+.fire-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.fire-particle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  animation: fireFloat 2s infinite ease-out;
+  opacity: 0.8;
+}
+
+.fire-particle:nth-child(1) {
+  top: 20%;
+  left: 40%;
+  background: #FF5722;
+  animation-delay: 0s;
+  width: 8px;
+  height: 8px;
+}
+
+.fire-particle:nth-child(2) {
+  top: 30%;
+  left: 60%;
+  background: #FF9800;
+  animation-delay: 0.4s;
+  width: 10px;
+  height: 10px;
+}
+
+.fire-particle:nth-child(3) {
+  top: 10%;
+  left: 50%;
+  background: #FFC107;
+  animation-delay: 0.8s;
+  width: 7px;
+  height: 7px;
+}
+
+.fire-particle:nth-child(4) {
+  top: 25%;
+  left: 30%;
+  background: #FF5722;
+  animation-delay: 1.2s;
+  width: 9px;
+  height: 9px;
+}
+
+.fire-particle:nth-child(5) {
+  top: 15%;
+  left: 70%;
+  background: #FF9800;
+  animation-delay: 1.6s;
+  width: 8px;
+  height: 8px;
+}
+
+@keyframes fireFloat {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-30px) translateX(5px) scale(1.2);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-60px) translateX(10px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Click prompt */
+.heartbeat-click-prompt {
+  position: absolute;
+  bottom: -30px;
+  left: 0;
+  right: 0;
+  color: #e74c3c;
+  font-weight: 600;
+  font-size: 1.1rem;
+  animation: pulseText 1.5s infinite;
+}
+
+@keyframes pulseText {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.history-loading {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: #7f8c8d;
+  flex-shrink: 0;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .heartbeat-page {
+    padding: 25px 15px 15px;
+    height: 95vh;
+  }
+  
+  .heartbeat-container {
+    padding: 15px;
+  }
+  
+  .heartbeat-title {
+    font-size: 1.8rem;
+  }
+  
+  .heartbeat-subtitle {
+    font-size: 1rem;
+    margin-bottom: 0;
+  }
+  
+  .heartbeat-visual {
+    width: 180px;
+    height: 180px;
+    margin-bottom: 25px;
+  }
+  
+  .heartbeat-emoji {
+    font-size: 150px;
+  }
+  
+  .heartbeat-message {
+    font-size: 1.1rem;
+  }
+  
+  .heartbeat-streak {
+    font-size: 1rem;
+  }
+  
+  .heartbeat-click-prompt {
+    font-size: 1rem;
+    bottom: -25px;
+  }
+}
+
+@media (max-width: 480px) {
+  .heartbeat-page {
+    padding: 20px 12px 12px;
+    height: 95vh;
+  }
+  
+  .heartbeat-container {
+    padding: 10px;
+  }
+  
+  .heartbeat-title {
+    font-size: 1.6rem;
+  }
+  
+  .heartbeat-visual {
+    width: 160px;
+    height: 160px;
+    margin-bottom: 20px;
+  }
+  
+  .heartbeat-emoji {
+    font-size: 130px;
+  }
+  
+  .heartbeat-status {
+    margin: 20px 0;
+  }
+  
+  .heartbeat-footer {
+    padding-top: 20px;
+  }
+}
+
+@media (min-height: 800px) {
+  .heartbeat-container {
+    justify-content: space-around;
+  }
+  
+  .heartbeat-visual {
+    margin: 20px auto;
+  }
+  
+  .heartbeat-status {
+    margin: 15px 0 25px;
+  }
+}

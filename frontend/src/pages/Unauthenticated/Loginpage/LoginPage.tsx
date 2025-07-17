@@ -54,7 +54,7 @@ const LoginPage: React.FC = () => {
         await triggerLoginNotification(tokens.access, user_id);
 
 
-        navigate("/home");
+        navigate("/heartbeat");
         // window.location.reload();
       } else if (user_type === "pendinguser") {
         localStorage.setItem("user_type", user_type);

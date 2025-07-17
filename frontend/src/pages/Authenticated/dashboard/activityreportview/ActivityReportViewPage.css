@@ -1,0 +1,401 @@
+/* Mobile-first base styles */
+.activity-report-page {
+  text-align: center;
+  overflow: auto;
+  overflow-x: hidden;
+  height: 95vh;
+  width: 100%;
+  position: relative;
+  background-color: white;
+  box-sizing: border-box;
+  padding: 10px;
+}
+
+.activity-report-container {
+  margin: 0 auto;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  border: 2px solid #000000;
+  overflow: hidden;
+}
+
+/* Top Bar Styles - Mobile */
+.activity-report-top-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 15px;
+  background: #fff;
+  border-bottom: 2px solid #000000;
+}
+
+.activity-report-top-bar h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+  text-align: center;
+  flex-grow: 1;
+  order: 2;
+}
+
+.activity-report-back-button {
+  align-self: flex-start;
+  order: 1;
+  padding: 8px 15px;
+  background-color: #f0f0f0;
+  border: 2px solid #000000;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  font-size: 0.9rem;
+}
+
+.activity-report-back-button:hover:not(.disabled) {
+  background-color: #e0e0e0;
+}
+
+.activity-report-back-button.disabled {
+  background-color: #f8f8f8;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.activity-report-total-users {
+  order: 3;
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 15px;
+  background: #f0f0f0;
+  border: 2px solid #000000;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.activity-report-users-icon {
+  font-size: 1.4rem;
+}
+
+/* Level Indicator */
+.activity-report-level-indicator {
+  text-align: center;
+  padding: 10px;
+  background: #f8f9fa;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4b6cb7;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+/* Distribution Toggle */
+.activity-report-distribution-toggle {
+  padding: 15px;
+  text-align: center;
+}
+
+.activity-report-distribution-toggle button {
+  padding: 10px 15px;
+  background-color: #e3f2fd;
+  border: 2px solid #000000;
+  border-radius: 5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.9rem;
+}
+
+.activity-report-distribution-toggle button:hover {
+  background-color: #bbdefb;
+  transform: translateY(-2px);
+}
+
+/* Activity Distribution */
+.activity-report-distribution {
+  padding: 0 15px 20px;
+}
+
+.activity-report-distribution h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  color: #2c3e50;
+}
+
+.activity-distribution-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.activity-distribution-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.activity-bar-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #34495e;
+  text-align: left;
+}
+
+.activity-bar-container {
+  width: 100%;
+  height: 30px;
+  background-color: #ecf0f1;
+  border-radius: 5px;
+  border: 1px solid #bdc3c7;
+  overflow: hidden;
+}
+
+.activity-bar-fill {
+  height: 100%;
+  background-color: #3498db;
+  color: white;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  font-size: 0.9rem;
+  min-width: 30px;
+  transition: width 0.5s ease-out;
+}
+
+/* Children Grid - Mobile */
+.activity-report-children-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 20px 15px;
+}
+
+.activity-report-child-card {
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #000000;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100px;
+}
+
+.activity-report-child-card.active {
+  border-left: 4px solid #2ecc71;
+}
+
+.activity-report-child-card.inactive {
+  border-left: 4px solid #95a5a6;
+}
+
+.activity-report-child-card.active.clickable {
+  cursor: pointer;
+}
+
+.activity-report-child-card.active.clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+  border-color: #3498db;
+}
+
+.activity-report-child-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-report-child-count {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #3498db;
+}
+
+.activity-report-child-card.active .activity-report-child-count {
+  color: #27ae60;
+}
+
+.activity-report-child-card.inactive .activity-report-child-count {
+  color: #7f8c8d;
+}
+
+/* Loading and error states */
+.activity-report-loading, .activity-report-error {
+  text-align: center;
+  padding: 30px 15px;
+  font-size: 1.3rem;
+}
+
+.activity-report-loading {
+  color: #3498db;
+}
+
+.activity-report-error {
+  color: #e74c3c;
+}
+
+/* Tablet and small desktop styles (min-width: 480px) */
+@media (min-width: 480px) {
+  .activity-report-page {
+    padding: 15px;
+  }
+  
+  .activity-report-top-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+  }
+  
+  .activity-report-top-bar h2 {
+    font-size: 1.3rem;
+    order: 2;
+  }
+  
+  .activity-report-back-button {
+    order: 1;
+    padding: 8px 15px;
+    font-size: 0.9rem;
+  }
+  
+  .activity-report-total-users {
+    order: 3;
+    margin-top: 0;
+    padding: 8px 15px;
+    font-size: 1.1rem;
+    width: auto;
+  }
+  
+  .activity-report-distribution-toggle button {
+    padding: 12px 18px;
+    font-size: 1rem;
+  }
+  
+  .activity-report-children-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
+  }
+  
+  .activity-report-child-card {
+    padding: 15px;
+    height: 100px;
+  }
+  
+  .activity-report-child-name {
+    font-size: 1rem;
+  }
+  
+  .activity-report-child-count {
+    font-size: 1.5rem;
+  }
+  
+  .activity-report-level-indicator {
+    font-size: 1.1rem;
+    padding: 12px;
+  }
+}
+
+/* Desktop styles (min-width: 768px) */
+@media (min-width: 768px) {
+  .activity-report-page {
+    padding: 20px;
+  }
+  
+  .activity-report-container {
+    max-width: 1200px;
+  }
+  
+  .activity-report-top-bar {
+    padding: 20px;
+  }
+  
+  .activity-report-top-bar h2 {
+    font-size: 1.5rem;
+    order: unset;
+  }
+  
+  .activity-report-back-button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    min-width: 100px;
+    order: unset;
+    align-self: unset;
+  }
+  
+  .activity-report-total-users {
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    min-width: 150px;
+    width: auto;
+    margin-top: 0;
+    order: unset;
+  }
+  
+  .activity-report-level-indicator {
+    padding: 15px;
+    font-size: 1.1rem;
+  }
+  
+  .activity-report-distribution-toggle {
+    padding: 20px;
+  }
+  
+  .activity-report-distribution {
+    padding: 0 30px 30px;
+  }
+  
+  .activity-report-children-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    padding: 30px;
+  }
+  
+  .activity-report-child-card {
+    padding: 20px;
+    height: 120px;
+  }
+  
+  .activity-report-child-name {
+    font-size: 1.1rem;
+  }
+  
+  .activity-report-child-count {
+    font-size: 1.8rem;
+  }
+  
+  .activity-report-child-card.active.clickable:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .activity-report-loading, .activity-report-error {
+    padding: 50px 20px;
+    font-size: 1.5rem;
+  }
+  
+  .activity-distribution-bars {
+    gap: 15px;
+  }
+  
+  .activity-bar-label {
+    font-size: 1rem;
+  }
+  
+  .activity-bar-container {
+    height: 35px;
+  }
+}

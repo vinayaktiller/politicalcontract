@@ -18,7 +18,7 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ notificationId, notificat
   const notifications = useSelector((state: RootState) => state.notifications.notifications);
 
   const handleAction = (response: "yes" | "no") => {
-    dispatch(sendWebSocketMessage("Initiation Notification","verify_user", { 
+    dispatch(sendWebSocketMessage("Initiation_Notification","verify_user", { 
       notificationId: notificationNumber,
       gmail,
       response 

@@ -81,24 +81,6 @@ class ConnectionNotification(models.Model):
         
         logger.info(f"ConnectionNotification {self.id} status updated to {new_status}")
 
-    # def send_websocket_notification(self):
-    #     try:
-    #         channel_layer = get_channel_layer()
-    #         sanitized_email = self.sanitize_email(self.applicant.gmail)
-    #         group_name = f"connexions_{sanitized_email}"
-    #         message = self.STATUS_MESSAGES.get(self.status, "Unknown status update.")
-
-    #         async_to_sync(channel_layer.group_send)(
-    #             group_name,
-    #             {
-    #                 "type": "connexions_message",
-    #                 "notification_id": self.id,
-    #                 "status": self.status,
-    #                 "message": message
-    #             }
-    #         )
-    #     except Exception as e:
-    #         logger.error(f"WebSocket notification failed: {str(e)}")
 
     def _set_offline_status(self):
         try:

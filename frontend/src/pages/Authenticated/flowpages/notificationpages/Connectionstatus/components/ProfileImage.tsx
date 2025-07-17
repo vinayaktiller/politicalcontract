@@ -1,5 +1,5 @@
+// ProfileImage.tsx
 import React from 'react';
-
 
 interface ProfileImageProps {
     imageUrl: string;
@@ -8,14 +8,14 @@ interface ProfileImageProps {
 
 const ProfileImage: React.FC<ProfileImageProps> = ({ imageUrl, name }) => {
     return (
-        <div className="profile-image-container">
+        <div className="cs-profile-container">
             <img 
                 src={imageUrl} 
                 alt={`${name}'s profile`} 
-                className="profile-image"
-                onError={(e) => e.currentTarget.src = "default-profile.png"} // Fallback image
+                className="cs-profile-image"
+                onError={(e) => e.currentTarget.src = "default-profile.png"}
             />
-            <p className="profile-name">{name}</p>
+            <p className="cs-profile-name">{name}</p>
         </div>
     );
 };

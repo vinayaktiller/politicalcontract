@@ -17,7 +17,7 @@ export function useConnexionValidation() {
     if (id === 0) {
       setConnexionDetails({
         profilepic: null,
-        name: 'First Member',
+        name: 'Enter valid ID',
         text: 'YOU ARE THE FIRST MEMBER',
       });
       setError('');

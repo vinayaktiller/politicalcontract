@@ -1,5 +1,5 @@
+// StatusMessage.tsx
 import React from 'react';
-
 
 interface StatusMessageProps {
     message: string;
@@ -7,8 +7,8 @@ interface StatusMessageProps {
 
 const StatusMessage: React.FC<StatusMessageProps> = ({ message }) => {
     return (
-        <div className="status-message-container">
-            <p className="status-message">
+        <div className="cs-message-container">
+            <p className="cs-message">
                 {message || "No status message available"}
             </p>
         </div>

@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.authentication import JWTAuthentication  # Updated authentication
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.core.cache import cache
 from users.models.usertree import UserTree
 from .serializer import InitiatorIdSerializer
@@ -27,7 +27,7 @@ email_block_counter = Counter(
 
 class ValidateInitiatorAPIView(APIView):
     authentication_classes = [JWTAuthentication]  # Changed to JWT authentication
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request):
         initiator_id = request.data.get("initiator_id")

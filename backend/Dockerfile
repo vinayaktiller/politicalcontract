@@ -8,21 +8,26 @@ ENV PYTHONUNBUFFERED 1
 # Set the working directory inside the container
 WORKDIR /app
 
-# Install system dependencies required for PostgreSQL and building Python packages
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
+    build-essential \
     libpq-dev \
-    build-essential
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
 
-# Ensure that env variables are used for Django settings
-ENV PYTHONPATH="/app"
-
-# Install Python dependencies separately to optimize Docker caching
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application files
+# Copy application files
 COPY . .
 
-# Set the default command for running Django with WebSockets support (Daphne)
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "backend.asgi:application"]
+# Create media directory
+RUN mkdir -p /app/media/profile_pics
 
+# Add entrypoint script
+COPY ./docker-entrypoint.sh .
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

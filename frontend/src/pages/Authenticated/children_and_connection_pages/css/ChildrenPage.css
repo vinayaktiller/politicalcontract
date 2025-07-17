@@ -1,0 +1,319 @@
+    /* ChildrenPage.css */
+    .children-page-container {
+        text-align: center;
+        padding-bottom: 2vh;
+        overflow: auto;
+        height: 95vh;
+        width: 100%;
+        background-color: white;
+        position: relative;
+    }
+
+    .children-page-main-profile-container {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .children-page-main-profile-container-left {
+        flex: 1;
+    }
+
+    .children-page-main-profile-container-right {
+        flex: 1.75;
+    }
+
+    .children-page-main-profile-pic {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 2px solid teal;
+        background-color: lightgray;
+    }
+
+    .children-page-main-profile-pic-placeholder {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        border: 2px solid teal;
+        background-color: lightgray;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    .children-page-main-profile-details {
+        text-align: left;
+        font-size: 16px;
+        line-height: 1.5;
+    }
+
+    .children-page-relation-tabs {
+        display: flex;
+        justify-content: center;
+        margin: 15px 0;
+    }
+
+    .children-page-tab-button {
+        padding: 10px 15px;
+        margin: 0 5px;
+        border: none;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .children-page-tab-button:hover {
+        background-color: #e0e0e0;
+    }
+
+    .children-page-tab-active {
+        background-color: teal;
+        color: white;
+        font-weight: bold;
+    }
+
+    .children-page-controls {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 20px;
+        margin: 15px 0;
+    }
+
+    .children-page-sort-section {
+        display: flex;
+        align-items: center;
+    }
+
+    .children-page-custom-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .children-page-dropdown-button {
+        padding: 8px 15px;
+        background-color: #f2f2f2;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .children-page-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: white;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        z-index: 1000;
+        width: 200px;
+    }
+
+    .children-page-dropdown-menu button {
+        display: block;
+        width: 100%;
+        padding: 8px 12px;
+        text-align: left;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .children-page-dropdown-menu button:hover {
+        background-color: #f0f0f0;
+    }
+
+    .children-page-connections-section button {
+        padding: 8px 15px;
+        background-color: teal;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.3s;
+    }
+
+    .children-page-connections-section button:hover {
+        background-color: #006666;
+    }
+
+    .children-page-profiles-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .children-page-no-profiles-message {
+        padding: 20px;
+        font-style: italic;
+        color: #666;
+    }
+
+    .children-page-pagination-controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+        gap: 20px;
+    }
+
+    .children-page-pagination-button {
+        padding: 8px 16px;
+        background-color: teal;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .children-page-pagination-button:disabled {
+        background-color: lightgray;
+        cursor: not-allowed;
+    }
+
+    .children-page-indicator {
+        font-size: 16px;
+        font-weight: 500;
+    }
+
+    /* SmallProfile Styles - Updated to match previous design */
+    .small-profile-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: #F5E9E3;
+        margin-top: 30px;
+        padding: 15px 5px 0;
+        border-radius: 0;
+        border: 1px solid #000000;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        width: 165px;
+        text-align: center;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .small-profile-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .small-profile-info-banner {
+        position: absolute;
+        top: -25px;
+        left: 0;
+        right: 0;
+        background-color: teal;
+        color: white;
+        padding: 5px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 10;
+    }
+
+    .small-profile-avatar-container {
+        position: absolute;
+        top: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .small-profile-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 2px solid teal;
+        background-color: lightgray;
+        object-fit: cover;
+    }
+
+    .small-profile-avatar-placeholder {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        border: 2px solid teal;
+        background-color: lightgray;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .small-profile-info-container {
+        margin-top: 10px;
+        width: 100%;
+    }
+
+    .small-profile-name {
+        font-weight: bold;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    .small-profile-id {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+
+    .small-profile-property-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding: 5px;
+        font-weight: bold;
+        color: #007bff;
+        margin-top: auto;
+    }
+
+    .small-profile-property-arrow {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 16px;
+        color: #007bff;
+        padding: 0 5px;
+    }
+
+    .small-profile-property-display {
+        font-size: 12px;
+        flex-grow: 1;
+        text-align: center;
+    }
+        /* Add this to your existing ChildrenPage.css */
+    .children-page-make-connections-btn {
+        padding: 10px 20px;                          /* a bit less padding */
+        background: linear-gradient(135deg, #ffb347, #ffcc33); /* softer, paler gradient */
+        color: white;
+        border: none;
+        border-radius: 20px;                         /* reduced rounding */
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;                             /* slightly smaller text */
+        transition: all 0.3s;
+        box-shadow: 0 3px 6px rgba(255, 204, 51, 0.3);/* lighter shadow */
+        display: inline-block;
+        margin-top: 15px;
+    }
+
+    .children-page-make-connections-btn:hover {
+        background: linear-gradient(135deg, #ffcd66, #ffe08b); /* hover shift to lighter tones */
+        transform: translateY(-2px) scale(1.03);  /* gentler lift & scale */
+        box-shadow: 0 5px 10px rgba(255, 204, 51, 0.4);
+    }

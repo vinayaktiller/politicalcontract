@@ -27,6 +27,17 @@ export interface ConnectionStatusNotificationData {
   status_message: string;
 }
 
+export interface GroupSpeakerInvitationNotificationData {
+  invitation_id: number;
+  group_id: number;
+  group_name: string;
+  profile_picture: string;
+  profile_pic_source: string;
+  founder_name: string;
+  status: string;
+  action_required: boolean;
+}
+
 type NotificationBase<T extends string, D> = {
   id: number;
   notification_type: T;
@@ -40,5 +51,5 @@ type NotificationBase<T extends string, D> = {
 export type InitiationNotification = NotificationBase<"Initiation_Notification", InitiationNotificationData>;
 export type ConnectionNotification = NotificationBase<"Connection_Notification", ConnectionNotificationData>;
 export type ConnectionStatusNotification = NotificationBase<"Connection_Status", ConnectionStatusNotificationData>;
-
-export type Notification = InitiationNotification | ConnectionNotification | ConnectionStatusNotification;
+export type GroupSpeakerInvitationNotification = NotificationBase<"Group_Speaker_Invitation", GroupSpeakerInvitationNotificationData>;
+export type Notification = InitiationNotification | ConnectionNotification | ConnectionStatusNotification | GroupSpeakerInvitationNotification;
