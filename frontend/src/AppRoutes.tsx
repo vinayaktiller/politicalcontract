@@ -28,6 +28,8 @@ import OverallReportPage from "./pages/Authenticated/dashboard/OverallReportPage
 import ActivityReportViewPage from "./pages/Authenticated/dashboard/activityreportview/ActivityReportViewpage"; // Adjust the import path as necessary
 import ActivityReportListPage from "./pages/Authenticated/dashboard/activityreportslist/ActivityReportListPage"; // Adjust the import path as necessary
 import HeartbeatPage from "./pages/Authenticated/heartbeat/HeartbeatPage"; // Adjust the import path as necessary
+import ChatList from "./pages/Authenticated/messages/chatlist/chatlist"; // Adjust the import path as necessary
+import ChatPage from "./pages/Authenticated/messages/ChatPage/ChatPage"; // Adjust the import path as necessary
 const clientId = "719395873709-ese7vg45i9gfndador7q6rmq3untnkcr.apps.googleusercontent.com";
 
 const AppRoutes: React.FC = () => {
@@ -78,6 +80,8 @@ const AppRoutes: React.FC = () => {
               <Route path="/reports/overall/:level/:entityId" element={<OverallReportPage />} />
               <Route path="/activity-reports/:period/:reportId/:level" element={<ActivityReportViewPage />} />
               <Route path="/activity-reports-list" element={<ActivityReportListPage />} />
+              <Route path="/messages/chatlist" element={<ChatList />} />
+              <Route path="/chat/:conversationId" element={<ChatPage />} />
             </Route>
           </Route>
         </Routes>

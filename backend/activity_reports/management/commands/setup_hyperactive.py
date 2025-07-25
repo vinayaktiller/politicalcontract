@@ -5,38 +5,37 @@ from datetime import date, timedelta
 
 class Command(BaseCommand):
     help = 'Sets up hyperactive scenario for testing'
-    
+
     def handle(self, *args, **kwargs):
         user_id = '11021801300001'
-        today = date(2025, 7, 12)
-        
+        today = date.today()
+
         try:
             user = Petitioner.objects.get(id=user_id)
         except Petitioner.DoesNotExist:
             self.stdout.write(self.style.ERROR(f'User {user_id} not found'))
             return
-            
-        # Get or create monthly activity record
+
         activity, created = UserMonthlyActivity.objects.get_or_create(
             user=user,
             year=today.year,
             month=today.month,
             defaults={'active_days': []}
         )
-        
-        # Create 5-day streak (8th to 12th)
-        streak_days = [today - timedelta(days=i) for i in range(5)]
-        new_days = [d.day for d in streak_days]
-        
-        # Add streak days if not already present
-        for day in new_days:
+
+        # Define 5-day streak ending today
+        streak_dates = [today - timedelta(days=i) for i in range(4, -1, -1)]
+        streak_days = sorted(set(date.day for date in streak_dates))
+
+        # Append missing days
+        for day in streak_days:
             if day not in activity.active_days:
                 activity.active_days.append(day)
-                
+
+        activity.active_days = sorted(set(activity.active_days))
         activity.save()
-        
+
         self.stdout.write(self.style.SUCCESS(
-            f'Hyperactive scenario set for user {user_id}: '
-            f'5-day streak from {min(new_days)} to {max(new_days)} July'
+            f'Hyperactive scenario set for user {user_id}:\n'
+            f'→ Streak: {streak_days[0]} to {streak_days[-1]} {today.strftime("%B")}'
         ))
-        

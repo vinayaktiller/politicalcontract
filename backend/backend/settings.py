@@ -55,6 +55,8 @@ INSTALLED_APPS = [
     'event',
     'reports',
     'activity_reports',
+    'chat',
+
 
 ]
 
@@ -176,7 +178,10 @@ AUTH_USER_MODEL = 'users.Petitioner'  # Use the custom user model
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
+CELERY_TIMEZONE = 'Asia/Kolkata'
+CELERY_ENABLE_UTC = False
+
 
 USE_I18N = True
 

@@ -36,15 +36,18 @@ const LoginPage: React.FC = () => {
       });
 
       const data = await response.json();
-      const { user_type, user_email, tokens, user_id } = data;
+      const { user_type, user_email, tokens, user_id, name, profile_pic } = data;
 
       if (user_type === "olduser") {
         localStorage.setItem("access_token", tokens.access);
         localStorage.setItem("refresh_token", tokens.refresh);
         localStorage.setItem("user_id", user_id);
         localStorage.setItem("user_email", user_email);
+        localStorage.setItem("name", name);
+        localStorage.setItem("profile_pic", profile_pic || ""); // Store profile picture URL
 
-        dispatch(login({ user_email }));
+
+        dispatch(login({ user_email, name, profile_pic }));
         const userId = localStorage.getItem("user_id");
         if (userId) {
           dispatch(connectWebSocket(userId) as any);

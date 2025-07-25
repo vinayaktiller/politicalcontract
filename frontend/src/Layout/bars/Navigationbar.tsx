@@ -47,6 +47,7 @@ const Navigationbar: React.FC<NavigationbarProps> = ({ toggleNav }) => {
         <Link to={'/my-groups/'} onClick={handleNavClick}>My Groups</Link>
         <Link to={'dashboards/'} onClick={handleNavClick}>Dashboard</Link>
         <Link to={`/home/`} onClick={handleNavClick}>testing page</Link>
+        <Link to={`/messages/chatlist`} onClick={handleNavClick}>Messages</Link>
       </div>
       <div className='navbar-bottom'>
         <button onClick={handlelLogout}>Logout</button>

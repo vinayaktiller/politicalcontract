@@ -36,3 +36,5 @@ class LoginResponseSerializer(serializers.Serializer):
     user_id = serializers.IntegerField(required=False)
     tokens = TokenSerializer(required=False)
     message = serializers.CharField(required=False)
+    name = serializers.CharField(required=False, allow_null=True)  # New field
+    profile_pic = serializers.URLField(required=False, allow_null=True)  # New field

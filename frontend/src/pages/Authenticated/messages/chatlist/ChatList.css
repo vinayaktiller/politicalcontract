@@ -1,0 +1,450 @@
+/* Mobile-First Chat List Design */
+.chat-list-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Header Styles */
+.chat-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  position: sticky;
+  top: 0;
+}
+
+.chat-list-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+/* Button Styles */
+.refresh-button,
+.contacts-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 24px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.contacts-button {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.25);
+}
+
+.contacts-button:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.refresh-button {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.refresh-button:hover {
+  background: #e2e8f0;
+}
+
+.refresh-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Conversation List */
+.conversations-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  background: #ffffff;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.conversation-item:hover {
+  background-color: #f8fafc;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-pic {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  margin-right: 16px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+  border: 2px solid #eff6ff;
+}
+
+.profile-pic-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  margin-right: 16px;
+  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: white;
+  font-size: 20px;
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1e293b;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.last-message {
+  font-size: 0.875rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.message-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: 8px;
+  min-width: 70px;
+}
+
+.timestamp {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  white-space: nowrap;
+}
+
+.unread-count {
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* No Content States */
+.chat-list-loading,
+.no-conversations {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 120px);
+  color: #64748b;
+  font-size: 1rem;
+  padding: 20px;
+  text-align: center;
+}
+
+.user-error {
+  color: #ef4444;
+  font-size: 0.875rem;
+  padding: 16px;
+  text-align: center;
+}
+
+/* Contacts Modal */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.contacts-modal {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 450px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+/* Add this to the existing CSS */
+
+/* Updated Modal Header */
+.modal-header {
+  padding: 20px;
+  background: white;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  flex: 1;
+  text-align: center;
+}
+
+/* Modal Refresh Button */
+.modal-refresh-button {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  padding: 6px 12px;
+  border-radius: 24px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.modal-refresh-button:hover {
+  background: #e2e8f0;
+}
+
+.modal-refresh-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Animation for Modal Refresh Button */
+.modal-refresh-button:disabled::after {
+  content: "🔄";
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  margin-left: 8px;
+}
+
+/* Remove old header buttons gap */
+.header-buttons {
+  display: flex;
+}
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #64748b;
+  transition: color 0.2s ease;
+}
+
+.close-button:hover {
+  color: #334155;
+}
+
+.contacts-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.contact-item:hover {
+  background-color: #f8fafc;
+}
+
+.contact-info {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.contact-profile-pic {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-right: 16px;
+  object-fit: cover;
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+}
+
+.contact-profile-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-right: 16px;
+  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: white;
+  font-size: 18px;
+}
+
+.contact-name {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.contact-status {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.chat-exists {
+  color: #10b981;
+}
+
+.start-chat {
+  color: #3b82f6;
+}
+
+.modal-loading,
+.modal-no-contacts {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+/* Scrollbar Styling */
+.conversations-list::-webkit-scrollbar,
+.contacts-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversations-list::-webkit-scrollbar-track,
+.contacts-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.conversations-list::-webkit-scrollbar-thumb,
+.contacts-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.conversations-list::-webkit-scrollbar-thumb:hover,
+.contacts-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Animation for Refresh */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.refresh-button:disabled::after {
+  content: "🔄";
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  margin-left: 8px;
+}
+
+/* Responsive Design */
+@media (min-width: 768px) {
+  .chat-list-container {
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    margin: 20px auto;
+    height: 90vh;
+  }
+  
+  .contacts-modal {
+    width: 400px;
+  }
+}
+
+/* Loading Skeletons */
+.skeleton {
+  animation: skeleton-loading 1.5s linear infinite alternate;
+}
+
+@keyframes skeleton-loading {
+  0% { background-color: #f1f5f9; }
+  100% { background-color: #e2e8f0; }
+}
+
+.skeleton-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+}
+
+.skeleton-line {
+  height: 16px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-line-short {
+  width: 60%;
+}
+
+.skeleton-line-medium {
+  width: 80%;
+}

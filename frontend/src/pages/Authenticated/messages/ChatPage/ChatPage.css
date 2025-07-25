@@ -1,0 +1,248 @@
+.chat-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.chat-page-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #4e8cff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.chat-page-error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  flex-direction: column;
+  text-align: center;
+  padding: 20px;
+}
+
+.error-message {
+  font-size: 1.2rem;
+  color: #ff6b6b;
+  margin-bottom: 15px;
+}
+
+.back-link {
+  color: #4e8cff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background-color: white;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  z-index: 10;
+}
+
+.back-button {
+  font-size: 1.5rem;
+  margin-right: 12px;
+  cursor: pointer;
+}
+
+.profile-pic {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 12px;
+}
+
+.profile-pic-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #4e8cff;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  margin-right: 12px;
+}
+
+.user-name {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9f9f9;
+}
+
+.no-messages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #999;
+  font-style: italic;
+  text-align: center;
+}
+
+.message-bubble {
+  max-width: 75%;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.own-message {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.other-message {
+  align-self: flex-start;
+}
+
+.message-profile-pic {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 8px;
+}
+
+.message-profile-pic.placeholder {
+  background-color: #ccc;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
+
+.message-content {
+  padding: 12px 15px;
+  border-radius: 18px;
+  position: relative;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.own-message .message-content {
+  background-color: #d1e7ff;
+  color: #333;
+  border-bottom-right-radius: 4px;
+}
+
+.other-message .message-content {
+  background-color: white;
+  color: #333;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.message-text {
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+.message-time {
+  font-size: 0.7rem;
+  margin-top: 5px;
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+}
+
+.own-message .message-time {
+  justify-content: flex-end;
+  color: #666;
+}
+
+.other-message .message-time {
+  justify-content: flex-start;
+  color: #666;
+}
+
+.unread-indicator {
+  color: #ff6b6b;
+  margin-left: 4px;
+  font-weight: bold;
+}
+
+.message-input-container {
+  display: flex;
+  padding: 15px;
+  background-color: white;
+  border-top: 1px solid #e0e0e0;
+  align-items: flex-end;
+}
+
+.message-input {
+  flex: 1;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 24px;
+  outline: none;
+  font-size: 1rem;
+  resize: none;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.message-input:focus {
+  border-color: #4e8cff;
+}
+
+.send-button {
+  background-color: #4e8cff;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  padding: 10px 20px;
+  margin-left: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  min-height: 42px;
+}
+
+.send-button:disabled {
+  background-color: #a0c0ff;
+  cursor: not-allowed;
+}
+
+.send-button:hover:not(:disabled) {
+  background-color: #3a7bff;
+}
+
+.sending-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}

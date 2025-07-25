@@ -35,6 +35,7 @@ urlpatterns = [
     path('api/event/', include('event.urls')),
     path('api/reports/', include('reports.urls')),
     path('api/activity_reports/', include('activity_reports.urls')),
+    path('api/chat/', include('chat.urls')),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
