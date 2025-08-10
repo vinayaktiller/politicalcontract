@@ -4,3 +4,4 @@ from .usertree import UserTree
 from .petitioners import CustomUserManager
 from .Circle import Circle
 from .Connectionnotification import ConnectionNotification
+from .milestone import Milestone

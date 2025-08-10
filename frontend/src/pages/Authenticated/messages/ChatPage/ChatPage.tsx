@@ -1,3 +1,4 @@
+// src/features/chat/ChatPage/ChatPage.tsx
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -7,11 +8,11 @@ import {
 } from '../../../../store';
 import {
   initializeRoom,
-  sendNewMessage,
   markMessagesRead,
-  addMessage,
-  setCurrentRoom,
+  addOptimisticMessage,
+  updateMessage,
   removeMessage,
+  setCurrentRoom,
 } from './chatSlice';
 import {
   selectCurrentRoom,
@@ -20,12 +21,12 @@ import {
   selectChatStatus,
   selectSendStatus,
   selectChatError,
-} from './Chatpagetypes';
+  Message,
+} from './Chatpagetypes'; // assuming types exported from this file
+import { updateConversation, conversationRead } from '../chatlist/chatListSlice';
 import {
   Box,
   Typography,
-  Avatar,
-  CircularProgress,
   TextField,
   IconButton,
   Paper,
@@ -33,91 +34,118 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ReplayIcon from '@mui/icons-material/Replay';
 import { format } from 'date-fns';
+import './ChatPage.css';
+
+const StatusIcon = ({ status, isOwn }: { status: string; isOwn: boolean }) => {
+  if (!isOwn) return null;
+
+  let className = 'status-icon ';
+  const normalizedStatus = status.toLowerCase();
+
+  switch (normalizedStatus) {
+    case 'delivered':
+    case 'delivered_update':
+      className += 'delivered';
+      return <span className={className}>✓✓</span>;
+    case 'read':
+    case 'read_update':
+      className += 'read';
+      return <span className={className}>✓✓</span>;
+    default:
+      className += 'sent';
+      return <span className={className}>✓</span>;
+  }
+};
 
 const ChatPage: React.FC = () => {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
   const dispatch: AppDispatch = useDispatch();
 
-  // Refs for scroll and reading state
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMarkedRef = useRef<number>(0);
   const hasNewMessagesRef = useRef<boolean>(false);
-
-  // Local state for message input
   const [messageInput, setMessageInput] = useState('');
 
-  // Redux selectors for chat data
   const room = useSelector(selectCurrentRoom);
   const conversation = useSelector(selectConversation);
   const messages = useSelector(selectMessages);
   const status = useSelector(selectChatStatus);
   const sendStatus = useSelector(selectSendStatus);
   const error = useSelector(selectChatError);
-
-  // Current user info (adapt to your store structure)
   const currentUser = useSelector((state: RootState) => state.user);
+  const socket = useSelector((state: RootState) => state.notifications.socket);
 
-  /**
-   * Handle marking messages as read, throttled to max once every 2 seconds
-   */
+  // MARK AS READ handler - debounced and updates chat list unread count
   const handleMarkAsRead = useCallback(() => {
     if (!conversationId || !room) return;
-
     const now = Date.now();
-    if (now - lastMarkedRef.current < 2000) return;
-
+    if (now - lastMarkedRef.current < 2000) return; // rate-limit for performance
     if (hasNewMessagesRef.current) {
+      // Reset unread count in chat list
+      dispatch(
+        updateConversation({
+          id: conversationId,
+          changes: { unread_count: 0 },
+          moveToTop: true,
+        })
+      );
+
+      // Mark messages as read on server
       dispatch(markMessagesRead(conversationId));
+
       hasNewMessagesRef.current = false;
       lastMarkedRef.current = now;
     }
   }, [conversationId, room, dispatch]);
 
-  /**
-   * Initialize room once on mount or when conversationId changes
-   */
+  // When conversation changes, immediately reset unread count in chat list
   useEffect(() => {
-    if (!conversationId) return;
-
-    dispatch(setCurrentRoom(conversationId));
-    dispatch(initializeRoom(conversationId));
-
-    // Optional cleanup if you want to reset state on unmount
-    return () => {
-      // dispatch(resetRoomState(conversationId));
-    };
+    if (conversationId) {
+      dispatch(
+        updateConversation({
+          id: conversationId,
+          changes: { unread_count: 0 },
+          moveToTop: true,
+        })
+      );
+    }
   }, [conversationId, dispatch]);
 
-  /**
-   * Detect new unread messages and mark as read if necessary
-   */
+  // Init room and data
+  useEffect(() => {
+    if (!conversationId) return;
+    dispatch(setCurrentRoom(conversationId));
+    dispatch(initializeRoom(conversationId));
+    dispatch(conversationRead(conversationId));
+  }, [conversationId, dispatch]);
+
+  // Mark as read when new messages come in
   useEffect(() => {
     if (!room) return;
-
-    const hasNewUnread = messages.some(msg => !msg.is_own && !msg.read);
-
+    const hasNewUnread = messages.some(
+      (msg) =>
+        !msg.is_own &&
+        ['sent', 'delivered', 'delivered_update', 'Sent', 'Delivered', 'Delivered Update'].includes(
+          msg.status
+        )
+    );
     if (hasNewUnread) {
       hasNewMessagesRef.current = true;
       handleMarkAsRead();
     }
   }, [messages, handleMarkAsRead, room]);
 
-  /**
-   * Mark as read on user interactions (focus/click/tab visibility)
-   */
+  // Listen to focus/visibility changes and mark as read
   useEffect(() => {
     const handleUserActivity = () => {
-      if (document.visibilityState === 'visible') {
-        handleMarkAsRead();
-      }
+      if (document.visibilityState === 'visible') handleMarkAsRead();
     };
-
     window.addEventListener('focus', handleUserActivity);
     window.addEventListener('click', handleUserActivity);
     document.addEventListener('visibilitychange', handleUserActivity);
-
     return () => {
       window.removeEventListener('focus', handleUserActivity);
       window.removeEventListener('click', handleUserActivity);
@@ -125,55 +153,94 @@ const ChatPage: React.FC = () => {
     };
   }, [handleMarkAsRead]);
 
-  /**
-   * Scroll to bottom whenever messages change
-   */
+  // Autoscroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  /**
-   * Send message handler with optimistic UI update using temp ID
-   */
+  // Resend functionality for failed/sending messages
+  const handleResendMessage = (message: Message) => {
+    if (!conversationId) return;
+
+    dispatch(removeMessage({ conversationId, messageId: message.id }));
+
+    const newTempId = `temp-${Date.now()}`;
+    const optimisticMessage = {
+      ...message,
+      id: newTempId,
+      timestamp: new Date().toISOString(),
+      status: 'sent',
+    };
+
+    dispatch(addOptimisticMessage({ conversationId, message: optimisticMessage }));
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(
+        JSON.stringify({
+          category: 'chat_system',
+          action: 'send_message',
+          conversation_id: conversationId,
+          content: message.content,
+          temp_id: newTempId,
+        })
+      );
+    }
+  };
+
+  // Send message with optimistic update & chat list update
   const handleSendMessage = async () => {
     if (!conversationId || !messageInput.trim()) return;
 
     const content = messageInput.trim();
-    const safeSenderName = currentUser?.name ?? 'Unknown Sender';
-
-    // Create optimistic message with temp ID
+    const safeSenderName = currentUser?.name ?? 'You';
     const tempId = `temp-${Date.now()}`;
-    const optimisticMessage = {
+
+    const optimisticMessage: Message = {
       id: tempId,
       content,
       timestamp: new Date().toISOString(),
-      read: true,
+      status: 'sent',
       sender_name: safeSenderName,
-      sender_profile: null,
+      sender_profile: currentUser?.profile_pic ?? null,
       is_own: true,
     };
 
-    // Add optimistic message to state immediately
-    dispatch(addMessage({ conversationId, message: optimisticMessage }));
-
-    // Clear input box
+    dispatch(addOptimisticMessage({ conversationId, message: optimisticMessage }));
     setMessageInput('');
 
+    // Update chat list with new message details immediately
+    dispatch(
+      updateConversation({
+        id: conversationId,
+        changes: {
+          last_message: content,
+          last_message_timestamp: optimisticMessage.timestamp,
+        },
+        moveToTop: true,
+      })
+    );
+
     try {
-      // Await real message send fulfillment
-      await dispatch(sendNewMessage({ conversationId, content })).unwrap();
-      // No need to remove optimistic message here, sendNewMessage thunk will update it upon success
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(
+          JSON.stringify({
+            category: 'chat_system',
+            action: 'send_message',
+            conversation_id: conversationId,
+            content,
+            temp_id: tempId,
+          })
+        );
+      } else {
+        throw new Error('WebSocket not connected');
+      }
     } catch (error) {
-      console.error('Failed to send message:', error);
-      // Remove optimistic message on failure
       dispatch(removeMessage({ conversationId, messageId: tempId }));
-      // Optionally show error to user or retry
+      console.error('Failed to send message:', error);
     }
   };
 
-  /**
-   * Support sending message on Enter without shift (shift+enter adds newline)
-   */
+  // Send message on Enter key (without shift)
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -181,170 +248,97 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  // Show loading spinner while loading messages initially
-  if (status === 'loading' && !messages.length) {
+  // Render loading state
+  if (status === 'loading' && messages.length === 0) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
-        <CircularProgress />
+      <Box className="chat-page-loading">
+        <div className="loading-spinner"></div>
       </Box>
     );
   }
 
-  // Show error message or fallback if no conversation
+  // Render error or missing conversation state
   if (error || !conversation) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="100vh"
-        flexDirection="column"
-      >
-        <Typography variant="h6" color="error">
+      <Box className="chat-page-error">
+        <Typography variant="h6" className="error-message">
           {error || 'Conversation not found'}
         </Typography>
-        <Typography
-          variant="body1"
-          sx={{ mt: 2, cursor: 'pointer', textDecoration: 'underline' }}
-          onClick={() => navigate(-1)}
-        >
+        <Typography variant="body1" className="back-link" onClick={() => navigate(-1)}>
           Go back to conversations
         </Typography>
       </Box>
     );
   }
 
-  // Main chat UI rendering
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      {/* Header */}
-      <Paper
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          p: 2,
-          borderRadius: 0,
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          bgcolor: 'background.paper',
-        }}
-        elevation={1}
-      >
-        <IconButton onClick={() => navigate(-1)} sx={{ mr: 1 }} aria-label="Back to conversations">
+    <Box className="chat-page-container">
+      <Paper className="chat-header">
+        <IconButton onClick={() => navigate(-1)} className="back-button" aria-label="Go back">
           <ArrowBackIcon />
         </IconButton>
 
-        <Avatar
-          src={conversation.other_user.profile_pic || undefined}
-          alt={conversation.other_user.name}
-          sx={{ width: 40, height: 40, mr: 2 }}
-        />
-
-        <Typography variant="h6" noWrap>
-          {conversation.other_user.name}
-        </Typography>
+        {conversation.other_user.profile_pic ? (
+          <img
+            src={conversation.other_user.profile_pic}
+            alt={conversation.other_user.name}
+            className="profile-pic"
+          />
+        ) : (
+          <div className="profile-pic-placeholder">{conversation.other_user.name.charAt(0)}</div>
+        )}
+        <Typography className="user-name">{conversation.other_user.name}</Typography>
       </Paper>
 
-      {/* Messages Area */}
-      <Box
-        sx={{
-          flex: 1,
-          overflowY: 'auto',
-          p: 2,
-          bgcolor: '#f9f9f9',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+      <Box className="messages-container">
         {messages.length === 0 ? (
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              textAlign: 'center',
-            }}
-          >
-            <Typography variant="body1" color="textSecondary">
-              No messages yet. Be the first to start the conversation!
-            </Typography>
+          <Box className="no-messages">
+            <Typography variant="body1">No messages yet. Be the first to start the conversation!</Typography>
           </Box>
         ) : (
-          messages.map((message) => (
-            <Box
-              key={message.id}
-              sx={{
-                display: 'flex',
-                justifyContent: message.is_own ? 'flex-end' : 'flex-start',
-                mb: 2,
-              }}
-            >
+          <>
+            {messages.map((message) => (
               <Box
-                sx={{
-                  display: 'flex',
-                  maxWidth: '80%',
-                  flexDirection: message.is_own ? 'row-reverse' : 'row',
-                  alignItems: 'flex-end',
-                }}
+                key={message.id}
+                className={`message-bubble ${message.is_own ? 'own-message' : 'other-message'}`}
               >
-                {!message.is_own && (
-                  <Avatar
-                    src={message.sender_profile || undefined}
-                    alt={message.sender_name}
-                    sx={{ width: 32, height: 32, mr: 1, ml: 1 }}
-                  />
-                )}
+                {!message.is_own &&
+                  (message.sender_profile ? (
+                    <img
+                      src={message.sender_profile}
+                      alt={message.sender_name}
+                      className="message-profile-pic"
+                    />
+                  ) : (
+                    <div className="message-profile-pic placeholder">{message.sender_name.charAt(0)}</div>
+                  ))}
 
-                <Box>
-                  <Box
-                    sx={{
-                      bgcolor: message.is_own ? '#d1e7ff' : '#ffffff',
-                      borderRadius: 3,
-                      p: 1.5,
-                      boxShadow: 1,
-                      maxWidth: '100%',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    <Typography variant="body1">{message.content}</Typography>
-                  </Box>
+                <Box className="message-content">
+                  <Typography className="message-text">{message.content}</Typography>
+                  <Box className="message-time">
+                    <span>{format(new Date(message.timestamp), 'hh:mm a')}</span>
+                    <StatusIcon status={message.status} isOwn={message.is_own} />
 
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      display: 'block',
-                      textAlign: message.is_own ? 'right' : 'left',
-                      mt: 0.5,
-                      color: 'text.secondary',
-                      px: 1,
-                    }}
-                  >
-                    {format(new Date(message.timestamp), 'hh:mm a')}
-                    {!message.is_own && !message.read && (
-                      <span style={{ marginLeft: 4, color: '#ff6b6b' }}>•</span>
+                    {message.is_own && message.status === 'sent' && (
+                      <IconButton
+                        size="small"
+                        onClick={() => handleResendMessage(message)}
+                        className="retry-button"
+                        aria-label="Retry sending message"
+                      >
+                        <ReplayIcon fontSize="small" />
+                      </IconButton>
                     )}
-                  </Typography>
+                  </Box>
                 </Box>
               </Box>
-            </Box>
-          ))
+            ))}
+            <div ref={messagesEndRef} />
+          </>
         )}
-        <div ref={messagesEndRef} />
       </Box>
 
-      {/* Message Input Area */}
-      <Paper
-        sx={{
-          p: 2,
-          borderRadius: 0,
-          position: 'sticky',
-          bottom: 0,
-          bgcolor: 'background.paper',
-        }}
-        elevation={4}
-      >
+      <Paper className="message-input-container">
         <TextField
           fullWidth
           multiline
@@ -363,14 +357,15 @@ const ChatPage: React.FC = () => {
                   color="primary"
                   onClick={handleSendMessage}
                   disabled={!messageInput.trim() || sendStatus === 'sending'}
-                  sx={{ alignSelf: 'flex-end' }}
                   aria-label="send message"
+                  className="send-button"
                 >
-                  {sendStatus === 'sending' ? <CircularProgress size={24} /> : <SendIcon />}
+                  {sendStatus === 'sending' ? <span className="sending-spinner" /> : <SendIcon />}
                 </IconButton>
               </InputAdornment>
             ),
           }}
+          className="message-input"
         />
       </Paper>
     </Box>

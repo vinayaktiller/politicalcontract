@@ -26,11 +26,11 @@ const GroupSpeakerInvitation: React.FC = () => {
 
   // Find the specific notification with type safety
   const notification = groupSpeakerNotifications.find(
-    n => n.notification_number === Number(notificationNumber)
+    n => n.notification_number === notificationNumber
   );
 
   const currentIndex = groupSpeakerNotifications.findIndex(
-    n => n.notification_number === Number(notificationNumber)
+    n => n.notification_number === notificationNumber
   );
 
   useEffect(() => {

@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     'reports',
     'activity_reports',
     'chat',
+    'blog',
+    'blog_related',
 
 
 ]
@@ -212,9 +214,11 @@ CSRF_COOKIE_NAME = "csrftoken"
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {filename} {message}',
+            # Added :{lineno} to include line number in every log
+            'format': '{levelname} {asctime} {module} {filename}:{lineno} {message}',
             'style': '{',
         },
         'simple': {
@@ -222,6 +226,7 @@ LOGGING = {
             'style': '{',
         },
     },
+
     'handlers': {
         'console': {
             'level': 'DEBUG',
@@ -234,6 +239,7 @@ LOGGING = {
             'formatter': 'simple',
         },
     },
+
     'loggers': {
         'django': {
             'handlers': ['console'],
@@ -267,7 +273,8 @@ LOGGING = {
             'propagate': False,
         },
     },
-    # Add root logger as safety net
+
+    # Root logger - safety net
     'root': {
         'handlers': ['console_unfiltered'],
         'level': 'WARNING',
@@ -322,6 +329,13 @@ CELERY_BEAT_SCHEDULE = {
     'simulate-activity-every-3-minutes': {
         'task': 'activity_reports.tasks.simulate_realtime_activity',
         'schedule': crontab(minute='*/3'),  # Every 3 minutes
+        'options': {
+            'expires': 120,  # Expire after 2 minutes if not run
+        }
+    },
+    'populate-milestones-sequence': {
+        'task': 'users.tasks.populate_milestones_sequence',
+        'schedule': crontab(minute='*/3'),  # Every 180 seconds (3 minutes)
         'options': {
             'expires': 120,  # Expire after 2 minutes if not run
         }

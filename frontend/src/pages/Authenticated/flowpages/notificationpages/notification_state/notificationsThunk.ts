@@ -1,6 +1,16 @@
+// src/features/notifications/notificationsThunk.ts
+
 import { Dispatch } from '@reduxjs/toolkit';
-import { RootState } from '../../../../../store';
-import { addNotification, setSocket, setConnected, removeNotificationByDetails } from './notificationsSlice';
+import { AppDispatch, RootState } from '../../../../../store';
+import {
+  addNotification,
+  removeNotificationByDetails,
+  setConnected,
+  setSocket,
+} from './notificationsSlice';
+import { addMessage, updateMessage } from '../../../messages/ChatPage/chatSlice';
+import { updateConversation } from '../../../messages/chatlist/chatListSlice';
+import { fetchUserMilestones, addMilestone } from '../../../milestone/milestonesSlice';
 
 const RECONNECT_BASE_DELAY = 1000;
 let reconnectAttempts = 0;
@@ -10,10 +20,99 @@ const getReconnectDelay = () => {
   return Math.min(delay, 30000);
 };
 
+const handleChatSystemMessage = (
+  data: any,
+  dispatch: Dispatch,
+  getState: () => RootState
+) => {
+  const subtype = data.subtype;
+  const conversationId = data.conversation_id;
+  const messageId = data.message_id;
+  const status = data.status;
+
+  switch (subtype) {
+    case 'new_message': {
+      const state = getState();
+      const conversation = state.chat.rooms[conversationId]?.conversation;
+      const room = state.chat.rooms[conversationId];
+      const isCurrentRoom = state.chat.currentRoomId === conversationId;
+
+      // Deduplication: ignore if message ID already exists
+      if (room && room.messages.some(m => m.id === messageId)) {
+        console.log(`Duplicate new_message ignored for messageID: ${messageId}`);
+        break;
+      }
+
+      let sender_name = 'Unknown';
+      let sender_profile = null;
+      if (conversation) {
+        if (conversation.other_user.id === data.sender_id) {
+          sender_name = conversation.other_user.name;
+          sender_profile = conversation.other_user.profile_pic;
+        }
+      }
+
+      const message = {
+        id: messageId,
+        content: data.content,
+        timestamp: data.timestamp,
+        status: data.status || 'sent',
+        sender_name: data.sender_name || sender_name,
+        sender_profile: data.sender_profile || sender_profile,
+        is_own: false,
+      };
+
+      dispatch(addMessage({ conversationId, message }));
+
+      // Update chat list conversation info
+      const currentUnreadCount = state.chatList.entities[conversationId]?.unread_count || 0;
+      dispatch(updateConversation({
+        id: conversationId,
+        changes: {
+          last_message: data.content,
+          last_message_timestamp: data.timestamp,
+          unread_count: isCurrentRoom ? currentUnreadCount : currentUnreadCount + 1,
+        },
+        moveToTop: true,
+      }));
+
+      break;
+    }
+
+    case 'message_delivered':
+    case 'delivered_update':
+    case 'message_read':
+    case 'read_update':
+    case 'message_read_update':
+      dispatch(updateMessage({
+        conversationId,
+        messageId,
+        changes: { status },
+      }));
+      break;
+
+    case 'message_sent':
+      dispatch(updateMessage({
+        conversationId,
+        messageId: data.temp_id,
+        changes: {
+          id: data.message_id,
+          status: data.status || 'sent',
+          timestamp: data.timestamp,
+        },
+      }));
+      break;
+
+    default:
+      console.warn('Unhandled chat subtype:', subtype);
+  }
+};
+
 export const connectWebSocket =
-  (userId: string) => async (dispatch: Dispatch, getState: () => RootState) => {
+  (userId: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
     const { notifications } = getState();
-    
+
+    // Avoid duplicate connections
     if (notifications.socket instanceof WebSocket) {
       const socket = notifications.socket;
       if (socket.readyState === WebSocket.CONNECTING) {
@@ -34,30 +133,72 @@ export const connectWebSocket =
       socket.onopen = () => {
         reconnectAttempts = 0;
         dispatch(setConnected(true));
-        console.log('WebSocket connected');
+
+        // Fetch milestones on connect if idle
+        const storedUserId = localStorage.getItem('user_id');
+        if (storedUserId) {
+          const uid = parseInt(storedUserId, 10);
+          const milestoneState = getState().milestones;
+          const status = milestoneState?.status || 'idle';
+          if (status === 'idle') {
+            dispatch(fetchUserMilestones(uid));
+          }
+        }
+
+        socket.send(JSON.stringify({
+          category: 'chat_system',
+          action: 'user_online',
+        }));
       };
 
-      // In your WebSocket setup file
       socket.onmessage = (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data);
-          
-          if (data?.notification) {
-            console.log('Received notification:', data.notification);
-            dispatch(addNotification(data.notification));
+          console.log('WebSocket message received:', data);
+
+          // === Milestone Notification Handling ===
+          if (data?.notification?.notification_type === 'Milestone_Notification') {
+            console.log('Milestone Notification received:', data.notification);
+            // Create UI notification
+            const milestoneNotification = {
+              notification_type: 'Milestone_Notification' as const,
+              notification_message: data.notification.notification_message,
+              notification_data: data.notification.notification_data,
+              notification_number: data.notification.notification_number,
+              notification_freshness: data.notification.notification_freshness,
+              created_at: data.notification.created_at
+            };
+            console.log('Dispatching Milestone Notification:', milestoneNotification);
+
+            dispatch(addNotification(milestoneNotification));
+
+            // === NEW: Send deletion command to server for this milestone notification ===
+            const deletionMessage = JSON.stringify({
+              action: 'delete_notification',
+              notification_type: 'Milestone_Notification',
+              notification_number: data.notification.notification_number
+            });
+
+            if (socket.readyState === WebSocket.OPEN) {
+              socket.send(deletionMessage);
+              console.log('Sent deletion message for Milestone notification:', deletionMessage);
+            }
+
+            return;
           }
-          else if (data?.delete_notification) {
-            console.log('Received delete notification:', data.delete_notification);
-            
+
+          // === Existing handlers ===
+          if (data?.type === 'notification_message' && data?.category === 'chat_system') {
+            handleChatSystemMessage(data, dispatch, getState);
+          } else if (data?.notification) {
+            dispatch(addNotification(data.notification));
+          } else if (data?.delete_notification) {
             const { notification_type, notification_number } = data.delete_notification;
-            
             if (notification_type && notification_number) {
-              dispatch(removeNotificationByDetails({ 
-                notification_type, 
-                notification_number 
+              dispatch(removeNotificationByDetails({
+                notification_type,
+                notification_number,
               }));
-            } else {
-              console.error('Invalid delete notification format:', data.delete_notification);
             }
           }
         } catch (error) {
@@ -67,19 +208,13 @@ export const connectWebSocket =
 
       socket.onclose = (event: CloseEvent) => {
         dispatch(setConnected(false));
-
-        switch(event.code) {
-          case 4000:
-          case 4001:
-            return;
-          default:
-            reconnectAttempts++;
-            const delay = getReconnectDelay();
-            console.log(`Reconnecting in ${delay/1000} seconds...`);
-            setTimeout(() => {
-              const userId = localStorage.getItem('user_id');
-              if (userId) dispatch(connectWebSocket(userId) as any);
-            }, delay);
+        if (![4000, 4001].includes(event.code)) {
+          reconnectAttempts++;
+          const delay = getReconnectDelay();
+          setTimeout(() => {
+            const storedUserId = localStorage.getItem('user_id');
+            if (storedUserId) dispatch(connectWebSocket(storedUserId) as any);
+          }, delay);
         }
       };
 
@@ -89,7 +224,6 @@ export const connectWebSocket =
       };
 
       dispatch(setSocket(socket));
-
     } catch (error) {
       console.error('Connection failed:', error);
       const delay = getReconnectDelay();
@@ -97,77 +231,26 @@ export const connectWebSocket =
     }
   };
 
-export const disconnectWebSocket = () => (dispatch: Dispatch, getState: () => RootState) => {
-  const { notifications } = getState();
-  if (notifications.socket) {
-    notifications.socket.close(4000, 'User initiated disconnect');
-    dispatch(setSocket(null));
-    dispatch(setConnected(false));
-  }
-};
-
-export const sendWebSocketMessage =
-  (notificationType: string,messagetype: string, data: Record<string, any>) =>
-  (dispatch: Dispatch, getState: () => RootState) => {
+export const disconnectWebSocket =
+  () => (dispatch: AppDispatch, getState: () => RootState) => {
     const { notifications } = getState();
-    
-    if (notifications.socket && notifications.socket.readyState === WebSocket.OPEN) {
-      const message = JSON.stringify({ notificationType,messagetype, ...data });
-      notifications.socket.send(message);
-    } else {
-      console.error('WebSocket is not connected');
-      const userId = localStorage.getItem('user_id');
-      if (userId) dispatch(connectWebSocket(userId) as any);
+    if (notifications.socket) {
+      notifications.socket.close(4000, 'User initiated disconnect');
+      dispatch(setSocket(null));
+      dispatch(setConnected(false));
     }
   };
 
-// TypeScript-specific imports for browser-based WebSocket handling
-// No extra npm package is required for WebSocket in the browser
-
-// In browser environments, you do NOT need to import MessageEvent or CloseEvent explicitly
-
-// import type { AppDispatch } from '../../../../../store';
-
-// let socket: WebSocket | null = null;
-// export const connectWebSocket = (userId: string) => (dispatch: AppDispatch) => {
-  
-
-//   socket = new WebSocket(`ws://localhost:8000/ws/notifications/${userId}/`);
-
-//   socket.onopen = () => {
-//     console.log("WebSocket connected");
-//   };
-
-//   socket.onmessage = (event: MessageEvent) => {
-//     console.log("Received message:", event.data);
-//   };
-
-//   socket.onclose = (event: CloseEvent) => {
-//     console.log(`WebSocket closed: code=${event.code}, reason=${event.reason}`);
-//     socket = null;
-//   };
-
-//   socket.onerror = (error: Event) => {
-//     console.error("WebSocket error:", error);
-//   };
-// };
-
-// export const disconnectWebSocket = () => (dispatch: AppDispatch) => {
-//   if (socket) {
-//     socket.close(4000, "Manual disconnect");
-//     socket = null;
-//     console.log("WebSocket disconnected");
-//   } else {
-//     console.log("WebSocket is not connected");
-//   }
-// };
-
-// export const sendWebSocketMessage = (type: string, data: Record<string, any>) => {
-//   if (socket && socket.readyState === WebSocket.OPEN) {
-//     const message = JSON.stringify({ type, ...data });
-//     socket.send(message);
-//     console.log("Sent message:", message);
-//   } else {
-//     console.error("Cannot send message. WebSocket is not open.");
-//   }
-// };
+export const sendWebSocketMessage =
+  (notificationType: string, messagetype: string, data: Record<string, any>) =>
+  (dispatch: AppDispatch, getState: () => RootState) => {
+    const { notifications } = getState();
+    if (notifications.socket && notifications.socket.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({ notificationType, messagetype, ...data });
+      notifications.socket.send(message);
+    } else {
+      console.error('WebSocket is not connected');
+      const storedUserId = localStorage.getItem('user_id');
+      if (storedUserId) dispatch(connectWebSocket(storedUserId) as any);
+    }
+  };

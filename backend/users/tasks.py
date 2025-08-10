@@ -13,6 +13,9 @@ from geographies.models.geos import Village
 from users.models import Petitioner, UserTree
 from event.models.groups import Group
 
+from .models import Milestone
+
+
 logger = logging.getLogger(__name__)
 fake = Faker('en_IN')
 
@@ -164,4 +167,92 @@ def add_live_users():
         return f"Added {user_count} users"
     except Exception as e:
         logger.error(f"Live user creation failed: {str(e)}", exc_info=True)
+        raise
+
+
+@shared_task
+def populate_milestones_sequence():
+    """Populates milestones for a user in the correct sequence"""
+    user_id = 11021801300001  # Your target user ID
+    
+    # Get the milestone definitions from UserTree
+    initiation_milestones = UserTree.INITIATION_MILESTONES
+    influence_milestones = UserTree.INFLUENCE_MILESTONES
+    
+    try:
+        # Get existing milestones for the user
+        existing_milestones = Milestone.objects.filter(user_id=user_id)
+        existing_titles = [m.title for m in existing_milestones]
+        
+        # Create a list of all possible milestones in order
+        all_milestones = []
+        
+        # Add initiation milestones in order
+        for threshold in sorted(initiation_milestones.keys()):
+            title, text = initiation_milestones[threshold]
+            all_milestones.append({
+                'type': 'initiation',
+                'title': title,
+                'text': text,
+                'threshold': threshold
+            })
+        
+        # Add influence milestones in order
+        for threshold in sorted(influence_milestones.keys()):
+            title, text = influence_milestones[threshold]
+            all_milestones.append({
+                'type': 'influence',
+                'title': title,
+                'text': text,
+                'threshold': threshold
+            })
+        
+        # Find the next milestone to create
+        next_milestone = None
+        for milestone in all_milestones:
+            if milestone['title'] not in existing_titles:
+                next_milestone = milestone
+                break
+        
+        if not next_milestone:
+            # If all milestones exist, reset by deleting them
+            existing_milestones.delete()
+            next_milestone = all_milestones[0]  # Start from the first one
+            logger.info("Reset milestones for new sequence")
+        
+        # Get user's gender for photo ID calculation
+        try:
+            from .models.petitioners import Petitioner
+            petitioner = Petitioner.objects.get(id=user_id)
+            gender = petitioner.gender
+        except Petitioner.DoesNotExist:
+            gender = 'M'  # Default to male
+        
+        # Calculate photo ID based on milestone type and gender
+        if next_milestone['type'] == 'initiation':
+            levels = sorted(initiation_milestones.keys())
+            milestone_index = levels.index(next_milestone['threshold'])
+            gender_offset = 0 if gender == 'M' else 1
+            photo_id = milestone_index * 2 + gender_offset + 1
+        else:  # influence
+            levels = sorted(influence_milestones.keys())
+            milestone_index = levels.index(next_milestone['threshold'])
+            gender_offset = 0 if gender == 'M' else 1
+            photo_id = milestone_index * 2 + gender_offset + 1
+        
+        # Create the milestone
+        Milestone.objects.create(
+            user_id=user_id,
+            title=next_milestone['title'],
+            text=next_milestone['text'],
+            type=next_milestone['type'],
+            photo_id=photo_id,
+            created_at=timezone.now()
+        )
+        
+        logger.info(f"Created milestone: {next_milestone['title']}")
+        return f"Created {next_milestone['type']} milestone: {next_milestone['title']}"
+    
+    except Exception as e:
+        logger.error(f"Error creating milestone sequence: {str(e)}")
         raise

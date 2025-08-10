@@ -26,13 +26,13 @@ const InitiationNotification: React.FC = () => {
     console.log("Filtered Notifications:", notifications);
 
     const notification = notifications.find(n =>
-        n.notification_number === Number(notificationNumber)
+        n.notification_number === notificationNumber
     );
 
     console.log("This Notification:", notification);
 
     const currentIndex = notifications.findIndex(n =>
-        n.notification_number === Number(notificationNumber)
+        n.notification_number === notificationNumber
     );
 
     useEffect(() => {

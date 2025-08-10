@@ -167,7 +167,7 @@ const notificationsSlice = createSlice({
     },
     removeNotificationByDetails: (
       state, 
-      action: PayloadAction<{ notification_type: string; notification_number: number }>
+      action: PayloadAction<{ notification_type: string; notification_number: string }>
     ) => {
       state.notifications = state.notifications.filter(
         notification => 

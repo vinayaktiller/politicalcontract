@@ -1,19 +1,13 @@
-import { Middleware } from '@reduxjs/toolkit';
 import { RootState } from '../../../../store';
+import { Middleware } from '@reduxjs/toolkit';
 
 const CHAT_STORAGE_KEY = 'chatState';
-
-export interface MessageSender {
-  id: string;
-  name: string;
-  profile_pic: string | null;
-}
 
 export interface Message {
   id: string;
   content: string;
   timestamp: string;
-  read: boolean;
+  status: string; // 'sent' | 'delivered' | 'delivered_update' | 'read' | 'read_update'
   sender_name: string;
   sender_profile: string | null;
   is_own: boolean;
@@ -48,7 +42,6 @@ export interface ChatState {
   currentRoomId: string | null;
 }
 
-// ✅ Selectors with null safety
 export const selectCurrentRoom = (state: RootState) => {
   if (!state.chat) return null;
   const currentRoomId = state.chat.currentRoomId;
@@ -74,14 +67,12 @@ export const selectChatError = (state: RootState) =>
 export const selectRoomInitialized = (state: RootState, conversationId: string) =>
   state.chat?.rooms[conversationId]?.initialized || false;
 
-// ✅ Persistence logic
 export function loadChatState(): ChatState | undefined {
   try {
     const serializedState = localStorage.getItem(CHAT_STORAGE_KEY);
     if (serializedState === null) return undefined;
     const state = JSON.parse(serializedState) as ChatState;
 
-    // Reset status flags to avoid stale UI
     const rooms = Object.entries(state.rooms).reduce((acc, [id, room]) => {
       acc[id] = {
         ...room,
@@ -112,12 +103,10 @@ export function saveChatState(state: ChatState) {
   }
 }
 
-// ✅ Type-safe middleware
 export const chatPersistenceMiddleware: Middleware<{}, RootState> =
   (store) => (next) => (action) => {
     const result = next(action);
 
-    // Type-safe access to action.type
     if (
       typeof action === 'object' &&
       action !== null &&

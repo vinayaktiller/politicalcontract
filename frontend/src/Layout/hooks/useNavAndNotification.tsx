@@ -1,10 +1,13 @@
-import { useReducer, useEffect, useCallback } from 'react';
+// hooks/useNavAndNotification.ts
+import { useReducer, useEffect, useCallback, useState } from 'react';
 
+type ScreenSize = 'mobile' | 'tablet' | 'desktop';
 type State = {
   isNavVisible: boolean;
   butIsNavVisible: boolean;
   isNotificationsVisible: boolean;
   butIsNotificationsVisible: boolean;
+  screenSize: ScreenSize; // Add screen size tracking
 };
 
 type Action = 
@@ -13,13 +16,15 @@ type Action =
   | { type: 'TOGGLE_NAV' }
   | { type: 'SHOW_NOTIFICATIONS'; butIsNavVisible?: boolean }
   | { type: 'HIDE_NOTIFICATIONS'; butIsNavVisible?: boolean }
-  | { type: 'TOGGLE_NOTIFICATIONS' };
+  | { type: 'TOGGLE_NOTIFICATIONS' }
+  | { type: 'SET_SCREEN_SIZE'; size: ScreenSize }; // New action
 
 const initialState: State = {
   isNavVisible: false,
   butIsNavVisible: false,
   isNotificationsVisible: false,
   butIsNotificationsVisible: false,
+  screenSize: 'desktop', // Default to desktop
 };
 
 const reducer = (state: State, action: Action): State => {
@@ -60,6 +65,11 @@ const reducer = (state: State, action: Action): State => {
         isNotificationsVisible: !state.isNotificationsVisible,
         butIsNotificationsVisible: !state.butIsNotificationsVisible,
       };
+    case 'SET_SCREEN_SIZE':
+      return {
+        ...state,
+        screenSize: action.size,
+      };
     default:
       return state;
   }
@@ -67,9 +77,27 @@ const reducer = (state: State, action: Action): State => {
 
 export const useNavAndNotification = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
 
   const handleResize = useCallback(() => {
     const width = window.innerWidth;
+    setWindowSize({
+      width: width,
+      height: window.innerHeight,
+    });
+
+    // Determine screen size category
+    let size: ScreenSize = 'desktop';
+    if (width < 600) {
+      size = 'mobile';
+    } else if (width < 1200) {
+      size = 'tablet';
+    }
+    dispatch({ type: 'SET_SCREEN_SIZE', size });
+
     if (width >= 1200) {
       dispatch({ type: 'SHOW_NAV' });
       dispatch({ type: 'SHOW_NOTIFICATIONS' });
@@ -88,8 +116,19 @@ export const useNavAndNotification = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [handleResize]);
 
-  const toggleNav = () => dispatch({ type: 'TOGGLE_NAV' });
-  const toggleNotifications = () => dispatch({ type: 'TOGGLE_NOTIFICATIONS' });
+  const toggleNav = () => {
+    // Only allow toggle on mobile
+    if (state.screenSize === 'mobile') {
+      dispatch({ type: 'TOGGLE_NAV' });
+    }
+  };
+
+  const toggleNotifications = () => {
+    // Only allow toggle on mobile
+    if (state.screenSize === 'mobile') {
+      dispatch({ type: 'TOGGLE_NOTIFICATIONS' });
+    }
+  };
 
   return { state, toggleNav, toggleNotifications };
 };

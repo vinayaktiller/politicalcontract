@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface ConnectionActionButtonsProps {
   notificationId: string;
-  notificationNumber: number;
+  notificationNumber: string;
   connectionId: number;
   initiatorId: number;
 }

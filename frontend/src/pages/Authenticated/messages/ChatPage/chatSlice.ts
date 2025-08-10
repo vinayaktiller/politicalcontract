@@ -1,3 +1,4 @@
+// src/features/chat/ChatPage/chatSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '../../../../api';
 import { RootState } from '../../../../store';
@@ -10,8 +11,6 @@ import {
   loadChatState,
   chatPersistenceMiddleware 
 } from './Chatpagetypes';
-
-
 
 const initialRoomState: ChatRoomState = {
   conversation: null,
@@ -29,7 +28,9 @@ const initialState: ChatState = loadChatState() || {
   currentRoomId: null,
 };
 
-// Helper to get or initialize room state
+/**
+ * Helper to ensure room exists in state and return it
+ */
 const getRoomState = (state: ChatState, conversationId: string) => {
   if (!state.rooms[conversationId]) {
     state.rooms[conversationId] = { ...initialRoomState };
@@ -37,10 +38,10 @@ const getRoomState = (state: ChatState, conversationId: string) => {
   return state.rooms[conversationId];
 };
 
-// Thunks
+// Async thunk to fetch conversation detail
 export const fetchConversation = createAsyncThunk(
   'chat/fetchConversation',
-  async (conversationId: string, { getState, rejectWithValue }) => {
+  async (conversationId: string, { rejectWithValue }) => {
     try {
       const response = await api.get<ConversationDetail>(`/api/chat/conversations/${conversationId}/`);
       return { conversationId, data: response.data };
@@ -53,9 +54,10 @@ export const fetchConversation = createAsyncThunk(
   }
 );
 
+// Async thunk to fetch messages of a conversation
 export const fetchMessages = createAsyncThunk(
   'chat/fetchMessages',
-  async (conversationId: string, { getState, rejectWithValue }) => {
+  async (conversationId: string, { rejectWithValue }) => {
     try {
       const response = await api.get<Message[]>(`/api/chat/chat/${conversationId}/messages/`);
       return { conversationId, data: response.data };
@@ -68,6 +70,7 @@ export const fetchMessages = createAsyncThunk(
   }
 );
 
+// Async thunk to initialize a room by fetching conversation and messages
 export const initializeRoom = createAsyncThunk(
   'chat/initializeRoom',
   async (conversationId: string, { dispatch, getState }) => {
@@ -78,15 +81,15 @@ export const initializeRoom = createAsyncThunk(
       await dispatch(fetchConversation(conversationId));
       await dispatch(fetchMessages(conversationId));
     }
-    
     return conversationId;
   }
 );
 
+// Async thunk to send a new message
 export const sendNewMessage = createAsyncThunk(
   'chat/sendMessage',
   async ({ conversationId, content }: { conversationId: string; content: string }, 
-  { rejectWithValue, getState }) => {
+  { rejectWithValue }) => {
     try {
       const response = await api.post<Message>(`/api/chat/chat/${conversationId}/send/`, { content });
       return { conversationId, data: response.data };
@@ -99,34 +102,46 @@ export const sendNewMessage = createAsyncThunk(
   }
 );
 
+// Async thunk to mark messages as read (single)
 export const markMessagesRead = createAsyncThunk(
   'chat/markMessagesRead',
   async (conversationId: string, { rejectWithValue, getState }) => {
     try {
       const state = getState() as RootState;
-      
-      // Add safety checks for state.chat
-      if (!state.chat) {
-        return { conversationId, lastReadTime: null };
-      }
-      
+      if (!state.chat) return { conversationId, lastReadTime: null };
       const room = state.chat.rooms[conversationId];
-      
-      // If room doesn't exist, return early
-      if (!room) {
-        return { conversationId, lastReadTime: null };
-      }
-      
+      if (!room) return { conversationId, lastReadTime: null };
+
       const hasNewMessages = room.messages.some(
-        msg => !msg.is_own && !msg.read
+        msg => !msg.is_own && (msg.status === 'sent' || msg.status === 'delivered')
       );
-      
+
       if (hasNewMessages) {
         await api.post(`/api/chat/chat/${conversationId}/mark_read/`);
         return { conversationId, lastReadTime: new Date().toISOString() };
       }
-      
       return { conversationId, lastReadTime: room.lastReadTime };
+    } catch (error: any) {
+      return rejectWithValue({
+        conversationId,
+        error: error.response?.data?.error || 'Failed to mark messages as read'
+      });
+    }
+  }
+);
+
+// New async thunk to mark multiple messages as read in batch
+export const markMessagesReadBatch = createAsyncThunk(
+  'chat/markMessagesReadBatch',
+  async ({ conversationId, messageIds }: { 
+    conversationId: string; 
+    messageIds: string[] 
+  }, { rejectWithValue }) => {
+    try {
+      await api.post(`/api/chat/chat/${conversationId}/mark_read_batch/`, {
+        message_ids: messageIds
+      });
+      return { conversationId, messageIds };
     } catch (error: any) {
       return rejectWithValue({
         conversationId,
@@ -149,11 +164,21 @@ const chatSlice = createSlice({
         state.rooms[conversationId] = { ...initialRoomState };
       }
     },
+    resetUnreadCount: (state, action: PayloadAction<string>) => {
+      const conversationId = action.payload;
+      const room = state.rooms[conversationId];
+      if (room) {
+        room.messages = room.messages.map(msg => {
+          if (!msg.is_own && (msg.status === 'sent' || msg.status === 'delivered')) {
+            return { ...msg, status: 'read' };
+          }
+          return msg;
+        });
+      }
+    },
     addMessage: (state, action: PayloadAction<{ conversationId: string; message: Message }>) => {
       const { conversationId, message } = action.payload;
       const room = getRoomState(state, conversationId);
-      
-      // Only add if not already present
       if (!room.messages.some(m => m.id === message.id)) {
         room.messages.push(message);
       }
@@ -161,7 +186,6 @@ const chatSlice = createSlice({
     removeMessage: (state, action: PayloadAction<{ conversationId: string; messageId: string }>) => {
       const { conversationId, messageId } = action.payload;
       const room = state.rooms[conversationId];
-      
       if (room) {
         room.messages = room.messages.filter(msg => msg.id !== messageId);
       }
@@ -176,7 +200,6 @@ const chatSlice = createSlice({
     ) => {
       const { conversationId, messageId, changes } = action.payload;
       const room = state.rooms[conversationId];
-      
       if (room) {
         const index = room.messages.findIndex(msg => msg.id === messageId);
         if (index !== -1) {
@@ -190,25 +213,36 @@ const chatSlice = createSlice({
     ) => {
       const { conversationId, lastReadTime } = action.payload;
       const room = state.rooms[conversationId];
-      
       if (room) {
         room.lastReadTime = lastReadTime;
-        room.messages = room.messages.map(msg => ({
-          ...msg,
-          read: msg.is_own ? msg.read : true
-        }));
+        room.messages = room.messages.map(msg => {
+          if (
+            !msg.is_own && 
+            ['sent', 'delivered', 'delivered_update', 'Sent', 'Delivered', 'Delivered Update'].includes(msg.status)
+          ) {
+            return { ...msg, status: 'read' };
+          }
+          return msg;
+        });
       }
-    }
+    },
+    addOptimisticMessage: (
+      state,
+      action: PayloadAction<{ conversationId: string, message: Message }>
+    ) => {
+      const { conversationId, message } = action.payload;
+      const room = getRoomState(state, conversationId);
+      if (!room.messages.some(m => m.id === message.id)) {
+        room.messages.push(message);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
-      // Initialize Room
       .addCase(initializeRoom.fulfilled, (state, action) => {
         const conversationId = action.payload;
         state.currentRoomId = conversationId;
       })
-      
-      // Fetch Conversation
       .addCase(fetchConversation.pending, (state, action) => {
         const conversationId = action.meta.arg;
         const room = getRoomState(state, conversationId);
@@ -227,8 +261,6 @@ const chatSlice = createSlice({
         room.status = 'failed';
         room.error = payload.error;
       })
-      
-      // Fetch Messages
       .addCase(fetchMessages.pending, (state, action) => {
         const conversationId = action.meta.arg;
         const room = getRoomState(state, conversationId);
@@ -241,7 +273,6 @@ const chatSlice = createSlice({
         room.status = 'succeeded';
         room.messages = data;
         room.initialized = true;
-        
         if (!room.lastReadTime) {
           room.lastReadTime = new Date().toISOString();
         }
@@ -252,8 +283,6 @@ const chatSlice = createSlice({
         room.status = 'failed';
         room.error = payload.error;
       })
-      
-      // Send Message
       .addCase(sendNewMessage.pending, (state, action) => {
         const { conversationId } = action.meta.arg;
         const room = getRoomState(state, conversationId);
@@ -264,18 +293,14 @@ const chatSlice = createSlice({
         const { conversationId, data } = action.payload;
         const room = getRoomState(state, conversationId);
         room.sendStatus = 'succeeded';
-        
-        // Replace temporary message
-        const realMessage = data;
-        const tempIndex = room.messages.findIndex(msg => 
-          msg.id.startsWith('temp-') && 
-          msg.content === realMessage.content
+        // Find temp message and replace
+        const tempIndex = room.messages.findIndex(msg =>
+          msg.id.startsWith('temp-') && msg.content === data.content
         );
-        
         if (tempIndex !== -1) {
-          room.messages[tempIndex] = realMessage;
-        } else {
-          room.messages.push(realMessage);
+          room.messages[tempIndex] = data;
+        } else if (!room.messages.some(m => m.id === data.id)) {
+          room.messages.push(data);
         }
       })
       .addCase(sendNewMessage.rejected, (state, action) => {
@@ -283,25 +308,35 @@ const chatSlice = createSlice({
         const room = getRoomState(state, payload.conversationId);
         room.sendStatus = 'failed';
         room.sendError = payload.error;
-        
-        // Remove temporary message
+        // Remove temp message that failed
         const tempIndex = room.messages.findIndex(msg => msg.id.startsWith('temp-'));
         if (tempIndex !== -1) {
           room.messages.splice(tempIndex, 1);
         }
       })
-      
-      // Mark Messages Read
       .addCase(markMessagesRead.fulfilled, (state, action) => {
         const { conversationId, lastReadTime } = action.payload;
         const room = state.rooms[conversationId];
-        
         if (room && lastReadTime) {
           room.lastReadTime = lastReadTime;
-          room.messages = room.messages.map(msg => ({
-            ...msg,
-            read: msg.is_own ? msg.read : true
-          }));
+          room.messages = room.messages.map(msg => {
+            if (!msg.is_own && (msg.status === 'sent' || msg.status === 'delivered')) {
+              return { ...msg, status: 'read' };
+            }
+            return msg;
+          });
+        }
+      })
+      .addCase(markMessagesReadBatch.fulfilled, (state, action) => {
+        const { conversationId, messageIds } = action.payload;
+        const room = state.rooms[conversationId];
+        if (room) {
+          room.messages = room.messages.map(msg => {
+            if (messageIds.includes(msg.id) && !msg.is_own) {
+              return { ...msg, status: 'read' };
+            }
+            return msg;
+          });
         }
       });
   }
@@ -313,7 +348,9 @@ export const {
   addMessage, 
   removeMessage, 
   updateMessage,
-  markMessagesOptimistic
+  markMessagesOptimistic,
+  addOptimisticMessage,
+  resetUnreadCount,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

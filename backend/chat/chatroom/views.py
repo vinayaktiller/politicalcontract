@@ -8,8 +8,6 @@ from ..models import Conversation, Message
 from users.models import UserTree
 from .serializers import MessageSerializer, ConversationDetailSerializer
 
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,12 +29,13 @@ class ConversationDetailView(generics.RetrieveAPIView):
         obj.last_active = timezone.now()
         obj.save(update_fields=['last_active'])
         
-        # Prefetch UserTree for participants
+        # Prefetch UserTree for participants (optimization)
         participant_ids = [obj.participant1_id, obj.participant2_id]
         user_trees = UserTree.objects.filter(id__in=participant_ids)
         obj.user_tree_map = {ut.id: ut for ut in user_trees}
         
         return obj
+
 
 class MessageListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -53,14 +52,14 @@ class MessageListView(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         
-        # Get sender IDs
+        # Get unique sender IDs from messages
         sender_ids = set(queryset.values_list('sender_id', flat=True))
         
-        # Fetch related UserTree objects
+        # Fetch related UserTree objects for sender details
         user_trees = UserTree.objects.filter(id__in=sender_ids)
         user_tree_map = {ut.id: ut for ut in user_trees}
         
-        # Pass to serializer context
+        # Pass UserTree mapping in serializer context
         context = self.get_serializer_context()
         context['user_tree_map'] = user_tree_map
         
@@ -97,7 +96,7 @@ class SendMessageView(APIView):
         else:
             receiver = conversation.participant1
         
-        # Create message
+        # Create the new message
         message = Message.objects.create(
             conversation=conversation,
             sender=request.user,
@@ -105,13 +104,13 @@ class SendMessageView(APIView):
             content=content
         )
         
-        # Update conversation last message
+        # Update conversation's last message info & last_active
         conversation.last_message = content
         conversation.last_message_timestamp = message.timestamp
         conversation.last_active = message.timestamp
         conversation.save()
         
-        # Get UserTree for sender
+        # Get UserTree for sender to add to serializer context
         try:
             sender_tree = UserTree.objects.get(id=request.user.id)
             user_tree_map = {request.user.id: sender_tree}
@@ -123,12 +122,13 @@ class SendMessageView(APIView):
             'user_tree_map': user_tree_map
         })
         
-        # If receiver is offline, log it but don't deliver immediately
+        # Log if receiver is offline; message delivery will be handled elsewhere
         if not receiver.is_online:
             logger.info(f"Receiver {receiver.id} is offline. Message will be delivered when online.")
         
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
+
 class MarkAsReadView(APIView):
     permission_classes = [IsAuthenticated]
     
@@ -139,11 +139,13 @@ class MarkAsReadView(APIView):
                 (Q(participant1=request.user) | 
                  Q(participant2=request.user))
             )
-            # Mark messages as read
+            
+            # Only mark messages as read where user is the receiver and message is unread
             messages = Message.objects.filter(
                 conversation=conversation,
-                read=False,
-                receiver=request.user  # Only mark messages received by this user
+                receiver=request.user,
+                # Using status for unread detection; you may want to adjust based on your model
+                status__in=['sent', 'delivered']  # Messages not yet 'read' or 'read_update'
             )
             
             for message in messages:

@@ -24,11 +24,11 @@ const ConnectionStatusNotification: React.FC = () => {
     );
 
     const notification = notifications.find(n =>
-        n.notification_number === Number(notificationNumber)
+        n.notification_number === notificationNumber
     );
 
     const currentIndex = notifications.findIndex(n =>
-        n.notification_number === Number(notificationNumber)
+        n.notification_number === notificationNumber
     );
 
     useEffect(() => {

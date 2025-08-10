@@ -12,9 +12,12 @@ import activeUsersReducer from './pages/Authenticated/dashboard/dashboard/active
 import chatReducer from './pages/Authenticated/messages/ChatPage/chatSlice';
 import chatListReducer from './pages/Authenticated/messages/chatlist/chatListSlice';
 import contactsReducer from './pages/Authenticated/messages/chatlist/contacts/contactsSlice';
+import milestonesReducer from './pages/Authenticated/milestone/milestonesSlice'; // Updated import name
+import celebrationSlice from './pages/Authenticated/milestone/celebration/celebrationSlice'; // Updated import name
+// import journeyBlogSlice from './pages/Authenticated/BlogPage/BlogSlice'; // Updated import name
 
 // Middleware
-import { chatPersistenceMiddleware } from './pages/Authenticated/messages/ChatPage/Chatpagetypes'; // Make sure this path is correct
+import { chatPersistenceMiddleware } from './pages/Authenticated/messages/ChatPage/Chatpagetypes';
 
 // Interfaces
 interface UserState {
@@ -45,6 +48,9 @@ const rootReducer = combineReducers({
   chat: chatReducer,
   chatList: chatListReducer,
   contacts: contactsReducer,
+  milestones: milestonesReducer, // Fixed reducer name
+  celebration: celebrationSlice, // Fixed reducer name
+  // journeyBlogs: journeyBlogSlice, // Fixed reducer name
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
@@ -61,21 +67,26 @@ const persistConfig: PersistConfig<RootState> = {
     'activeUsers',
     'chatList',
     'contacts',
+    'milestones', // Added milestones to whitelist
+    'celebration', // Added celebration to whitelist
+    // 'journeyBlogs', // Added journeyBlogs to whitelist
   ],
   transforms: [notificationTransform],
   stateReconciler: (inboundState, originalState, reducedState) => {
     const today = new Date().toISOString().split('T')[0];
-    if (inboundState.heartbeat?.lastUpdated !== today) {
+    const mergedState = { ...reducedState, ...inboundState };
+
+    if (mergedState.heartbeat?.lastUpdated !== today) {
       return {
-        ...inboundState,
+        ...mergedState,
         heartbeat: {
           ...initialHeartbeatState,
-          streak: inboundState.heartbeat?.streak || 0,
+          streak: mergedState.heartbeat?.streak || 0,
           status: 'idle',
         },
       };
     }
-    return inboundState;
+    return mergedState;
   },
 };
 
@@ -94,6 +105,7 @@ export const store = configureStore({
           'heartbeat/checkActivity/fulfilled',
           'heartbeat/markActive/fulfilled',
           'activeUsers/setSocket',
+
         ],
         ignoredPaths: [
           'notifications.socket',

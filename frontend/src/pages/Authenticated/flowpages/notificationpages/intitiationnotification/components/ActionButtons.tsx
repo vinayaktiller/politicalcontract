@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface ActionButtonsProps {
   notificationId: string;
-  notificationNumber: number;
+  notificationNumber: string;
   gmail: string;
 }
 

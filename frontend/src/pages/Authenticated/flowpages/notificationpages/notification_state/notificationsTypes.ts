@@ -14,6 +14,20 @@ export interface InitiationNotificationData {
   event_id: number;
   initiator_id: number;
 }
+export interface MilestoneNotificationData {
+  initiator_id: number;
+  milestone_id: string;
+  id: number;
+  user_id: number;
+  title: string;
+  text: string;
+  created_at: string;
+  delivered: boolean;
+  photo_id: number | null;
+  photo_url: string | null;
+  type: string | null;
+  profile_picture: string | null;
+}
 
 export interface ConnectionNotificationData extends InitiationNotificationData {
   id: number;
@@ -43,7 +57,7 @@ type NotificationBase<T extends string, D> = {
   notification_type: T;
   notification_message: string;
   notification_data: D;
-  notification_number: number;
+  notification_number: string;
   notification_freshness: boolean;
   created_at?: string;
 };
@@ -52,4 +66,12 @@ export type InitiationNotification = NotificationBase<"Initiation_Notification",
 export type ConnectionNotification = NotificationBase<"Connection_Notification", ConnectionNotificationData>;
 export type ConnectionStatusNotification = NotificationBase<"Connection_Status", ConnectionStatusNotificationData>;
 export type GroupSpeakerInvitationNotification = NotificationBase<"Group_Speaker_Invitation", GroupSpeakerInvitationNotificationData>;
-export type Notification = InitiationNotification | ConnectionNotification | ConnectionStatusNotification | GroupSpeakerInvitationNotification;
+
+export type MilestoneNotification = NotificationBase<"Milestone_Notification", MilestoneNotificationData>;
+
+export type Notification =
+  | InitiationNotification
+  | ConnectionNotification
+  | ConnectionStatusNotification
+  | GroupSpeakerInvitationNotification
+  | MilestoneNotification;  // Add to union type

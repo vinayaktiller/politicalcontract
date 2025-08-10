@@ -1,4 +1,5 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+// src/features/chat/chatList/chatListSlice.ts
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import api from '../../../../api';
 import { RootState } from '../../../../store';
 import { ChatListState, Conversation } from './chatTypes';
@@ -11,11 +12,20 @@ const initialState: ChatListState = {
   lastFetched: null,
 };
 
-export const fetchConversations = createAsyncThunk(
+// Async thunk for fetching conversations (with 5-minute cache)
+export const fetchConversations = createAsyncThunk<
+  Conversation[] | null,
+  boolean | undefined,
+  { state: RootState }
+>(
   'chatList/fetchConversations',
-  async (force: boolean = false, { getState }) => {
-    const state = getState() as RootState;
-    if (!force && state.chatList.lastFetched && Date.now() - state.chatList.lastFetched < 300000) {
+  async (force = false, { getState }) => {
+    const state = getState();
+    if (
+      !force &&
+      state.chatList.lastFetched &&
+      Date.now() - state.chatList.lastFetched < 300000 // 5 minutes cache
+    ) {
       return null;
     }
     const response = await api.get<Conversation[]>('/api/chat/chatlist/');
@@ -27,27 +37,48 @@ const chatListSlice = createSlice({
   name: 'chatList',
   initialState,
   reducers: {
-    messageReceived(state, action) {
-      const { conversation_id, message, sender_id } = action.payload;
-      const conversation = state.entities[conversation_id];
-      
+    // Update conversation fields and optionally move to top
+    updateConversation: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        changes: Partial<Conversation>;
+        moveToTop?: boolean;
+      }>
+    ) => {
+      const { id, changes, moveToTop } = action.payload;
+      const conversation = state.entities[id];
       if (conversation) {
-        conversation.last_message = message;
-        conversation.last_message_timestamp = new Date().toISOString();
-        
-        if (sender_id !== conversation.other_user.id) {
-          conversation.unread_count += 1;
+        Object.assign(conversation, changes);
+
+        if (moveToTop) {
+          state.ids = state.ids.filter(convId => convId !== id);
+          state.ids.unshift(id);
         }
       }
     },
-    conversationRead(state, action) {
+
+    // Reset unread count on conversation read
+    conversationRead(state, action: PayloadAction<string>) {
       const conversation = state.entities[action.payload];
       if (conversation) {
         conversation.unread_count = 0;
       }
     },
+
+    // Add a new conversation to entities and ids (at the top)
+    addNewConversation(state, action: PayloadAction<Conversation>) {
+      const conversation = action.payload;
+      state.entities[conversation.id] = conversation;
+      if (!state.ids.includes(conversation.id)) {
+        state.ids.unshift(conversation.id);
+      }
+    },
+
+    // Reset entire chat list state
     resetChatList: () => initialState,
   },
+
   extraReducers: (builder) => {
     builder
       .addCase(fetchConversations.pending, (state) => {
@@ -72,13 +103,18 @@ const chatListSlice = createSlice({
   },
 });
 
-export const { messageReceived, conversationRead, resetChatList } = chatListSlice.actions;
+export const {
+  updateConversation,
+  conversationRead,
+  addNewConversation,
+  resetChatList,
+} = chatListSlice.actions;
 
 export default chatListSlice.reducer;
 
 // Selectors
-export const selectAllConversations = (state: RootState) => 
-  state.chatList.ids.map(id => state.chatList.entities[id]);
+export const selectAllConversations = (state: RootState): Conversation[] =>
+  state.chatList.ids.map((id) => state.chatList.entities[id]);
 
-export const selectConversationById = (id: string) => (state: RootState) => 
+export const selectConversationById = (id: string) => (state: RootState) =>
   state.chatList.entities[id];
