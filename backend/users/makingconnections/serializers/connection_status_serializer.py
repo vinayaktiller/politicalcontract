@@ -5,7 +5,7 @@ class ConnectionStatusSerializer(serializers.ModelSerializer):
     notification_type = serializers.SerializerMethodField()
     notification_message = serializers.SerializerMethodField()
     notification_data = serializers.SerializerMethodField()
-    notification_number = serializers.IntegerField(source='id', read_only=True)
+    notification_number = serializers.CharField(source='id', read_only=True)
     notification_freshness = serializers.SerializerMethodField()  # Override with custom logic
 
     class Meta:

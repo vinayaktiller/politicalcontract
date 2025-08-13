@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.db.models import JSONField
 from geographies.models.geos import Village, Subdistrict, District, State, Country
@@ -6,6 +7,7 @@ from geographies.models.geos import Village, Subdistrict, District, State, Count
 # VILLAGE ACTIVITY REPORTS
 # ======================
 class DailyVillageActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     village = models.ForeignKey(Village, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     user_data = JSONField()
@@ -15,7 +17,9 @@ class DailyVillageActivityReport(models.Model):
     class Meta:
         db_table = 'activity_reports"."daily_village_activity_report'
 
+
 class WeeklyVillageActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     village = models.ForeignKey(Village, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     week_number = models.PositiveSmallIntegerField()
@@ -24,12 +28,14 @@ class WeeklyVillageActivityReport(models.Model):
     week_last_date = models.DateField()
     user_data = JSONField()
     parent_id = models.PositiveBigIntegerField(null=True, blank=True)
-    additional_info = JSONField(null=True, blank=True)  # Optional field for extra data
+    additional_info = JSONField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."weekly_village_activity_report'
 
+
 class MonthlyVillageActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     village = models.ForeignKey(Village, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     month = models.PositiveSmallIntegerField()
@@ -37,8 +43,7 @@ class MonthlyVillageActivityReport(models.Model):
     last_date = models.DateField()
     user_data = JSONField()
     parent_id = models.PositiveBigIntegerField(null=True, blank=True)
-    additional_info = JSONField(null=True, blank=True)  # Optional field for extra data
-
+    additional_info = JSONField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."monthly_village_activity_report'
@@ -48,6 +53,7 @@ class MonthlyVillageActivityReport(models.Model):
 # SUBDISTRICT ACTIVITY REPORTS
 # ======================
 class DailySubdistrictActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     subdistrict = models.ForeignKey(Subdistrict, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     village_data = JSONField()
@@ -57,7 +63,9 @@ class DailySubdistrictActivityReport(models.Model):
     class Meta:
         db_table = 'activity_reports"."daily_subdistrict_activity_report'
 
+
 class WeeklySubdistrictActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     subdistrict = models.ForeignKey(Subdistrict, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     week_number = models.PositiveSmallIntegerField()
@@ -66,13 +74,14 @@ class WeeklySubdistrictActivityReport(models.Model):
     week_last_date = models.DateField()
     village_data = JSONField()
     parent_id = models.PositiveBigIntegerField(null=True, blank=True)
-    additional_info = JSONField(null=True, blank=True)  # Optional field for extra data
-
+    additional_info = JSONField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."weekly_subdistrict_activity_report'
 
+
 class MonthlySubdistrictActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     subdistrict = models.ForeignKey(Subdistrict, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     month = models.PositiveSmallIntegerField()
@@ -80,8 +89,7 @@ class MonthlySubdistrictActivityReport(models.Model):
     last_date = models.DateField()
     village_data = JSONField()
     parent_id = models.PositiveBigIntegerField(null=True, blank=True)
-    additional_info = JSONField(null=True, blank=True)  # Optional field for extra data
-
+    additional_info = JSONField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."monthly_subdistrict_activity_report'
@@ -91,6 +99,7 @@ class MonthlySubdistrictActivityReport(models.Model):
 # DISTRICT ACTIVITY REPORTS
 # ======================
 class DailyDistrictActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     district = models.ForeignKey(District, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     subdistrict_data = JSONField()
@@ -100,7 +109,9 @@ class DailyDistrictActivityReport(models.Model):
     class Meta:
         db_table = 'activity_reports"."daily_district_activity_report'
 
+
 class WeeklyDistrictActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     district = models.ForeignKey(District, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     week_number = models.PositiveSmallIntegerField()
@@ -109,13 +120,14 @@ class WeeklyDistrictActivityReport(models.Model):
     week_last_date = models.DateField()
     subdistrict_data = JSONField()
     parent_id = models.PositiveBigIntegerField(null=True, blank=True)
-    additional_info = JSONField(null=True, blank=True)  # Optional field for extra data
-
+    additional_info = JSONField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."weekly_district_activity_report'
 
+
 class MonthlyDistrictActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     district = models.ForeignKey(District, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     month = models.PositiveSmallIntegerField()
@@ -123,8 +135,7 @@ class MonthlyDistrictActivityReport(models.Model):
     last_date = models.DateField()
     subdistrict_data = JSONField()
     parent_id = models.PositiveBigIntegerField(null=True, blank=True)
-    additional_info = JSONField(null=True, blank=True)  # Optional field for extra data
-
+    additional_info = JSONField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."monthly_district_activity_report'
@@ -134,6 +145,7 @@ class MonthlyDistrictActivityReport(models.Model):
 # STATE ACTIVITY REPORTS
 # ======================
 class DailyStateActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     state = models.ForeignKey(State, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     district_data = JSONField()
@@ -143,7 +155,9 @@ class DailyStateActivityReport(models.Model):
     class Meta:
         db_table = 'activity_reports"."daily_state_activity_report'
 
+
 class WeeklyStateActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     state = models.ForeignKey(State, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     week_number = models.PositiveSmallIntegerField()
@@ -152,13 +166,14 @@ class WeeklyStateActivityReport(models.Model):
     week_last_date = models.DateField()
     district_data = JSONField()
     parent_id = models.PositiveBigIntegerField(null=True, blank=True)
-    additional_info = JSONField(null=True, blank=True)  # Optional field for extra data
-
+    additional_info = JSONField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."weekly_state_activity_report'
 
+
 class MonthlyStateActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     state = models.ForeignKey(State, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     month = models.PositiveSmallIntegerField()
@@ -166,8 +181,7 @@ class MonthlyStateActivityReport(models.Model):
     last_date = models.DateField()
     district_data = JSONField()
     parent_id = models.PositiveBigIntegerField(null=True, blank=True)
-    additional_info = JSONField(null=True, blank=True)  # Optional field for extra data
-
+    additional_info = JSONField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."monthly_state_activity_report'
@@ -177,6 +191,7 @@ class MonthlyStateActivityReport(models.Model):
 # COUNTRY ACTIVITY REPORTS
 # ======================
 class DailyCountryActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     state_data = JSONField()
@@ -185,7 +200,9 @@ class DailyCountryActivityReport(models.Model):
     class Meta:
         db_table = 'activity_reports"."daily_country_activity_report'
 
+
 class WeeklyCountryActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     week_number = models.PositiveSmallIntegerField()
@@ -193,21 +210,21 @@ class WeeklyCountryActivityReport(models.Model):
     week_start_date = models.DateField()
     week_last_date = models.DateField()
     state_data = JSONField()
-    additional_info = JSONField(null=True, blank=True)  # Optional field for extra data
-
+    additional_info = JSONField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."weekly_country_activity_report'
 
+
 class MonthlyCountryActivityReport(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
     active_users = models.PositiveIntegerField(default=0)
     month = models.PositiveSmallIntegerField()
     year = models.PositiveSmallIntegerField()
     last_date = models.DateField()
     state_data = JSONField()
-    additional_info = JSONField(null=True, blank=True)  # Optional field for extra data
-
+    additional_info = JSONField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."monthly_country_activity_report'

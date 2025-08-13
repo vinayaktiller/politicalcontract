@@ -15,7 +15,6 @@ from event.models.groups import Group
 
 from .models import Milestone
 
-
 logger = logging.getLogger(__name__)
 fake = Faker('en_IN')
 

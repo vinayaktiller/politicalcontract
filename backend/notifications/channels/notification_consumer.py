@@ -169,8 +169,12 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 await handle_connection_status(self, data)
             elif data.get("notificationType") == "Group_Speaker_Invitation":
                 await handle_speaker_invitation(self, data)
+            elif data.get("notificationType") == "Milestone_Notification":
+                pass
+            elif data.get("action") == "delete_notification":
+                pass
             else:
-                raise ValueError(f"Unknown message category: {category or 'no category'}")
+                raise ValueError(f"Unknown message category: {category or 'no category'} data: {data}")
 
         except json.JSONDecodeError:
             logger.error(f"JSON decoding error from user {self.user_id}: {text_data}")

@@ -2,10 +2,14 @@ from django.core.management.base import BaseCommand
 from django.db import connection, transaction
 
 class Command(BaseCommand):
-    help = 'Truncates user, geography, event, and report-related tables, resets sequences, and clears data safely.'
+    help = 'Truncates user, geography, event, and report-related tables (including activity reports), resets sequences, and clears data safely.'
 
     def handle(self, *args, **options):
         tables_to_truncate = [
+            # =========================
+            # OLD 'report' SCHEMA TABLES
+            # =========================
+
             # Reports: Village
             ('report', 'village_daily_report'),
             ('report', 'village_weekly_report'),
@@ -33,9 +37,40 @@ class Command(BaseCommand):
 
             # Cumulative report
             ('report', 'cumulative_report'),
-        ]
 
-        
+            # =========================
+            # NEW 'activity_reports' TABLES
+            # =========================
+
+            # Village Activity
+            ('activity_reports', 'daily_village_activity_report'),
+            ('activity_reports', 'weekly_village_activity_report'),
+            ('activity_reports', 'monthly_village_activity_report'),
+
+            # Subdistrict Activity
+            ('activity_reports', 'daily_subdistrict_activity_report'),
+            ('activity_reports', 'weekly_subdistrict_activity_report'),
+            ('activity_reports', 'monthly_subdistrict_activity_report'),
+
+            # District Activity
+            ('activity_reports', 'daily_district_activity_report'),
+            ('activity_reports', 'weekly_district_activity_report'),
+            ('activity_reports', 'monthly_district_activity_report'),
+
+            # State Activity
+            ('activity_reports', 'daily_state_activity_report'),
+            ('activity_reports', 'weekly_state_activity_report'),
+            ('activity_reports', 'monthly_state_activity_report'),
+
+            # Country Activity
+            ('activity_reports', 'daily_country_activity_report'),
+            ('activity_reports', 'weekly_country_activity_report'),
+            ('activity_reports', 'monthly_country_activity_report'),
+
+            # User Activity
+            ('activity_reports', 'user_monthly_activity'),
+            ('activity_reports', 'daily_activity_summary'),
+        ]
 
         with transaction.atomic():
             with connection.cursor() as cursor:

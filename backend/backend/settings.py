@@ -272,6 +272,21 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+          'users': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'users.tasks': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'users.models': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
 
     # Root logger - safety net

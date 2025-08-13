@@ -85,6 +85,7 @@ class UserTree(models.Model):
             else:
                 self.height = 0
             self.depth = 0  # New nodes start as leaves
+        
 
         super().save(*args, **kwargs)
 

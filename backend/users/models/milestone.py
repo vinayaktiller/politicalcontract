@@ -1,16 +1,19 @@
 # users/models.py
-from django.db import models, transaction
+from django.db import models
+import logging
 from django.utils import timezone
+from django.db import transaction
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-import logging
 import uuid
+
 
 logger = logging.getLogger(__name__)
 
 class Milestone(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # UUID primary key
-    user_id = models.BigIntegerField()  
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # Using UUID instead of BigAutoField
+    """Model to store user achievements and milestones"""
+    user_id = models.BigIntegerField()
     title = models.CharField(max_length=255)
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -25,28 +28,34 @@ class Milestone(models.Model):
             models.Index(fields=['user_id']),
         ]
 
+    
     def save(self, *args, **kwargs):
         """Override save to send notification when new Milestone is created."""
-        is_new = not self.pk
+        is_new = self._state.adding
         super().save(*args, **kwargs)
         if is_new:
-            # transaction.on_commit(self.send_milestone_notification)
-            self.send_milestone_notification()
+            from .petitioners import Petitioner
+            user= Petitioner.objects.get(id=self.user_id)
+            if user.is_online:
+                self.send_milestone_notification()
+                logger.info(f"Milestone notification sent for {self.title} to user {self.user_id}")
+               
+           
 
     def send_milestone_notification(self):
         """Send milestone notification via WebSocket."""
-        logger.error(f"Sending milestone notification for {self.title} to user {self.user_id}")
+        
         try:
+            logger.info(f"3 Sending milestone notification for {self.title} to user {self.user_id}")
             channel_layer = get_channel_layer()
             group_name = f"notifications_{self.user_id}"
-
-            notification = {
-                 
+            notification_data = {
+                "notification": {
                     "notification_type": "Milestone_Notification",
                     "notification_message": f"Achievement unlocked: {self.title} for {self.type}",
                     "notification_data": {
-                        "milestone_id": str(self.id),  # Ensure UUID is string
-                        "user_id": self.user_id,  
+                        "milestone_id": str(self.id),
+                        "user_id": self.user_id,
                         "title": self.title,
                         "text": self.text,
                         "created_at": self.created_at.isoformat(),
@@ -58,32 +67,22 @@ class Milestone(models.Model):
                     "notification_number": str(self.id),
                     "notification_freshness": True,
                     "created_at": self.created_at.isoformat(),
-                
+                }
             }
-
-            event_data = {
-                "notification": notification,
-            }
-
-            # # Send over WebSocket
-            # async_to_sync(channel_layer.group_send)(
-            #     group_name,
-            #     {
-            #         "type": "notification.message",
-            #         "notification": notification,
-            #     }
-            # )
 
             async_to_sync(channel_layer.group_send)(
-                f"notifications_{notification.connection_id}",
-                event_data
-                
+                group_name,
+                {
+                    "type": "notification.message",
+                    **notification_data
+                }
             )
+            logger.info(f"  34 Milestone notification sent for {self.title} to group {group_name}")
 
             # Mark as delivered and save
             self.delivered = True
-            super().save(update_fields=['delivered'])
-            logger.info(f"Milestone  delivered to user {self.user_id}")
+            self.save(update_fields=['delivered'])
+            logger.info(f"21 Milestone {self.id} delivered to user {self.user_id}")
 
         except Exception as e:
             logger.error(f"Error sending milestone notification: {str(e)}")

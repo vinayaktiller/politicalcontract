@@ -3,6 +3,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
 from users.models import Petitioner
 from datetime import date
+import uuid
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -11,6 +12,7 @@ from channels.layers import get_channel_layer
 
 class UserMonthlyActivity(models.Model):
     """Stores daily activity in a compact monthly format"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         Petitioner, 
         on_delete=models.CASCADE,
@@ -37,6 +39,7 @@ class UserMonthlyActivity(models.Model):
         return f"{self.user} - {self.year}/{self.month}"
 
 class DailyActivitySummary(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     date = models.DateField(unique=True)
     active_users = ArrayField(
         models.BigIntegerField(),
