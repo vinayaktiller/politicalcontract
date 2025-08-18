@@ -15,6 +15,7 @@ import contactsReducer from './pages/Authenticated/messages/chatlist/contacts/co
 import milestonesReducer from './pages/Authenticated/milestone/milestonesSlice'; // Updated import name
 import celebrationSlice from './pages/Authenticated/milestone/celebration/celebrationSlice'; // Updated import name
 // import journeyBlogSlice from './pages/Authenticated/BlogPage/BlogSlice'; // Updated import name
+import circleContactsSlice from './pages/Authenticated/blogrelated/BlogCreator/CircleContacts/circleContactsSlice'; // Updated import name
 
 // Middleware
 import { chatPersistenceMiddleware } from './pages/Authenticated/messages/ChatPage/Chatpagetypes';
@@ -50,6 +51,7 @@ const rootReducer = combineReducers({
   contacts: contactsReducer,
   milestones: milestonesReducer, // Fixed reducer name
   celebration: celebrationSlice, // Fixed reducer name
+  circleContacts: circleContactsSlice, // Fixed reducer name
   // journeyBlogs: journeyBlogSlice, // Fixed reducer name
 });
 
@@ -69,6 +71,9 @@ const persistConfig: PersistConfig<RootState> = {
     'contacts',
     'milestones', // Added milestones to whitelist
     'celebration', // Added celebration to whitelist
+    'chat', // Added chat to whitelist
+    'circleContacts', // Added circleContacts to whitelist
+
     // 'journeyBlogs', // Added journeyBlogs to whitelist
   ],
   transforms: [notificationTransform],

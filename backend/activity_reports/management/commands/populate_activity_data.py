@@ -1,11 +1,10 @@
-# management/commands/populate_activity_data.py
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 from datetime import date, timedelta
 from users.models import Petitioner
 from activity_reports.models import UserMonthlyActivity, DailyActivitySummary
 import random
 from collections import defaultdict
+
 
 class Command(BaseCommand):
     help = 'Populates activity data with realistic random user activity patterns'
@@ -56,20 +55,16 @@ class Command(BaseCommand):
             
         self.stdout.write(f"Found {len(all_users)} users in the database")
         
-        # Track active users per day
-        daily_activity = {}
-        
         # Create a mapping of user IDs to their join dates
         user_join_dates = dict(
             Petitioner.objects.values_list('id', 'date_joined__date')
         )
         
-        # For each day in our range
         current_date = start_date
         days_processed = 0
         
         while current_date <= end_date:
-            # Users who could be active today (joined before today)
+            # Eligible users: joined on or before today
             eligible_users = [
                 user_id for user_id in all_users 
                 if user_join_dates[user_id] <= current_date
@@ -79,15 +74,12 @@ class Command(BaseCommand):
                 current_date += timedelta(days=1)
                 continue
                 
-            # Determine how many users will be active today
-            active_count = min(
-                max(min_active, int(len(eligible_users) * probability)),
-                max_active
-            )
+            # Determine number of active users today
+            raw_count = max(min_active, int(len(eligible_users) * probability))
+            active_count = min(raw_count, max_active, len(eligible_users))  # <-- FIX: cap at population size
             
-            # Randomly select active users
+            # Select active users randomly
             active_users = random.sample(eligible_users, active_count)
-            daily_activity[current_date] = active_users
             
             # Create daily summary
             DailyActivitySummary.objects.update_or_create(
@@ -95,35 +87,25 @@ class Command(BaseCommand):
                 defaults={'active_users': active_users}
             )
             
-            # Prepare monthly activity updates
+            # Track monthly updates per user
             monthly_updates = defaultdict(list)
             for user_id in active_users:
-                # Get day of month (1-31)
                 day_of_month = current_date.day
-                
-                # Create key for monthly tracking
                 month_key = (user_id, current_date.year, current_date.month)
-                
-                # Add day to this month's activity
                 if day_of_month not in monthly_updates[month_key]:
                     monthly_updates[month_key].append(day_of_month)
             
-            # Update monthly activity records
+            # Save or update UserMonthlyActivity
             for (user_id, year, month), days in monthly_updates.items():
-                # Get existing record
                 try:
                     record = UserMonthlyActivity.objects.get(
-                        user_id=user_id,
-                        year=year,
-                        month=month
+                        user_id=user_id, year=year, month=month
                     )
-                    # Merge and deduplicate days
                     existing_days = set(record.active_days)
                     existing_days.update(days)
                     record.active_days = sorted(existing_days)
                     record.save()
                 except UserMonthlyActivity.DoesNotExist:
-                    # Create new record
                     UserMonthlyActivity.objects.create(
                         user_id=user_id,
                         year=year,
@@ -131,20 +113,22 @@ class Command(BaseCommand):
                         active_days=days
                     )
             
-            # Progress tracking
+            # Progress counter
             current_date += timedelta(days=1)
             days_processed += 1
             
             if days_processed % 10 == 0:
-                self.stdout.write(f"Processed {days_processed} days...")
-                self.stdout.write(f"  Today: {current_date - timedelta(days=1)} - {active_count} active users")
+                self.stdout.write(
+                    f"Processed {days_processed} days... "
+                    f"(last day: {current_date - timedelta(days=1)}, active users: {active_count})"
+                )
         
         self.stdout.write(self.style.SUCCESS(
             f'Successfully populated {days_processed} days of activity data'
         ))
         self.stdout.write(self.style.SUCCESS(
-            f'Created {UserMonthlyActivity.objects.count()} monthly activity records'
+            f'Created/updated {UserMonthlyActivity.objects.count()} monthly activity records'
         ))
         self.stdout.write(self.style.SUCCESS(
-            f'Created {DailyActivitySummary.objects.count()} daily summary records'
+            f'Created/updated {DailyActivitySummary.objects.count()} daily summary records'
         ))

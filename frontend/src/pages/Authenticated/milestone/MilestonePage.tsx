@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from "../../../store";
 import { fetchUserMilestones, invalidateMilestoneCache } from './milestonesSlice';
@@ -15,6 +15,7 @@ const initialState = {
 const MilestonePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Detect if navigation came from celebration modal
   const [isFromCelebration, setIsFromCelebration] = useState(false);
@@ -252,6 +253,20 @@ const MilestonePage: React.FC = () => {
             const imgUrl = `http://localhost:3000/${milestone.type}/${milestone.photo_id}.jpg`;
             const badgeClass = `milestone-badge milestone-badge-${milestone.type}`;
             const isHighlighted = highlightedId === milestone.id;
+             const handleWriteInsight = () => {
+                const insightData = {
+                  milestone_id: milestone.milestone_id,
+                  user_id: milestone.user_id,
+                  title: milestone.title,
+                  text: milestone.text,
+                  created_at: milestone.created_at,
+                  type: milestone.type,
+                  photo_id: milestone.photo_id,
+                  milestone_kind: "milestone", // to identify in BlogCreator
+                };
+                console.log("📝 Navigating to BlogCreator with milestone insight:", insightData);
+                navigate("/blog-creator", { state: insightData });
+              };
 
 
             return (
@@ -284,6 +299,12 @@ const MilestonePage: React.FC = () => {
                   <div className="milestone-date">
                     Awarded on {new Date(milestone.created_at).toLocaleDateString()}
                   </div>
+                  <button
+                  className="milestone-write-insight-button"
+                  onClick={handleWriteInsight}
+                >
+                  blog
+                </button>
                 </div>
               </div>
             );

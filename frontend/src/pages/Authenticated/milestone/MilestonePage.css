@@ -423,3 +423,44 @@
   height: 100%;
   pointer-events: none;
 }
+
+
+/* Write Insight button inside milestone card */
+.milestone-write-insight-button {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #3498db;
+  background: rgba(52, 152, 219, 0.1); /* light blue translucent */
+  border: 2px solid #3498db;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  box-shadow: 0 2px 6px rgba(52, 152, 219, 0.2);
+  backdrop-filter: blur(6px);
+  user-select: none;
+  outline-offset: 2px;
+  outline: none;
+}
+
+/* Hover and focus states for accessibility and style */
+.milestone-write-insight-button:hover,
+.milestone-write-insight-button:focus {
+  background: #3498db;
+  color: white;
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.5);
+  outline: none;
+}
+
+/* Ensure milestone-card has relative positioning for button absolute */
+.milestone-card {
+  position: relative; /* Add if not already set */
+}
+
+/* Optional: Add some padding bottom to milestone-content so button doesn't overlap text */
+.milestone-content {
+  padding-bottom: 60px; /* enough space for the button */
+}

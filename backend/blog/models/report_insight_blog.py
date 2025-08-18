@@ -8,6 +8,7 @@ from .blogsize import MicroContent, ShortEssayContent, ArticleContent
 class ReportReference(models.Model):
     """Abstract model for report references in blogs."""
     REPORT_TYPE_CHOICES = [
+
         # Activity Reports
         ('activity_reports.DailyVillageActivityReport', 'Daily Village Activity Report'),
         ('activity_reports.WeeklyVillageActivityReport', 'Weekly Village Activity Report'),
@@ -44,6 +45,8 @@ class ReportReference(models.Model):
         ('report.CumulativeReport', 'Cumulative Report'),
         ('report.OverallReport', 'Overall Report'),
     ]
+
+    
     id = models.UUIDField(primary_key=True) 
     report_type = models.CharField(
         max_length=100, 
@@ -51,24 +54,18 @@ class ReportReference(models.Model):
         blank=True,
         null=True
     )
-    report_id = models.BigIntegerField(
-        blank=True,
-        null=True,
-        help_text="ID of the referenced report"
-    )
+    report_id = models.UUIDField() 
 
     class Meta:
         abstract = True
-
-class micro_report_insight_blog (ReportReference, MicroContent):
+class micro_report_insight_blog(ReportReference, MicroContent):
     class Meta:
-        db_table = 'micro_report_insight_blog'
+        db_table = 'blog"."report_insight_blog_micro'  # Changed
 
-class short_essay_report_insight_blog (ReportReference, ShortEssayContent):
+class short_essay_report_insight_blog(ReportReference, ShortEssayContent):
     class Meta:
-        db_table = 'short_essay_report_insight_blog'
+        db_table = 'blog"."report_insight_blog_short_essay'  # Changed
 
-class article_report_insight_blog (ReportReference, ArticleContent):
+class article_report_insight_blog(ReportReference, ArticleContent):
     class Meta:
-        db_table = 'article_report_insight_blog'
-
+        db_table = 'blog"."report_insight_blog_article'  # Changed

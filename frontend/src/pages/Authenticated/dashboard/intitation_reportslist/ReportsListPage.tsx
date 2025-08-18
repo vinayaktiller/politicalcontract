@@ -4,7 +4,7 @@ import api from '../../../../api';
 import './ReportsListPage.css';
 
 interface ReportItem {
-  id: number;
+  id: string; // ✅ Changed from number to string (UUID)
   report_type: 'daily' | 'weekly' | 'monthly';
   formatted_date: string;
   new_users: number;
@@ -41,9 +41,9 @@ const ReportsListPage: React.FC = () => {
         page_size: pagination.pageSize.toString(),
         report_type: filterType
       });
-      
+
       const response = await api.get<ApiResponse>('/api/reports/reports/list/', { params });
-      
+
       setReports(response.data.results);
       setPagination(prev => ({
         ...prev,
@@ -73,7 +73,6 @@ const ReportsListPage: React.FC = () => {
 
   const handlePageChange = (newPage: number) => {
     setPagination(prev => ({ ...prev, page: newPage }));
-    
   };
 
   const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -81,7 +80,7 @@ const ReportsListPage: React.FC = () => {
     setPagination(prev => ({ ...prev, pageSize: newSize, page: 1 }));
   };
 
-  const handleReportClick = (reportType: string, id: number) => {
+  const handleReportClick = (reportType: string, id: string) => { // ✅ accept string id
     navigate(`/reports/${reportType}/${id}/country`);
   };
 
@@ -101,7 +100,7 @@ const ReportsListPage: React.FC = () => {
 
   return (
     <div className="dashboard-page">
-      <div className="dashboard-container"  ref={topRef}>
+      <div className="dashboard-container" ref={topRef}>
         {/* Top Bar */}
         <div className="top-bar">
           <h2>Invitation Reports</h2>
@@ -112,25 +111,25 @@ const ReportsListPage: React.FC = () => {
               </button>
               {showFilterDropdown && (
                 <div className="filter-dropdown">
-                  <button 
+                  <button
                     className={filterType === 'all' ? 'active' : ''}
                     onClick={() => handleFilterChange('all')}
                   >
                     All Reports
                   </button>
-                  <button 
+                  <button
                     className={filterType === 'daily' ? 'active' : ''}
                     onClick={() => handleFilterChange('daily')}
                   >
                     Daily
                   </button>
-                  <button 
+                  <button
                     className={filterType === 'weekly' ? 'active' : ''}
                     onClick={() => handleFilterChange('weekly')}
                   >
                     Weekly
                   </button>
-                  <button 
+                  <button
                     className={filterType === 'monthly' ? 'active' : ''}
                     onClick={() => handleFilterChange('monthly')}
                   >
@@ -139,10 +138,10 @@ const ReportsListPage: React.FC = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="page-size-selector">
               <label htmlFor="pageSize">Reports per page:</label>
-              <select 
+              <select
                 id="pageSize"
                 value={pagination.pageSize}
                 onChange={handlePageSizeChange}
@@ -165,28 +164,28 @@ const ReportsListPage: React.FC = () => {
             <div className="error-message">{error}</div>
           ) : reports.length > 0 ? (
             reports.map(report => (
-              <div 
+              <div
                 key={report.id}
                 className={`report-card ${report.report_type}`}
-                onClick={() => handleReportClick(report.report_type, report.id)}
+                onClick={() => handleReportClick(report.report_type, report.id)} // ✅ id is string
               >
                 <div className="report-content">
                   <div className="report-left">
                     <div className="report-date">{report.formatted_date}</div>
                     <div className="report-type">{getReportTypeLabel(report.report_type)}</div>
-                    <div className="report-id">Report number: {report.id}</div>
+                    <div className="report-id">Report ID: {report.id}</div>
                   </div>
                   <div className="report-right">
                     <div className="people-icon">
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        width="32" 
-                        height="32" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="#3498db" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#3498db"
+                        strokeWidth="2"
+                        strokeLinecap="round"
                         strokeLinejoin="round"
                       >
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -209,16 +208,18 @@ const ReportsListPage: React.FC = () => {
 
         {/* Pagination */}
         <div className="dashboard-pagination-controls">
-          <button 
+          <button
             onClick={() => handlePageChange(pagination.page - 1)}
             disabled={pagination.page === 1 || loading}
           >
             Previous
           </button>
-          
-          <span>Page {pagination.page} of {Math.ceil(pagination.count / pagination.pageSize)}</span>
-          
-          <button 
+
+          <span>
+            Page {pagination.page} of {Math.ceil(pagination.count / pagination.pageSize)}
+          </span>
+
+          <button
             onClick={() => handlePageChange(pagination.page + 1)}
             disabled={!pagination.next || loading}
           >

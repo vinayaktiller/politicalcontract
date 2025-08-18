@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models import JSONField
 from geographies.models.geos import Village, Subdistrict, District, State, Country
 
-# ======================
+# ======================s
 # VILLAGE ACTIVITY REPORTS
 # ======================
 class DailyVillageActivityReport(models.Model):
@@ -12,7 +12,7 @@ class DailyVillageActivityReport(models.Model):
     active_users = models.PositiveIntegerField(default=0)
     user_data = JSONField()
     date = models.DateField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."daily_village_activity_report'
@@ -27,7 +27,7 @@ class WeeklyVillageActivityReport(models.Model):
     week_start_date = models.DateField()
     week_last_date = models.DateField()
     user_data = JSONField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
     additional_info = JSONField(null=True, blank=True)
 
     class Meta:
@@ -42,7 +42,7 @@ class MonthlyVillageActivityReport(models.Model):
     year = models.PositiveSmallIntegerField()
     last_date = models.DateField()
     user_data = JSONField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
     additional_info = JSONField(null=True, blank=True)
 
     class Meta:
@@ -58,7 +58,7 @@ class DailySubdistrictActivityReport(models.Model):
     active_users = models.PositiveIntegerField(default=0)
     village_data = JSONField()
     date = models.DateField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."daily_subdistrict_activity_report'
@@ -73,7 +73,7 @@ class WeeklySubdistrictActivityReport(models.Model):
     week_start_date = models.DateField()
     week_last_date = models.DateField()
     village_data = JSONField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
     additional_info = JSONField(null=True, blank=True)
 
     class Meta:
@@ -88,7 +88,7 @@ class MonthlySubdistrictActivityReport(models.Model):
     year = models.PositiveSmallIntegerField()
     last_date = models.DateField()
     village_data = JSONField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
     additional_info = JSONField(null=True, blank=True)
 
     class Meta:
@@ -104,7 +104,7 @@ class DailyDistrictActivityReport(models.Model):
     active_users = models.PositiveIntegerField(default=0)
     subdistrict_data = JSONField()
     date = models.DateField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."daily_district_activity_report'
@@ -119,7 +119,7 @@ class WeeklyDistrictActivityReport(models.Model):
     week_start_date = models.DateField()
     week_last_date = models.DateField()
     subdistrict_data = JSONField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
     additional_info = JSONField(null=True, blank=True)
 
     class Meta:
@@ -134,7 +134,7 @@ class MonthlyDistrictActivityReport(models.Model):
     year = models.PositiveSmallIntegerField()
     last_date = models.DateField()
     subdistrict_data = JSONField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
     additional_info = JSONField(null=True, blank=True)
 
     class Meta:
@@ -150,7 +150,7 @@ class DailyStateActivityReport(models.Model):
     active_users = models.PositiveIntegerField(default=0)
     district_data = JSONField()
     date = models.DateField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
 
     class Meta:
         db_table = 'activity_reports"."daily_state_activity_report'
@@ -165,7 +165,7 @@ class WeeklyStateActivityReport(models.Model):
     week_start_date = models.DateField()
     week_last_date = models.DateField()
     district_data = JSONField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
     additional_info = JSONField(null=True, blank=True)
 
     class Meta:
@@ -180,7 +180,7 @@ class MonthlyStateActivityReport(models.Model):
     year = models.PositiveSmallIntegerField()
     last_date = models.DateField()
     district_data = JSONField()
-    parent_id = models.PositiveBigIntegerField(null=True, blank=True)
+    parent_id = models.UUIDField(null=True, blank=True)
     additional_info = JSONField(null=True, blank=True)
 
     class Meta:
@@ -196,6 +196,7 @@ class DailyCountryActivityReport(models.Model):
     active_users = models.PositiveIntegerField(default=0)
     state_data = JSONField()
     date = models.DateField()
+    
 
     class Meta:
         db_table = 'activity_reports"."daily_country_activity_report'

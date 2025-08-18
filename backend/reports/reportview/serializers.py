@@ -8,7 +8,12 @@ from ..models.intitationreports import (
     CountryDailyReport, CountryWeeklyReport, CountryMonthlyReport
 )
 
+
 class BaseReportSerializer(serializers.ModelSerializer):
+    # ✅ Explicitly declare UUIDs so they are output as strings
+    id = serializers.UUIDField(format='hex_verbose')
+    parent_id = serializers.UUIDField(format='hex_verbose', required=False, allow_null=True)
+
     geographical_entity = serializers.SerializerMethodField()
     level = serializers.SerializerMethodField()
     parent_info = serializers.SerializerMethodField()
@@ -17,7 +22,7 @@ class BaseReportSerializer(serializers.ModelSerializer):
     def get_geographical_entity(self, obj):
         entity = getattr(obj, self.Meta.entity_field)
         return {
-            'id': entity.id,
+            'id': entity.id,  # Still number (geographical ID)
             'name': entity.name,
             'type': self.Meta.entity_type
         }
@@ -26,22 +31,22 @@ class BaseReportSerializer(serializers.ModelSerializer):
         return self.Meta.level
 
     def get_parent_info(self, obj):
-        if not hasattr(obj, 'parent_id') or not obj.parent_id:
+        if not getattr(obj, 'parent_id', None):
             return None
-        
+
         parent_level = {
             'village': 'subdistrict',
             'subdistrict': 'district',
             'district': 'state',
             'state': 'country'
         }.get(self.Meta.level)
-        
+
         if not parent_level:
             return None
 
         return {
             'level': parent_level,
-            'report_id': obj.parent_id
+            'report_id': str(obj.parent_id)  # ✅ Ensure string
         }
 
     def get_children_data(self, obj):
@@ -50,7 +55,8 @@ class BaseReportSerializer(serializers.ModelSerializer):
     class Meta:
         abstract = True
 
-# Village Serializers
+
+# ---------------- Village Serializers ----------------
 class VillageDailyReportSerializer(BaseReportSerializer):
     class Meta:
         model = VillageDailyReport
@@ -60,15 +66,18 @@ class VillageDailyReportSerializer(BaseReportSerializer):
         level = 'village'
         children_field = 'user_data'
 
+
 class VillageWeeklyReportSerializer(BaseReportSerializer):
     class Meta(VillageDailyReportSerializer.Meta):
         model = VillageWeeklyReport
+
 
 class VillageMonthlyReportSerializer(BaseReportSerializer):
     class Meta(VillageDailyReportSerializer.Meta):
         model = VillageMonthlyReport
 
-# Subdistrict Serializers
+
+# ---------------- Subdistrict Serializers ----------------
 class SubdistrictDailyReportSerializer(BaseReportSerializer):
     class Meta:
         model = SubdistrictDailyReport
@@ -78,15 +87,18 @@ class SubdistrictDailyReportSerializer(BaseReportSerializer):
         level = 'subdistrict'
         children_field = 'village_data'
 
+
 class SubdistrictWeeklyReportSerializer(BaseReportSerializer):
     class Meta(SubdistrictDailyReportSerializer.Meta):
         model = SubdistrictWeeklyReport
+
 
 class SubdistrictMonthlyReportSerializer(BaseReportSerializer):
     class Meta(SubdistrictDailyReportSerializer.Meta):
         model = SubdistrictMonthlyReport
 
-# District Serializers
+
+# ---------------- District Serializers ----------------
 class DistrictDailyReportSerializer(BaseReportSerializer):
     class Meta:
         model = DistrictDailyReport
@@ -96,15 +108,18 @@ class DistrictDailyReportSerializer(BaseReportSerializer):
         level = 'district'
         children_field = 'subdistrict_data'
 
+
 class DistrictWeeklyReportSerializer(BaseReportSerializer):
     class Meta(DistrictDailyReportSerializer.Meta):
         model = DistrictWeeklyReport
+
 
 class DistrictMonthlyReportSerializer(BaseReportSerializer):
     class Meta(DistrictDailyReportSerializer.Meta):
         model = DistrictMonthlyReport
 
-# State Serializers
+
+# ---------------- State Serializers ----------------
 class StateDailyReportSerializer(BaseReportSerializer):
     class Meta:
         model = StateDailyReport
@@ -114,15 +129,18 @@ class StateDailyReportSerializer(BaseReportSerializer):
         level = 'state'
         children_field = 'district_data'
 
+
 class StateWeeklyReportSerializer(BaseReportSerializer):
     class Meta(StateDailyReportSerializer.Meta):
         model = StateWeeklyReport
+
 
 class StateMonthlyReportSerializer(BaseReportSerializer):
     class Meta(StateDailyReportSerializer.Meta):
         model = StateMonthlyReport
 
-# Country Serializers
+
+# ---------------- Country Serializers ----------------
 class CountryDailyReportSerializer(BaseReportSerializer):
     class Meta:
         model = CountryDailyReport
@@ -132,9 +150,11 @@ class CountryDailyReportSerializer(BaseReportSerializer):
         level = 'country'
         children_field = 'state_data'
 
+
 class CountryWeeklyReportSerializer(BaseReportSerializer):
     class Meta(CountryDailyReportSerializer.Meta):
         model = CountryWeeklyReport
+
 
 class CountryMonthlyReportSerializer(BaseReportSerializer):
     class Meta(CountryDailyReportSerializer.Meta):

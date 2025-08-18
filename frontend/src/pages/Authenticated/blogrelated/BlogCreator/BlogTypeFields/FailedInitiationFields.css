@@ -1,0 +1,331 @@
+/* Card wrapper */
+.failed-initiation-card {
+  max-width: 800px;
+  margin: 18px auto;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(19, 24, 31, 0.06);
+  background: #ffffff;
+  padding: 20px;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  color: #121212;
+}
+
+/* Title */
+.failed-initiation-top-title {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Location Section */
+.failed-initiation-location-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fafafa;
+  border: 1px solid #eef0f2;
+  border-radius: 8px;
+}
+
+.failed-initiation-location-section h4 {
+  margin: 0 0 6px 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.failed-initiation-form-hint {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 4px 0 12px 0;
+}
+
+.failed-initiation-location-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+/* Form groups */
+.failed-initiation-form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.failed-initiation-form-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 160px;
+}
+
+.failed-initiation-form-group label {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.failed-initiation-required {
+  color: #dc2626;
+  margin-left: 4px;
+}
+
+.failed-initiation-form-group input,
+.failed-initiation-form-group select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #dfe3e8;
+  font-size: 14px;
+  transition: border 120ms ease, box-shadow 120ms ease;
+}
+
+.failed-initiation-form-group input:focus,
+.failed-initiation-form-group select:focus {
+  outline: none;
+  border-color: rgba(14, 165, 233, 0.9);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.1);
+}
+
+/* Panel Body */
+.failed-initiation-panel-body {
+  border-radius: 8px;
+  border: 1px solid #eef0f2;
+  padding: 14px;
+  background: #fff;
+}
+
+/* Textarea */
+.failed-initiation-write-layout {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.journey-textarea {
+  width: 100%;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  background: #fbfdff;
+  outline: none;
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+  color: #0f172a;
+  padding: 10px 12px;
+  resize: none;
+  min-height: 96px;
+  box-sizing: border-box;
+}
+
+.journey-textarea:focus {
+  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.12);
+  border-color: rgba(14, 165, 233, 0.25);
+}
+
+/* Footer */
+.failed-initiation-panel-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  gap: 12px;
+  position: relative;
+}
+
+.failed-initiation-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.failed-initiation-char-counter {
+  font-size: 13px;
+  color: #6b7280;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.failed-initiation-char-counter.clickable:active {
+  transform: translateY(1px);
+}
+
+.failed-initiation-char-counter.exceeded {
+  background: #fff7ed;
+  color: #b45309;
+  border-color: #fde3c7;
+  box-shadow: 0 6px 18px rgba(244, 172, 62, 0.08);
+  animation: pulse-border 1.2s infinite;
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 6px 18px rgba(244, 172, 62, 0.04); }
+  50% { box-shadow: 0 10px 28px rgba(244, 172, 62, 0.12); }
+  100% { box-shadow: 0 6px 18px rgba(244, 172, 62, 0.04); }
+}
+
+/* Size popup */
+.failed-initiation-size-popup {
+  position: absolute;
+  top: -8px;
+  left: 0;
+  transform: translateY(-100%);
+  width: 260px;
+  border-radius: 8px;
+  box-shadow: 0 14px 38px rgba(13, 19, 25, 0.08);
+  background: #fff;
+  border: 1px solid #eef2f7;
+  z-index: 90;
+  padding: 8px;
+}
+
+.failed-initiation-size-option-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.failed-initiation-size-option-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.failed-initiation-size-warning {
+  font-size: 13px;
+  color: #b45309;
+  margin-left: 6px;
+}
+
+/* Footer Right / Submit */
+.failed-initiation-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.submit-btn {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: white;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.submit-btn.submitting {
+  opacity: 0.9;
+  pointer-events: none;
+  background: linear-gradient(90deg, #111827, #374151);
+}
+
+/* Spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Modal Overlay */
+.failed-initiation-upgrade-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 18, 0.45);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.failed-initiation-upgrade-modal {
+  width: 420px;
+  max-width: calc(100% - 40px);
+  background: #fff;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 30px 80px rgba(8, 12, 20, 0.3);
+}
+
+.failed-initiation-upgrade-modal h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.failed-initiation-upgrade-modal p {
+  margin: 0 0 14px 0;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.failed-initiation-upgrade-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Buttons inside modals */
+.btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.btn.btn-secondary {
+  background: #f3f4f6;
+  color: #0f172a;
+}
+
+.btn.btn-primary {
+  background: #0f172a;
+  color: #fff;
+}
+
+/* Notes */
+.failed-initiation-form-note {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .failed-initiation-card {
+    margin: 10px;
+    padding: 14px;
+  }
+
+  .failed-initiation-location-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .failed-initiation-form-row {
+    flex-direction: column;
+  }
+
+  .failed-initiation-size-popup {
+    width: 100%;
+    left: 0;
+  }
+
+  .journey-textarea {
+    font-size: 15px;
+    min-height: 56px;
+  }
+}

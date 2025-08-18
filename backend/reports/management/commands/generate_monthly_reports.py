@@ -11,8 +11,9 @@ from reports.models import (
 from users.models.petitioners import Petitioner
 from collections import defaultdict
 
+
 class Command(BaseCommand):
-    help = 'Generates monthly reports for all geographic levels'
+    help = 'Generates monthly reports for all geographic levels (UUID-safe)'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -41,7 +42,6 @@ class Command(BaseCommand):
             self.stdout.write(f"Processing {year}-{month:02d} ({current_month_start} to {month_end})...")
             
             with transaction.atomic():
-                # Create reports bottom-up
                 village_reports = self.create_village_monthly_reports(
                     current_month_start, month_end, month, year
                 )
@@ -57,8 +57,6 @@ class Command(BaseCommand):
                 country_reports = self.create_country_monthly_reports(
                     month_end, month, year, state_reports
                 )
-                
-                # Update parent IDs after all reports are created
                 self.update_parent_ids(
                     village_reports, 
                     subdistrict_reports,
@@ -78,17 +76,15 @@ class Command(BaseCommand):
         ))
 
     def get_date_range(self, kwargs):
-        # Find first user date
         first_user = Petitioner.objects.order_by('date_joined').first()
         
         if not first_user:
             self.stdout.write(self.style.WARNING('No users found. Exiting.'))
             exit(0)
-            
+        
         first_date = first_user.date_joined.date()
         default_start = date(first_date.year, first_date.month, 1)
         
-        # Default end date is last month
         today = date.today()
         last_month = today - relativedelta(months=1)
         default_end = date(last_month.year, last_month.month, 1)
@@ -110,31 +106,32 @@ class Command(BaseCommand):
         return start_date, end_date
 
     def get_month_start(self, dt):
-        """Get first day of the month for a given date"""
         return date(dt.year, dt.month, 1)
 
     def create_village_monthly_reports(self, month_start, month_end, month, year):
-        # Get daily reports within the month - FIXED FIELD NAME: date instead of report_date
         daily_reports = VillageDailyReport.objects.filter(
             date__range=[month_start, month_end]
         ).select_related('village')
         
-        # Group by village
         village_data = defaultdict(lambda: {'users': 0, 'user_data': {}})
         
         for report in daily_reports:
             village_id = report.village_id
             village_data[village_id]['users'] += report.new_users
-            village_data[village_id]['user_data'].update(report.user_data)
+            # Convert UUID keys in user_data to strings for JSON safety
+            for uid, info in report.user_data.items():
+                village_data[village_id]['user_data'][str(uid)] = {
+                    "id": str(info["id"]),
+                    "name": info["name"]
+                }
         
         reports_created = {}
         for village_id, data in village_data.items():
             if data['users'] == 0:
-                # Skip villages with no users
                 continue
-                
+            
             village = Village.objects.get(id=village_id)
-            report, created = VillageMonthlyReport.objects.update_or_create(
+            report, _ = VillageMonthlyReport.objects.update_or_create(
                 last_date=month_end,
                 village=village,
                 month=month,
@@ -142,21 +139,19 @@ class Command(BaseCommand):
                 defaults={
                     'new_users': data['users'],
                     'user_data': data['user_data'],
-                    'parent_id': 0  # Temporary value
+                    'parent_id': None
                 }
             )
             reports_created[village_id] = report
         
-        # Delete reports with zero users
         VillageMonthlyReport.objects.filter(
             last_date=month_end,
             new_users=0
         ).delete()
-            
+        
         return reports_created
 
     def create_subdistrict_monthly_reports(self, month_end, month, year, village_reports):
-        # Get all villages grouped by subdistrict
         villages = Village.objects.select_related('subdistrict').all()
         subdistrict_villages = defaultdict(list)
         for village in villages:
@@ -172,22 +167,21 @@ class Command(BaseCommand):
                 report = village_reports.get(village.id)
                 count = report.new_users if report else 0
                 village_data[str(village.id)] = {
-                    "id": village.id,
+                    "id": str(village.id),
                     "name": village.name,
                     "new_users": count,
-                    "report_id": report.id if report else None
+                    "report_id": str(report.id) if report else None
                 }
                 total_users += count
             
             if total_users == 0:
-                # Delete if exists with zero users
                 SubdistrictMonthlyReport.objects.filter(
                     last_date=month_end,
                     subdistrict=subdistrict
                 ).delete()
                 continue
-                
-            report, created = SubdistrictMonthlyReport.objects.update_or_create(
+            
+            report, _ = SubdistrictMonthlyReport.objects.update_or_create(
                 last_date=month_end,
                 subdistrict=subdistrict,
                 month=month,
@@ -195,15 +189,14 @@ class Command(BaseCommand):
                 defaults={
                     'new_users': total_users,
                     'village_data': village_data,
-                    'parent_id': 0  # Temporary value
+                    'parent_id': None
                 }
             )
             reports_created[subdistrict_id] = report
-            
+        
         return reports_created
 
     def create_district_monthly_reports(self, month_end, month, year, subdistrict_reports):
-        # Get all subdistricts grouped by district
         subdistricts = Subdistrict.objects.select_related('district').all()
         district_subdistricts = defaultdict(list)
         for sub in subdistricts:
@@ -219,22 +212,21 @@ class Command(BaseCommand):
                 report = subdistrict_reports.get(sub.id)
                 count = report.new_users if report else 0
                 subdistrict_data[str(sub.id)] = {
-                    "id": sub.id,
+                    "id": str(sub.id),
                     "name": sub.name,
                     "new_users": count,
-                    "report_id": report.id if report else None
+                    "report_id": str(report.id) if report else None
                 }
                 total_users += count
             
             if total_users == 0:
-                # Delete if exists with zero users
                 DistrictMonthlyReport.objects.filter(
                     last_date=month_end,
                     district=district
                 ).delete()
                 continue
-                
-            report, created = DistrictMonthlyReport.objects.update_or_create(
+            
+            report, _ = DistrictMonthlyReport.objects.update_or_create(
                 last_date=month_end,
                 district=district,
                 month=month,
@@ -242,15 +234,14 @@ class Command(BaseCommand):
                 defaults={
                     'new_users': total_users,
                     'subdistrict_data': subdistrict_data,
-                    'parent_id': 0  # Temporary value
+                    'parent_id': None
                 }
             )
             reports_created[district_id] = report
-            
+        
         return reports_created
 
     def create_state_monthly_reports(self, month_end, month, year, district_reports):
-        # Get all districts grouped by state
         districts = District.objects.select_related('state').all()
         state_districts = defaultdict(list)
         for district in districts:
@@ -266,22 +257,21 @@ class Command(BaseCommand):
                 report = district_reports.get(district.id)
                 count = report.new_users if report else 0
                 district_data[str(district.id)] = {
-                    "id": district.id,
+                    "id": str(district.id),
                     "name": district.name,
                     "new_users": count,
-                    "report_id": report.id if report else None
+                    "report_id": str(report.id) if report else None
                 }
                 total_users += count
             
             if total_users == 0:
-                # Delete if exists with zero users
                 StateMonthlyReport.objects.filter(
                     last_date=month_end,
                     state=state
                 ).delete()
                 continue
-                
-            report, created = StateMonthlyReport.objects.update_or_create(
+            
+            report, _ = StateMonthlyReport.objects.update_or_create(
                 last_date=month_end,
                 state=state,
                 month=month,
@@ -289,15 +279,14 @@ class Command(BaseCommand):
                 defaults={
                     'new_users': total_users,
                     'district_data': district_data,
-                    'parent_id': 0  # Temporary value
+                    'parent_id': None
                 }
             )
             reports_created[state_id] = report
-            
+        
         return reports_created
 
     def create_country_monthly_reports(self, month_end, month, year, state_reports):
-        # Get all states grouped by country
         states = State.objects.select_related('country').all()
         country_states = defaultdict(list)
         for state in states:
@@ -313,22 +302,21 @@ class Command(BaseCommand):
                 report = state_reports.get(state.id)
                 count = report.new_users if report else 0
                 state_data[str(state.id)] = {
-                    "id": state.id,
+                    "id": str(state.id),
                     "name": state.name,
                     "new_users": count,
-                    "report_id": report.id if report else None
+                    "report_id": str(report.id) if report else None
                 }
                 total_users += count
             
             if total_users == 0:
-                # Delete if exists with zero users
                 CountryMonthlyReport.objects.filter(
                     last_date=month_end,
                     country=country
                 ).delete()
                 continue
-                
-            report, created = CountryMonthlyReport.objects.update_or_create(
+            
+            report, _ = CountryMonthlyReport.objects.update_or_create(
                 last_date=month_end,
                 country=country,
                 month=month,
@@ -339,67 +327,35 @@ class Command(BaseCommand):
                 }
             )
             reports_created[country_id] = report
-            
+        
         return reports_created
 
     def update_parent_ids(self, village_reports, subdistrict_reports, 
                           district_reports, state_reports, country_reports):
-        # Prefetch all villages for village reports
-        village_ids = list(village_reports.keys())
-        villages = Village.objects.filter(id__in=village_ids).select_related('subdistrict')
-        village_map = {v.id: v for v in villages}
-        
-        # Update village reports with subdistrict parent IDs
+        villages = Village.objects.filter(id__in=village_reports.keys()).select_related('subdistrict')
         for village_id, report in village_reports.items():
-            village = village_map.get(village_id)
-            if not village:
-                continue
-            subdistrict_id = village.subdistrict_id
-            if subdistrict_id in subdistrict_reports:
-                report.parent_id = subdistrict_reports[subdistrict_id].id
+            village = next((v for v in villages if v.id == village_id), None)
+            if village and village.subdistrict_id in subdistrict_reports:
+                report.parent_id = subdistrict_reports[village.subdistrict_id].id
                 report.save()
-        
-        # Prefetch all subdistricts for subdistrict reports
-        subdistrict_ids = list(subdistrict_reports.keys())
-        subdistricts = Subdistrict.objects.filter(id__in=subdistrict_ids).select_related('district')
-        subdistrict_map = {s.id: s for s in subdistricts}
-        
-        # Update subdistrict reports with district parent IDs
+
+        subs = Subdistrict.objects.filter(id__in=subdistrict_reports.keys()).select_related('district')
         for subdistrict_id, report in subdistrict_reports.items():
-            subdistrict = subdistrict_map.get(subdistrict_id)
-            if not subdistrict:
-                continue
-            district_id = subdistrict.district_id
-            if district_id in district_reports:
-                report.parent_id = district_reports[district_id].id
+            subdistrict = next((s for s in subs if s.id == subdistrict_id), None)
+            if subdistrict and subdistrict.district_id in district_reports:
+                report.parent_id = district_reports[subdistrict.district_id].id
                 report.save()
-        
-        # Prefetch all districts for district reports
-        district_ids = list(district_reports.keys())
-        districts = District.objects.filter(id__in=district_ids).select_related('state')
-        district_map = {d.id: d for d in districts}
-        
-        # Update district reports with state parent IDs
+
+        dists = District.objects.filter(id__in=district_reports.keys()).select_related('state')
         for district_id, report in district_reports.items():
-            district = district_map.get(district_id)
-            if not district:
-                continue
-            state_id = district.state_id
-            if state_id in state_reports:
-                report.parent_id = state_reports[state_id].id
+            district = next((d for d in dists if d.id == district_id), None)
+            if district and district.state_id in state_reports:
+                report.parent_id = state_reports[district.state_id].id
                 report.save()
-        
-        # Prefetch all states for state reports
-        state_ids = list(state_reports.keys())
-        states = State.objects.filter(id__in=state_ids).select_related('country')
-        state_map = {s.id: s for s in states}
-        
-        # Update state reports with country parent IDs
+
+        states = State.objects.filter(id__in=state_reports.keys()).select_related('country')
         for state_id, report in state_reports.items():
-            state = state_map.get(state_id)
-            if not state:
-                continue
-            country_id = state.country_id
-            if country_id in country_reports:
-                report.parent_id = country_reports[country_id].id
+            state = next((s for s in states if s.id == state_id), None)
+            if state and state.country_id in country_reports:
+                report.parent_id = country_reports[state.country_id].id
                 report.save()

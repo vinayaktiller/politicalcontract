@@ -8,7 +8,6 @@ from ..models import (
     DailyCountryActivityReport, WeeklyCountryActivityReport, MonthlyCountryActivityReport
 )
 from geographies.models.geos import Village, Subdistrict, District, State, Country
-
 class BaseActivityReportSerializer(serializers.ModelSerializer):
     geographical_entity = serializers.SerializerMethodField()
     level = serializers.SerializerMethodField()
@@ -19,7 +18,7 @@ class BaseActivityReportSerializer(serializers.ModelSerializer):
     def get_geographical_entity(self, obj):
         entity = getattr(obj, self.Meta.entity_field)
         return {
-            'id': entity.id,
+            'id': str(entity.id),
             'name': entity.name,
             'type': self.Meta.entity_type
         }
@@ -30,34 +29,45 @@ class BaseActivityReportSerializer(serializers.ModelSerializer):
     def get_parent_info(self, obj):
         if not hasattr(obj, 'parent_id') or not obj.parent_id:
             return None
-        
-        parent_level = {
+
+        parent_level_map = {
             'village': 'subdistrict',
             'subdistrict': 'district',
             'district': 'state',
             'state': 'country'
-        }.get(self.Meta.level)
-        
+        }
+        parent_level = parent_level_map.get(self.Meta.level)
         if not parent_level:
             return None
 
         return {
             'level': parent_level,
-            'report_id': obj.parent_id
+            'report_id': str(obj.parent_id)
         }
 
     def get_children_data(self, obj):
-        return getattr(obj, self.Meta.children_field, {})
+        data = getattr(obj, self.Meta.children_field, {})
+        return {
+            k: {
+                **v,
+                'id': str(v['id']),
+                'report_id': str(v.get('report_id', '')) if v.get('report_id') else None
+            }
+            for k, v in data.items()
+        }
 
     def get_additional_info(self, obj):
-        # Only return additional_info if it exists and is not empty
-        if hasattr(obj, 'additional_info') and obj.additional_info:
+        """
+        Return additional_info JSON if the model has it, else None.
+        Keeps frontend API consistent.
+        """
+        # Check if the model actually has the field
+        if hasattr(obj, 'additional_info') and obj.additional_info is not None:
             return obj.additional_info
         return None
 
-    class Meta:
-        abstract = True
 
+    
 # Village Serializers
 class DailyVillageActivityReportSerializer(BaseActivityReportSerializer):
     class Meta:

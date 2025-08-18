@@ -13,6 +13,9 @@ const HomePage: React.FC = () => {
       <button onClick={() => navigate('/group-registration')} className="navigate-btn">
         create a group
       </button>
+      <button onClick={() => navigate('/blog-creator')} className="navigate-btn">
+        blog-creator  
+      </button>
     </div>
   );
 };

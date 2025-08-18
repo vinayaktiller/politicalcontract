@@ -43,10 +43,12 @@ const ActivityReportListPage: React.FC = () => {
         page_size: pagination.pageSize.toString(),
         report_type: filterType
       });
-      
-      const response = await api.get<ApiResponse>('/api/activity_reports/activity-reports/list/', { params });
 
-      
+      const response = await api.get<ApiResponse>(
+        '/api/activity_reports/activity-reports/list/',
+        { params }
+      );
+
       setReports(response.data.results);
       setPagination(prev => ({
         ...prev,
@@ -63,6 +65,7 @@ const ActivityReportListPage: React.FC = () => {
     }
   };
 
+  // Fetch data whenever filter/pagination changes
   useEffect(() => {
     fetchReports();
   }, [filterType, pagination.page, pagination.pageSize]);
@@ -105,7 +108,9 @@ const ActivityReportListPage: React.FC = () => {
     switch (type) {
       case 'daily':
         return (
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3498db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
+               viewBox="0 0 24 24" fill="none"
+               stroke="#3498db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
             <line x1="16" y1="2" x2="16" y2="6"></line>
             <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -114,7 +119,9 @@ const ActivityReportListPage: React.FC = () => {
         );
       case 'weekly':
         return (
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#388e3c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
+               viewBox="0 0 24 24" fill="none"
+               stroke="#388e3c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
             <line x1="16" y1="2" x2="16" y2="6"></line>
             <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -129,7 +136,9 @@ const ActivityReportListPage: React.FC = () => {
         );
       case 'monthly':
         return (
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#7b1fa2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
+               viewBox="0 0 24 24" fill="none"
+               stroke="#7b1fa2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
             <line x1="16" y1="2" x2="16" y2="6"></line>
             <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -144,7 +153,9 @@ const ActivityReportListPage: React.FC = () => {
         );
       default:
         return (
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3498db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
+               viewBox="0 0 24 24" fill="none"
+               stroke="#3498db" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
             <line x1="16" y1="2" x2="16" y2="6"></line>
             <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -167,25 +178,25 @@ const ActivityReportListPage: React.FC = () => {
               </button>
               {showFilterDropdown && (
                 <div className="filter-dropdown">
-                  <button 
+                  <button
                     className={filterType === 'all' ? 'active' : ''}
                     onClick={() => handleFilterChange('all')}
                   >
                     All Reports
                   </button>
-                  <button 
+                  <button
                     className={filterType === 'daily' ? 'active' : ''}
                     onClick={() => handleFilterChange('daily')}
                   >
                     Daily
                   </button>
-                  <button 
+                  <button
                     className={filterType === 'weekly' ? 'active' : ''}
                     onClick={() => handleFilterChange('weekly')}
                   >
                     Weekly
                   </button>
-                  <button 
+                  <button
                     className={filterType === 'monthly' ? 'active' : ''}
                     onClick={() => handleFilterChange('monthly')}
                   >
@@ -194,10 +205,10 @@ const ActivityReportListPage: React.FC = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="page-size-selector">
               <label htmlFor="pageSize">Reports per page:</label>
-              <select 
+              <select
                 id="pageSize"
                 value={pagination.pageSize}
                 onChange={handlePageSizeChange}
@@ -220,7 +231,7 @@ const ActivityReportListPage: React.FC = () => {
             <div className="error-message">{error}</div>
           ) : reports.length > 0 ? (
             reports.map(report => (
-              <div 
+              <div
                 key={report.id}
                 className={`report-card ${report.report_type}`}
                 onClick={() => handleReportClick(report.report_type, report.id)}
@@ -233,9 +244,7 @@ const ActivityReportListPage: React.FC = () => {
                     <div className="report-country">Country: {report.country_name}</div>
                   </div>
                   <div className="report-right">
-                    <div className="report-icon">
-                      {getIconForReportType(report.report_type)}
-                    </div>
+                    <div className="report-icon">{getIconForReportType(report.report_type)}</div>
                     <div className="report-users">
                       {report.active_users} active {report.active_users === 1 ? 'user' : 'users'}
                     </div>
@@ -250,16 +259,18 @@ const ActivityReportListPage: React.FC = () => {
 
         {/* Pagination */}
         <div className="dashboard-pagination-controls">
-          <button 
+          <button
             onClick={() => handlePageChange(pagination.page - 1)}
             disabled={pagination.page === 1 || loading}
           >
             Previous
           </button>
-          
-          <span>Page {pagination.page} of {Math.ceil(pagination.count / pagination.pageSize)}</span>
-          
-          <button 
+
+          <span>
+            Page {pagination.page} of {Math.ceil(pagination.count / pagination.pageSize)}
+          </span>
+
+          <button
             onClick={() => handlePageChange(pagination.page + 1)}
             disabled={!pagination.next || loading}
           >

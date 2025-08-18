@@ -41,6 +41,8 @@ import ChatPage from "./pages/Authenticated/messages/ChatPage/ChatPage";
 
 import MilestonePage from "./pages/Authenticated/milestone/MilestonePage";
 import MilestonePreviewPage from "./pages/Authenticated/milestone/MilestonePreviewPage";
+import BlogCreator from "./pages/Authenticated/blogrelated/BlogCreator/index";
+import ClaimContributionForm from "./pages/Authenticated/contribution/ClaimContributionForm";
 
 const clientId = "719395873709-ese7vg45i9gfndador7q6rmq3untnkcr.apps.googleusercontent.com";
 
@@ -96,6 +98,8 @@ const AppRoutes: React.FC = () => {
             <Route path="chat/:conversationId" element={<ChatPage />} />
             <Route path="milestones" element={<MilestonePage />} />
             <Route path="milestone-preview" element={<MilestonePreviewPage />} />
+            <Route path="blog-creator" element={<BlogCreator />} />
+            <Route path="claim-contribution" element={<ClaimContributionForm />} />
           </Route>
         </Route>
       </Routes>

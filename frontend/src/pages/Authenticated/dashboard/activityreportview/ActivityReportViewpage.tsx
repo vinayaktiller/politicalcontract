@@ -47,7 +47,7 @@ interface ReportData {
   };
 }
 
-const ActivityReportViewPage = () => {
+const ActivityReportViewPage: React.FC = () => {
   const { period, reportId, level } = useParams<{
     period: ReportType;
     reportId: string;
@@ -65,18 +65,17 @@ const ActivityReportViewPage = () => {
       try {
         setLoading(true);
         setError("");
+        console.log("🔍 Fetching Activity Report Data...", { period, reportId, level });
 
-        const response = await api.get<ReportData>(
-          `/api/activity_reports/activity-report/`,
-          {
-            params: {
-              type: period,
-              report_id: reportId,
-              level: level
-            }
-          }
-        );
+        const response = await api.get<ReportData>(`/api/activity_reports/activity-report/`, {
+          params: {
+            type: period,
+            report_id: reportId,
+            level: level,
+          },
+        });
 
+        console.log("✅ Activity API Response:", response.data);
         setReport(response.data);
       } catch (err) {
         setError("Failed to load report. Please try again later.");
@@ -89,6 +88,7 @@ const ActivityReportViewPage = () => {
     if (period && reportId && level) {
       fetchReportData();
     } else {
+      console.warn("⚠️ Missing required parameters in URL", { period, reportId, level });
       setError("Missing required parameters in URL");
       setLoading(false);
     }
@@ -97,16 +97,39 @@ const ActivityReportViewPage = () => {
   const handleChildClick = (child: ChildData) => {
     if (child.active_users > 0 && child.report_id) {
       const nextLevel = getChildLevel(level as ReportLevel);
+      console.log(`➡️ Navigating to child activity report: /activity-reports/${period}/${child.report_id}/${nextLevel}`);
       navigate(`/activity-reports/${period}/${child.report_id}/${nextLevel}`);
     }
   };
 
   const handleBackClick = () => {
-    if (report?.parent_info) {
-      navigate(
-        `/activity-reports/${period}/${report.parent_info.report_id}/${report.parent_info.level}`
-      );
+    console.log("🔙 Back button clicked. Parent Info:", report?.parent_info);
+    if (level === "country") {
+      // Navigate to the reports list page when at country level
+      console.log("➡️ At country level, navigating to /activity-reports-list");
+      navigate("/activity-reports-list");
+    } else if (report?.parent_info) {
+      navigate(`/activity-reports/${period}/${report.parent_info.report_id}/${report.parent_info.level}`);
+    } else {
+      // fallback to list if no parent info for safety
+      navigate("/activity-reports-list");
     }
+  };
+
+  // Write Insight button handler
+  const handleWriteInsight = () => {
+    if (!report) return;
+    const insightData = {
+      geographical_entity: report.geographical_entity,
+      id: report.id,
+      level: report.level,
+      active_users: report.active_users,
+      date: report.date,
+      period: period,
+      report_kind: "activity", // indicate activity report
+    };
+    console.log("📝 Navigating to BlogCreator with activity insight data:", insightData);
+    navigate("/blog-creator", { state: insightData });
   };
 
   const getChildLevel = (currentLevel: ReportLevel): ReportLevel => {
@@ -115,7 +138,7 @@ const ActivityReportViewPage = () => {
       state: "district",
       district: "subdistrict",
       subdistrict: "village",
-      village: "village"
+      village: "village",
     };
     return levelMap[currentLevel];
   };
@@ -131,10 +154,7 @@ const ActivityReportViewPage = () => {
       return `${entity.name} Report - Week ${report.week_number}, ${report.year}`;
     }
     if (period === "monthly" && report.month && report.year) {
-      const monthName = new Date(report.year, report.month - 1).toLocaleString(
-        "default",
-        { month: "long" }
-      );
+      const monthName = new Date(report.year, report.month - 1).toLocaleString("default", { month: "long" });
       return `${entity.name} Report - ${monthName} ${report.year}`;
     }
     return `${entity.name} Report`;
@@ -152,7 +172,7 @@ const ActivityReportViewPage = () => {
       <div className="activity-report-distribution">
         <h3>Activity Distribution</h3>
         <div className="activity-distribution-bars">
-          {buckets.map(bucket => (
+          {buckets.map((bucket) => (
             <div key={bucket} className="activity-distribution-bar">
               <div className="activity-bar-label">
                 {bucket}+ {bucket === 1 ? "day" : "days"}
@@ -160,7 +180,7 @@ const ActivityReportViewPage = () => {
               <div className="activity-bar-container">
                 <div
                   className="activity-bar-fill"
-                  style={{ width: `${(distribution[bucket] / report.active_users) * 100}%` }}
+                  style={{ width: `${report.active_users ? (distribution[bucket] / report.active_users) * 100 : 0}%` }}
                 >
                   {distribution[bucket]}
                 </div>
@@ -172,25 +192,8 @@ const ActivityReportViewPage = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="activity-report-page">
-        <div className="activity-report-container">
-          <div className="activity-report-loading">Loading report...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="activity-report-page">
-        <div className="activity-report-container">
-          <div className="activity-report-error">{error}</div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="activity-report-loading">Loading report...</div>;
+  if (error) return <div className="activity-report-error">{error}</div>;
 
   return (
     <div className="activity-report-page">
@@ -198,13 +201,18 @@ const ActivityReportViewPage = () => {
         {report && (
           <>
             <div className="activity-report-top-bar">
-              <button
-                onClick={handleBackClick}
-                disabled={!report.parent_info}
-                className={`activity-report-back-button ${!report.parent_info ? "disabled" : ""}`}
-              >
-                &larr; Back
-              </button>
+              <div className="activity-report-header-actions">
+                <button
+                  onClick={handleBackClick}
+                  disabled={!report.parent_info && level !== "country"}
+                  className={`activity-report-back-button ${!report.parent_info && level !== "country" ? "disabled" : ""}`}
+                >
+                  &larr; Back
+                </button>
+                <button onClick={handleWriteInsight} className="activity-report-write-insight-button">
+                  Write Insight
+                </button>
+              </div>
               <h2>{formatTitle()}</h2>
               <div className="activity-report-total-users">
                 <span className="activity-report-users-icon">👤</span>
@@ -212,9 +220,7 @@ const ActivityReportViewPage = () => {
               </div>
             </div>
 
-            <div className="activity-report-level-indicator">
-              {report.level.toUpperCase()} LEVEL
-            </div>
+            <div className="activity-report-level-indicator">{report.level.toUpperCase()} LEVEL</div>
 
             {(period === "weekly" || period === "monthly") && (
               <div className="activity-report-distribution-toggle">
@@ -230,9 +236,9 @@ const ActivityReportViewPage = () => {
               {Object.entries(report.children_data).map(([id, child]) => (
                 <div
                   key={id}
-                  className={`activity-report-child-card ${
-                    child.active_users > 0 ? "active" : "inactive"
-                  } ${child.active_users > 0 && child.report_id ? "clickable" : ""}`}
+                  className={`activity-report-child-card ${child.active_users > 0 ? "active" : "inactive"} ${
+                    child.active_users > 0 && child.report_id ? "clickable" : ""
+                  }`}
                   onClick={() => child.active_users > 0 && child.report_id && handleChildClick(child)}
                 >
                   <div className="activity-report-child-name">{child.name}</div>

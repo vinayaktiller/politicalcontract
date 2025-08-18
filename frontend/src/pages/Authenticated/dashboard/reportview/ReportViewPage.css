@@ -30,18 +30,28 @@
   border-bottom: 2px solid #000000;
 }
 
+.report-view-header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
+.report-view-header-left,
+.report-view-header-right {
+  flex: 0 0 auto;
+}
+
 .report-view-top-bar h2 {
-  margin: 0;
+  flex-grow: 1;
+  margin: 0 15px;
+  text-align: center;
   font-size: 1.1rem;
   color: #333;
-  text-align: center;
-  flex-grow: 1;
-  order: 2;
 }
 
 .report-view-back-button {
-  align-self: flex-start;
-  order: 1;
   padding: 8px 15px;
   background-color: #f0f0f0;
   border: 2px solid #000000;
@@ -60,6 +70,22 @@
   background-color: #f8f8f8;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.report-view-write-insight-button {
+  padding: 8px 15px;
+  background-color: #fffdee;
+  border: 2px solid #005cbf;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s, border-color 0.2s;
+  font-size: 0.9rem;
+}
+
+.report-view-write-insight-button:hover:not(:disabled) {
+  background-color: #e0ecff;
+  border-color: #007bff;
 }
 
 .report-view-total-users {
@@ -157,7 +183,8 @@
 }
 
 /* Loading and error states */
-.report-view-loading, .report-view-error {
+.report-view-loading,
+.report-view-error {
   text-align: center;
   padding: 30px 15px;
   font-size: 1.3rem;
@@ -176,26 +203,35 @@
   .report-view-page {
     padding: 15px;
   }
-  
+
   .report-view-top-bar {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 10px;
     padding: 15px;
+    align-items: center;
   }
-  
+
+  .report-view-header-actions {
+    flex-direction: row;
+    gap: 15px;
+    width: 100%;
+    max-width: 100%;
+    padding-bottom: 0;
+  }
+
   .report-view-top-bar h2 {
     font-size: 1.3rem;
     order: 2;
+    width: 100%;
   }
-  
-  .report-view-back-button {
-    order: 1;
+
+  .report-view-back-button,
+  .report-view-write-insight-button {
     padding: 8px 15px;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    min-width: 105px;
   }
-  
+
   .report-view-total-users {
     order: 3;
     margin-top: 0;
@@ -203,25 +239,25 @@
     font-size: 1.1rem;
     width: auto;
   }
-  
+
   .report-view-children-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 15px;
   }
-  
+
   .report-view-child-card {
     padding: 15px;
     height: 100px;
   }
-  
+
   .report-view-child-name {
     font-size: 1rem;
   }
-  
+
   .report-view-child-count {
     font-size: 1.5rem;
   }
-  
+
   .report-view-level-indicator {
     font-size: 1.1rem;
     padding: 12px;
@@ -233,67 +269,83 @@
   .report-view-page {
     padding: 20px;
   }
-  
+
   .report-view-container {
     max-width: 1200px;
   }
-  
+
   .report-view-top-bar {
-    padding: 20px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    padding: 20px 20px 10px 20px;
   }
-  
+
+  .report-view-header-actions {
+    width: 100%;
+    max-width: 100%;
+    padding-bottom: 0;
+  }
+
+  .report-view-header-left,
+  .report-view-header-right {
+    flex: 0 0 auto;
+  }
+
   .report-view-top-bar h2 {
     font-size: 1.5rem;
-    order: unset;
+    margin: 0 15px;
+    flex-grow: 1;
+    text-align: center;
   }
-  
-  .report-view-back-button {
+
+  .report-view-back-button,
+  .report-view-write-insight-button {
     padding: 10px 20px;
     font-size: 1rem;
-    min-width: 100px;
-    order: unset;
-    align-self: unset;
+    min-width: 120px;
   }
-  
+
   .report-view-total-users {
     padding: 10px 20px;
     font-size: 1.2rem;
     min-width: 150px;
     width: auto;
     margin-top: 0;
-    order: unset;
   }
-  
+
   .report-view-level-indicator {
     padding: 15px;
     font-size: 1.1rem;
   }
-  
+
   .report-view-children-grid {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 20px;
     padding: 30px;
   }
-  
+
   .report-view-child-card {
     padding: 20px;
     height: 120px;
   }
-  
+
   .report-view-child-name {
     font-size: 1.1rem;
   }
-  
+
   .report-view-child-count {
     font-size: 1.8rem;
   }
-  
+
   .report-view-child-card.active.clickable:hover {
     transform: translateY(-5px);
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
   }
-  
-  .report-view-loading, .report-view-error {
+
+  .report-view-loading,
+  .report-view-error {
     padding: 50px 20px;
     font-size: 1.5rem;
   }

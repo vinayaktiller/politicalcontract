@@ -21,16 +21,13 @@ class JourneyBlog(models.Model):
 
 class MicroJourneyBlog(JourneyBlog, MicroContent):
     class Meta:
-        db_table = 'blog"."micro_journey_blog'
-
+        db_table = 'blog"."journey_blog_micro'  # Changed
 
 class ShortEssayJourneyBlog(JourneyBlog, ShortEssayContent):
     class Meta:
-        db_table = 'blog"."short_essay_journey_blog'
-
+        db_table = 'blog"."journey_blog_short_essay'  # Changed
 
 class ArticleJourneyBlog(JourneyBlog, ArticleContent):
     class Meta:
-        db_table = 'blog"."article_journey_blog'
-
+        db_table = 'blog"."journey_blog_article'  # Changed
 

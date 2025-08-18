@@ -7,10 +7,10 @@ from ..models import (
 
 class CountryActivityReportSerializer(serializers.Serializer):
     report_type = serializers.SerializerMethodField()
-    id = serializers.IntegerField()
+    id = serializers.UUIDField()  # Changed to UUIDField
     formatted_date = serializers.SerializerMethodField()
     active_users = serializers.IntegerField()
-    country_id = serializers.IntegerField(source='country.id')
+    country_id = serializers.UUIDField(source='country.id')  # Changed to UUIDField
     country_name = serializers.CharField(source='country.name')
 
     def get_report_type(self, obj):

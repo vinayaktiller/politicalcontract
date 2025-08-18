@@ -1,0 +1,254 @@
+/* ReportInsightFields.css */
+
+/* --- Theme variables --- */
+:root {
+  --card-bg: #ffffff;
+  --accent-gradient: linear-gradient(180deg, #06b6d4, #3b82f6);
+  --muted: #64748b;
+  --text-dark: #0f172a;
+}
+
+/* Card wrapper */
+.report-insight-composer.card {
+  max-width: 800px;
+  margin: 18px auto;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(19,24,31,0.06);
+  background: var(--card-bg);
+  padding: 0;
+  overflow: visible;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  color: var(--text-dark);
+}
+
+/* HEADER - compact grid: 2 columns + centered users row */
+.report-insight-header {
+  padding: 8px 14px 6px 20px; /* keep compact vertical space */
+  border-bottom: 1px solid #eef0f2;
+  background: linear-gradient(180deg, #fafafa, #fff);
+  position: relative;
+}
+
+/* left decorative accent (thin) */
+.report-insight-header::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  border-radius: 8px;
+  background: var(--accent-gradient);
+}
+
+/* grid layout: two columns for top row; center users spans both columns */
+.header-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+/* LEFT column: date + secondary */
+.header-left {
+  padding-left: 4px; /* align nicely with accent */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* RIGHT column: level + country */
+.header-right {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+/* Date slightly larger for readability */
+.date-line {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1;
+}
+
+/* Secondary slightly larger than before */
+.second-line {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 0.95;
+}
+
+/* Right top/bottom (kept small / compact) */
+.right-top {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dark);
+  line-height: 1;
+}
+
+.right-bottom {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.95;
+}
+
+/* Centered users row: spans both columns, slightly larger per your request */
+.header-center-users {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;       /* <-- increased to 15px as requested */
+  color: var(--muted);
+  font-weight: 700;
+  background: transparent;
+  padding: 2px 6px;
+  border-radius: 9999px;
+}
+
+/* people icon bumped a bit to match text size */
+.people-icon {
+  width: 18px;           /* slightly larger */
+  height: 18px;
+  display: inline-block;
+  vertical-align: middle;
+  color: currentColor;
+  opacity: 0.9;
+}
+
+/* new users text */
+.new-users-text {
+  font-size: 15px;       /* <-- ensure new users text is 15px */
+  line-height: 1;
+}
+
+/* BODY */
+.report-insight-body {
+  padding: 12px 18px;
+  background: #fff;
+}
+
+.textarea-avatar-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.avatar-sm {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  box-shadow: 0 2px 6px rgba(16,24,40,0.06);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* textarea styling */
+.report-insight-textarea {
+  width: 100%;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  background: #fbfdff;
+  outline: none;
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+  color: #0f172a;
+  padding: 10px 12px;
+  overflow: hidden;
+  resize: none;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding-left: 64px; /* leave space for avatar */
+}
+
+.report-insight-textarea:focus {
+  box-shadow: 0 6px 18px rgba(14,165,233,0.12);
+  border-color: rgba(14,165,233,0.25);
+}
+
+/* FOOTER */
+.report-insight-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+  border-top: 1px solid #eef0f2;
+  gap: 12px;
+}
+
+.char-counter {
+  font-size: 13px;
+  color: #6b7280;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* submit button */
+.submit-btn {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: #0f172a;
+  color: white;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #374151;
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.submit-btn.submitting {
+  opacity: 0.9;
+  pointer-events: none;
+  background: linear-gradient(90deg, #111827, #374151);
+}
+
+/* spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Responsive: keep two columns on small screens but reduce paddings */
+@media (max-width: 520px) {
+  .report-insight-composer.card { margin: 10px; }
+  .report-insight-header { padding: 6px 12px 6px 16px; }
+  .date-line { font-size: 14px; }
+  .second-line, .right-bottom { font-size: 12.5px; }
+  .header-grid { gap: 6px; }
+  .avatar-sm { width: 36px; height: 36px; top: 10px; left: 10px; }
+  .report-insight-textarea { padding-left: 58px; min-height: 52px; }
+  .header-center-users { font-size: 14.5px; } /* slightly smaller on tiny screens */
+  .people-icon { width: 16px; height: 16px; }
+}

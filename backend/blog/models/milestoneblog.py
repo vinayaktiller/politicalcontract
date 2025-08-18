@@ -4,12 +4,11 @@ from .journeyblog import JourneyBlog
 
 import uuid
 
-
 class MilestoneJourneyBlog(JourneyBlog):
     """
     Abstract base class for Journey Blogs that are tied to a Milestone.
     """
-    milestone_id = models.UUIDField(null=True, blank=True)
+    milestone_id = models.UUIDField()
     class Meta:
         abstract = True
 
@@ -29,20 +28,14 @@ class MilestoneJourneyBlog(JourneyBlog):
         
         return milestone.target_user == milestone.user_id
 
-
 class MicroMilestoneJourneyBlog(MilestoneJourneyBlog, MicroContent):
-    """Micro journey blog tied to a milestone."""
     class Meta:
-        db_table = 'blog"."micro_milestone_journey_blog'
-
+        db_table = 'blog"."milestone_journey_blog_micro'  # Changed
 
 class ShortEssayMilestoneJourneyBlog(MilestoneJourneyBlog, ShortEssayContent):
-    """Short essay journey blog tied to a milestone."""
     class Meta:
-        db_table = 'blog"."short_essay_milestone_journey_blog'
-
+        db_table = 'blog"."milestone_journey_blog_short_essay'  # Changed
 
 class ArticleMilestoneJourneyBlog(MilestoneJourneyBlog, ArticleContent):
-    """Article journey blog tied to a milestone."""
     class Meta:
-        db_table = 'blog"."article_milestone_journey_blog'
+        db_table = 'blog"."milestone_journey_blog_article'  # Changed

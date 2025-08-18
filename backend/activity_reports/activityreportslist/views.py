@@ -32,16 +32,23 @@ class CountryActivityReportListView(APIView):
         reports = []
         
         if report_type in ['all', 'daily']:
-            for report in DailyCountryActivityReport.objects.all():
-                reports.append((get_activity_report_end_date(report), report))
+            # Use .all() with iterator for efficiency
+            reports.extend(
+                (get_activity_report_end_date(report), report)
+                for report in DailyCountryActivityReport.objects.all()
+            )
         
         if report_type in ['all', 'weekly']:
-            for report in WeeklyCountryActivityReport.objects.all():
-                reports.append((get_activity_report_end_date(report), report))
+            reports.extend(
+                (get_activity_report_end_date(report), report)
+                for report in WeeklyCountryActivityReport.objects.all()
+            )
         
         if report_type in ['all', 'monthly']:
-            for report in MonthlyCountryActivityReport.objects.all():
-                reports.append((get_activity_report_end_date(report), report))
+            reports.extend(
+                (get_activity_report_end_date(report), report)
+                for report in MonthlyCountryActivityReport.objects.all()
+            )
         
         # Sort by end date (most recent first)
         reports.sort(key=lambda x: x[0], reverse=True)
@@ -62,12 +69,19 @@ class LatestCountryActivityReportsView(APIView):
         # Get all reports with their end dates
         all_reports = []
         
-        for report in DailyCountryActivityReport.objects.all():
-            all_reports.append((get_activity_report_end_date(report), report))
-        for report in WeeklyCountryActivityReport.objects.all():
-            all_reports.append((get_activity_report_end_date(report), report))
-        for report in MonthlyCountryActivityReport.objects.all():
-            all_reports.append((get_activity_report_end_date(report), report))
+        # Use list comprehensions for efficiency
+        all_reports.extend(
+            (get_activity_report_end_date(report), report)
+            for report in DailyCountryActivityReport.objects.all()
+        )
+        all_reports.extend(
+            (get_activity_report_end_date(report), report)
+            for report in WeeklyCountryActivityReport.objects.all()
+        )
+        all_reports.extend(
+            (get_activity_report_end_date(report), report)
+            for report in MonthlyCountryActivityReport.objects.all()
+        )
         
         # Sort by end date (most recent first)
         all_reports.sort(key=lambda x: x[0], reverse=True)

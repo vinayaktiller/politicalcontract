@@ -12,6 +12,7 @@ from ..models import (
 )
 from .serializers import *
 from geographies.models.geos import Country
+import uuid
 
 class ActivityReportDetailView(APIView):
     MODEL_MAPPING = {
@@ -83,8 +84,12 @@ class ActivityReportDetailView(APIView):
     
     def get_report_by_id(self, report_type, level, report_id):
         model = self.MODEL_MAPPING[report_type][level]
-        return model.objects.get(id=report_id)
-    
+        try:
+            # Try to parse as UUID
+            return model.objects.get(id=uuid.UUID(report_id))
+        except (ValueError, TypeError):
+            # Handle invalid UUID format
+            raise NotFound("Invalid report ID format")
     def get_report_by_params(self, report_type, level, params):
         model = self.MODEL_MAPPING[report_type][level]
         filters = {}
