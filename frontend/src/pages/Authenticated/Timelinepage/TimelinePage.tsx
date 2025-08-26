@@ -35,7 +35,7 @@ export default function TimelinePage() {
   const [isTimelineLoading, setIsTimelineLoading] = useState(false);
 
   const currentTimelineNumber = state?.currenttimelinenumber ?? 1;
-  const currentLineOwner = state?.currentlineowner ?? 43120704200001;
+  const currentLineOwner = state?.currentlineowner ?? 0;
 
   const timelines = useSelector((s: RootState) => s.timeline.timelines);
   const timelineData = timelines[currentTimelineNumber] || {

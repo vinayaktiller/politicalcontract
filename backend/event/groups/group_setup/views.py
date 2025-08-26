@@ -11,12 +11,15 @@ from users.models.petitioners import Petitioner
 from .serializers import GroupSerializer,UserTreeSerializer
 from users.models.usertree import UserTree
 from django.db.models import Prefetch
+from users.login.authentication import CookieJWTAuthentication 
 import logging
 logger = logging.getLogger(__name__)
 
 class GroupDetailView(APIView):
-    authentication_classes = [JWTAuthentication]
+
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
+
 
     def get(self, request, group_id):
         try:
@@ -43,7 +46,7 @@ class GroupDetailView(APIView):
 
 class VerifySpeakerView(APIView):
     """Verifies if a user ID should be considered for addition (not already in speakers or pending speakers)."""
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, group_id):
@@ -78,7 +81,7 @@ class VerifySpeakerView(APIView):
 
 class AddPendingSpeakerView(APIView):
     """Adds a user to the pending speakers list upon frontend confirmation."""
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request, group_id):

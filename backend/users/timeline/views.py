@@ -9,6 +9,8 @@ from collections import defaultdict
 from ..models.usertree import UserTree
 from ..models.Circle import Circle
 from .serializers import ProfileSerializer, ExtendedProfileSerializer
+from users.login.authentication import CookieJWTAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 
 class CustomPagination(PageNumberPagination):
@@ -18,9 +20,14 @@ class CustomPagination(PageNumberPagination):
 
 
 class TimelineHeadView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     pagination_class = CustomPagination
 
     def get(self, request, user_id):
+        if user_id ==0:
+            user_id = request.user.id
         try:
             user = get_object_or_404(UserTree, id=user_id)
 
@@ -97,6 +104,8 @@ class TimelineHeadView(APIView):
 
 
 class TimelineTailView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def get(self, request, user_id):
         try:
             profile = get_object_or_404(UserTree, id=user_id)

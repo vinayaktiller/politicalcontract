@@ -50,7 +50,9 @@ const WaitingPage: React.FC = () => {
 
           // Store generated_user_id when verification is successful
           if (data.type === "verification_success" && data.generated_user_id) {
-            localStorage.setItem("user_id", data.generated_user_id.toString());
+            localStorage.setItem("user_id", data.generated_user_id);
+            localStorage.setItem("name", data.name);
+            localStorage.setItem("profile_pic", data.profile_pic || "");
             console.log("🔹 Stored generated_user_id in local storage:", data.generated_user_id);
             dispatch(login({ user_email })); // Dispatch login action with user_email
             navigate("/heartbeat");

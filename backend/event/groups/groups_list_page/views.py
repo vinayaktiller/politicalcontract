@@ -2,32 +2,22 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from ...models.groups import Group
 from ...models.UserGroupParticipation import UserGroupParticipation
 from .serializers import UserGroupSerializer
+from users.login.authentication import CookieJWTAuthentication  # Import your authentication class
+
 
 class UserGroupsAPI(APIView):
     """
-    API to get all groups related to a user
-    Example: /api/user-groups/?user_id=123
+    API to get all groups related to the authenticated user
     """
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
     
     def get(self, request):
         user_id = request.user.id
-        
-        if not user_id:
-            return Response(
-                {"error": "user_id parameter is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return Response(
-                {"error": "user_id must be a valid integer"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
         
         # 1. Find groups where user is the founder
         founder_groups = Group.objects.filter(founder=user_id)

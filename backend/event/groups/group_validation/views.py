@@ -8,6 +8,8 @@ from ...models import Group
 from .serializer import GroupSerializer  # Import your GroupSerializer
 import logging
 from prometheus_client import Counter
+from users.login.authentication import CookieJWTAuthentication  # Import your authentication class
+from rest_framework.permissions import IsAuthenticated
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +28,8 @@ email_block_counter = Counter(
 )
 
 class GroupValidationAPIView(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [AllowAny]
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         group_id = request.data.get("group_id")

@@ -20,15 +20,15 @@ const AddressDetails: React.FC<AddressDetailsProps> = ({
     <div className="profile-address">
       Address 
       <br />
-      Country ID: {country}
+      Country : {country}
       <br />
-      State ID: {state}
+      State : {state}
       <br />
-      District ID: {district}
+      District : {district}
       <br />
-      Subdistrict ID: {subdistrict} 
+      Subdistrict : {subdistrict} 
       <br />
-      Village ID: {village}
+      Village : {village}
     </div>
   );
 };

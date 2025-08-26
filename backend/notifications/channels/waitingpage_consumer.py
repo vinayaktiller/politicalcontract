@@ -252,6 +252,8 @@
 #             notification.move_to_archive()
 #         except ObjectDoesNotExist:
 #             pass
+
+
 import logging
 import re
 import json
@@ -262,8 +264,11 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from pendingusers.models.notifications import InitiationNotification
 from pendingusers.services.pending_user_service import verify_and_transfer_user
+from users.models import UserTree
+
 
 logger = logging.getLogger(__name__)
+
 
 class WaitingpageConsumer(AsyncWebsocketConsumer):
     """
@@ -281,7 +286,6 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
-        # Send the latest notification (if available)
         notification = await self.get_latest_notification(self.user_email)
         if notification:
             await self.send(text_data=json.dumps({
@@ -299,15 +303,6 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
         logger.info(f"User disconnected: {self.user_email}")
 
     async def receive(self, text_data):
-        """
-        Handles messages from the WebSocket client.
-        Expects JSON like:
-        {
-          "type": "accept_verification" | "accept_rejection",
-          "user_email": "...",
-          "notificationId": 123
-        }
-        """
         try:
             data = json.loads(text_data)
             message_type = data.get("type")
@@ -324,10 +319,16 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
             if message_type == "accept_verification":
                 petitioner = await self.verify_user(notification_id)
                 if petitioner:
+                    user_tree = await self.get_user_tree(petitioner.id)
+                    name = user_tree.name
+                    profile_pic = user_tree.profilepic.url if user_tree.profilepic else None
+
                     await self.send(text_data=json.dumps({
                         "type": "verification_success",
                         "user_email": user_email,
-                        "generated_user_id": petitioner.id
+                        "generated_user_id": petitioner.id,
+                        "name": name,
+                        "profile_pic": profile_pic
                     }))
                 else:
                     logger.error(f"Verification failed for notification {notification_id}")
@@ -343,9 +344,6 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
             logger.error("Failed to decode JSON message.")
 
     async def waitingpage_message(self, event):
-        """
-        Handles messages sent to the group via channel_layer.group_send().
-        """
         await self.send(text_data=json.dumps({
             "user_email": self.user_email,
             "status": event.get("status", "unknown"),
@@ -373,10 +371,16 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
                 .select_related('applicant')
                 .get(id=notification_id)
             )
-            return verify_and_transfer_user(notification.applicant)
+            # mark_as_completed deletes notification & applicant, returns petitioner
+            petitioner = notification.mark_as_completed()
+            return petitioner
         except Exception as e:
             logger.error(f"Error verifying user for notification {notification_id}: {str(e)}")
             return None
+
+    @database_sync_to_async
+    def get_user_tree(self, petitioner_id):
+        return UserTree.objects.get(id=petitioner_id)
 
     @database_sync_to_async
     def move_notification_to_archive(self, notification_id):

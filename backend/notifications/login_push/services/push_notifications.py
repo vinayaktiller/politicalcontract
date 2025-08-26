@@ -48,7 +48,7 @@ def handle_user_notifications_on_login(user):
 def _process_initiation_notifications(user):
     """Process InitiationNotifications where user is the initiator"""
     notifications = InitiationNotification.objects.filter(
-        initiator=user,
+        initiator_id=user.id,
         reacted=False
     )
     

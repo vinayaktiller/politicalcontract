@@ -23,7 +23,7 @@ const MyGroupsPage: React.FC = () => {
       try {
         setLoading(true);
         const response = await api.get<{ groups: Group[] }>('/api/event/user-groups/', {
-          params: { user_id: 123 } // Replace with actual user ID
+          // params: { user_id: 11021801300001 } // Replace with actual user ID
         });
         setGroups(response.data.groups);
         setError(null);

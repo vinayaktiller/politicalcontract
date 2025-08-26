@@ -7,6 +7,7 @@ from .chatroom.views import (
     MarkAsReadView
 )
 from .contact_list.views import contact_list, start_conversation
+# from contact_list.views import ContactListAPIView, StartConversationAPIView
 
 urlpatterns = [
     # Chat list endpoints
@@ -29,4 +30,7 @@ urlpatterns = [
          name='chat-mark-read'),
     path('contacts/', contact_list, name='contact_list'),
     path('conversation/start/<int:contact_id>/', start_conversation, name='start_conversation'),
-]
+     # path('contacts/', ContactListAPIView.as_view(), name='contact-list'),
+     # path('start-conversation/<int:contact_id>/', StartConversationAPIView.as_view(), name='start-conversation'),
+
+ ]

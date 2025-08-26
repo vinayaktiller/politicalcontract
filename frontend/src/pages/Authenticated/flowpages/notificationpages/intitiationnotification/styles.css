@@ -40,7 +40,7 @@
   width: 60%;
 }
 
-.profile-content {
+.in-profile-content {
   display: flex;
   z-index: 10;
   flex-direction: column;
@@ -48,22 +48,23 @@
   margin-top: 0;
   font-weight: bold;
   color: black;
+  
 }
 
-.profile-image {
+.in-profile-image {
   position: absolute; /* Add this to position the image absolutely within the profile card */
   top: -52px; /* Adjust this to position the image */
   left: 50%;
   transform: translateX(-50%); /* Center the image horizontally */
   object-fit: cover;
-  width: 104px;  /* Adjust as needed */
-  height: 104px; /* Adjust as needed */
+  width: 90px;  /* Adjust as needed */
+  height: 90px; /* Adjust as needed */
   border-radius: 50%; /* Perfectly round shape */
   border: 3px solid #276A73; /* Stroke with 3px weight and 276A73 color */
 }
 
 .profile-name {
-  margin-top: 80px; /* Adjust this to account for the space taken by the profile image */
+  margin-top: 60px; /* Adjust this to account for the space taken by the profile image */
   font-size: 24px;
   letter-spacing: 0.05em;
 }

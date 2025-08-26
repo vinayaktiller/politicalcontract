@@ -26,11 +26,11 @@ const GroupSpeakerInvitation: React.FC = () => {
 
   // Find the specific notification with type safety
   const notification = groupSpeakerNotifications.find(
-    n => n.notification_number === notificationNumber
+    n => n.id === Number(notificationNumber)
   );
 
   const currentIndex = groupSpeakerNotifications.findIndex(
-    n => n.notification_number === notificationNumber
+    n => n.id === Number(notificationNumber)
   );
 
   useEffect(() => {
@@ -48,7 +48,7 @@ const GroupSpeakerInvitation: React.FC = () => {
   const handleNavigation = (direction: 'prev' | 'next') => {
     const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
     if (newIndex >= 0 && newIndex < groupSpeakerNotifications.length) {
-      navigate(`/GroupSpeakerInvitation/${groupSpeakerNotifications[newIndex].notification_number}`);
+      navigate(`/GroupSpeakerInvitation/${groupSpeakerNotifications[newIndex].id}`);
     }
   };
 

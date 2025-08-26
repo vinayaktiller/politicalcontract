@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import './HeartbeatGraph.css';
-import { format, parseISO, subDays } from 'date-fns';
+import { format, parseISO, subDays, eachDayOfInterval } from 'date-fns';
 
 interface ActivityHistoryItem {
   date: string;
@@ -28,11 +28,11 @@ const HeartbeatGraph: React.FC<HeartbeatGraphProps> = ({ activityHistory }) => {
         date: dateStr,
         active: activity ? activity.active : false
       };
-    }).reverse();
+    });
   };
 
   const fullHistory = generateFullHistory();
-  const dayWidth = 30; // Fixed width per day for mobile
+  const dayWidth = 40; // Increased width per day for better date visibility
   const totalWidth = fullHistory.length * dayWidth;
 
   // Realistic ECG waveform generator
@@ -63,7 +63,7 @@ const HeartbeatGraph: React.FC<HeartbeatGraphProps> = ({ activityHistory }) => {
     return path.join(' ');
   };
 
-  // Scroll to end on mount
+  // Scroll to end (most recent date) on mount
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
@@ -99,47 +99,34 @@ const HeartbeatGraph: React.FC<HeartbeatGraphProps> = ({ activityHistory }) => {
             />
           ))}
           
-          {/* Date Labels */}
+          {/* Date Labels - showing all dates but with rotation for better fit */}
           {fullHistory.map((item, index) => (
-            (index % 7 === 0 || index === fullHistory.length - 1) && (
-              <g key={`label-${index}`}>
-                <text
-                  x={index * dayWidth + dayWidth / 2}
-                  y="105"
-                  fontSize="10"
-                  textAnchor="middle"
-                  fill="#7f8c8d"
-                  className="date-label"
-                >
-                  {format(parseISO(item.date), 'MMM dd')}
-                </text>
-                <line
-                  x1={index * dayWidth + dayWidth / 2}
-                  y1="80"
-                  x2={index * dayWidth + dayWidth / 2}
-                  y2="100"
-                  stroke="#e9ecef"
-                  strokeWidth="1"
-                />
-              </g>
-            )
+            <g key={`label-${index}`}>
+              <text
+                x={index * dayWidth + dayWidth / 2}
+                y="105"
+                fontSize="10"
+                textAnchor="middle"
+                fill="#7f8c8d"
+                className="date-label"
+                transform={`rotate(45 ${index * dayWidth + dayWidth / 2} 105)`}
+              >
+                {format(parseISO(item.date), 'MMM dd')}
+              </text>
+              <line
+                x1={index * dayWidth + dayWidth / 2}
+                y1="80"
+                x2={index * dayWidth + dayWidth / 2}
+                y2="100"
+                stroke="#e9ecef"
+                strokeWidth="1"
+              />
+            </g>
           ))}
         </svg>
       </div>
     </div>
   );
 };
-
-function eachDayOfInterval({ start, end }: { start: Date; end: Date }): Date[] {
-  const days: Date[] = [];
-  const current = new Date(start);
-  
-  while (current <= end) {
-    days.push(new Date(current));
-    current.setDate(current.getDate() + 1);
-  }
-  
-  return days;
-}
 
 export default HeartbeatGraph;

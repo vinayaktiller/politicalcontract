@@ -21,7 +21,8 @@ const HeartbeatPage: React.FC = () => {
     status,
     error,
     activityHistory,
-    historyStatus
+    historyStatus,
+    historyError,
   } = heartbeatState;
   
   const userId = 11021801300001;
@@ -38,11 +39,13 @@ const HeartbeatPage: React.FC = () => {
     }
   }, [dispatch, status, historyStatus, userId]);
 
+
   const handleMarkActive = () => {
     if (heartState !== 'active' && heartState !== 'hyperactive') {
       dispatch(markUserActive(userId));
     }
   };
+
 
   const statusMessages = {
     inactive: "Your support is missed. Please contribute today!",
@@ -51,6 +54,7 @@ const HeartbeatPage: React.FC = () => {
     hyperactive: "Amazing! Your daily support is fueling the movement!"
   };
 
+
   const getStreakInfo = () => {
     if (!lastActiveDate) return "No recent support";
     if (streak === 0) return "Start your support streak today!";
@@ -58,6 +62,7 @@ const HeartbeatPage: React.FC = () => {
     if (streak >= 5) return `Current streak: ${streak} days! Keep going!`;
     return `Current streak: ${streak} days`;
   };
+
 
   const getHeartEmoji = () => {
     switch(heartState) {
@@ -69,9 +74,11 @@ const HeartbeatPage: React.FC = () => {
     }
   };
 
+
   const isLoading = status === 'loading';
   const showFireAnimation = heartState === 'hyperactive';
   const isHeartClickable = heartState !== 'active' && heartState !== 'hyperactive';
+
 
   return (
     <div className="heartbeat-page">
@@ -118,20 +125,14 @@ const HeartbeatPage: React.FC = () => {
               <p>Checking your status...</p>
             </div>
           ) : error ? (
-            <p className="heartbeat-error">{error}</p>
+            <p className="heartbeat-error">{typeof error === 'string' ? error : JSON.stringify(error)}</p>
           ) : (
             <>
-              <p className="heartbeat-message">
-                {statusMessages[heartState]}
-              </p>
+              <p className="heartbeat-message">{statusMessages[heartState]}</p>
               <p className="heartbeat-streak">{getStreakInfo()}</p>
             </>
           )}
         </div>
-        
-        {historyStatus === 'succeeded' && activityHistory && activityHistory.length > 0 && (
-          <HeartbeatGraph activityHistory={activityHistory} />
-        )}
         
         {historyStatus === 'loading' && (
           <div className="history-loading">
@@ -139,6 +140,21 @@ const HeartbeatPage: React.FC = () => {
             <p>Loading activity history...</p>
           </div>
         )}
+        
+        {historyStatus === 'succeeded' && (
+          <>
+            {activityHistory && activityHistory.length > 0 ? (
+              <HeartbeatGraph activityHistory={activityHistory} />
+            ) : (
+              <p className="no-history-message">No activity history available yet.</p>
+            )}
+          </>
+        )}
+
+        {historyStatus === 'failed' && (
+          <p className="heartbeat-error">{typeof historyError === 'string' ? historyError : JSON.stringify(historyError)}</p>
+        )}
+        
       </div>
       
       <div className="heartbeat-footer">

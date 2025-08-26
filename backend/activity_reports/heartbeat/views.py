@@ -8,13 +8,17 @@ from ..models import UserMonthlyActivity, DailyActivitySummary
 from users.models import Petitioner
 from .serializers import UserStreakStatusSerializer, MarkActiveSerializer, ActivityHistorySerializer
 from django.db import transaction
-
+from users.login.authentication import CookieJWTAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 class CheckActivityView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
     MAX_STREAK_DAYS = 10  # Limit for streak calculation
+    
 
     def get(self, request):
-        user_id = request.query_params.get('user_id')
+        user_id = request.user.id
         date_str = request.query_params.get('date')
 
         if not user_id:
@@ -87,10 +91,12 @@ class CheckActivityView(APIView):
 
 
 class ActivityHistoryView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
     HISTORY_DAYS = 30  # Last 30 days of activity
 
     def get(self, request):
-        user_id = request.query_params.get('user_id')
+        user_id = request.user.id
         if not user_id:
             return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -142,12 +148,14 @@ class ActivityHistoryView(APIView):
     
 
 class MarkActiveView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         serializer = MarkActiveSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        user_id = serializer.validated_data['user_id']
+        user_id = request.user.id
         date_obj = serializer.validated_data['date']
         
         try:

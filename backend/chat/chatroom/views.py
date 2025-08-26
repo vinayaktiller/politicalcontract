@@ -7,12 +7,14 @@ from django.utils import timezone
 from ..models import Conversation, Message
 from users.models import UserTree
 from .serializers import MessageSerializer, ConversationDetailSerializer
+from users.login.authentication import CookieJWTAuthentication
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 class ConversationDetailView(generics.RetrieveAPIView):
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = ConversationDetailSerializer
     lookup_field = 'id'
@@ -38,6 +40,7 @@ class ConversationDetailView(generics.RetrieveAPIView):
 
 
 class MessageListView(generics.ListAPIView):
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = MessageSerializer
     
@@ -68,6 +71,7 @@ class MessageListView(generics.ListAPIView):
 
 
 class SendMessageView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def post(self, request, conversation_id):
@@ -130,6 +134,7 @@ class SendMessageView(APIView):
     
 
 class MarkAsReadView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def post(self, request, conversation_id):

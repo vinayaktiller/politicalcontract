@@ -5,9 +5,12 @@ from django.db.models import Prefetch, Q
 from ..models import Conversation, Message
 from users.models import UserTree
 from .serializers import ConversationListSerializer
+from users.login.authentication import CookieJWTAuthentication
+
 
 
 class ConversationListView(generics.ListAPIView):
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = ConversationListSerializer
 

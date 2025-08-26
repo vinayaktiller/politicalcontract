@@ -12,7 +12,7 @@ const ProfileImage: React.FC<ProfileImageProps> = ({ imageUrl, name }) => {
       loading="lazy"
       src={imageUrl || '/default-profile.png'}
       alt={`Profile of ${name}`}
-      className="profile-image"
+      className="in-profile-image"
       onError={(e) => {
         (e.target as HTMLImageElement).src = '/default-profile.png';
       }}

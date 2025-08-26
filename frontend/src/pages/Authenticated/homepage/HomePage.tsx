@@ -16,6 +16,12 @@ const HomePage: React.FC = () => {
       <button onClick={() => navigate('/blog-creator')} className="navigate-btn">
         blog-creator  
       </button>
+      <button onClick={() => navigate('/questions')} className="navigate-btn">
+        questions
+      </button>
+      <button onClick={() => navigate('/claim-contribution')} className="navigate-btn">
+        claim-contribution
+      </button>
     </div>
   );
 };

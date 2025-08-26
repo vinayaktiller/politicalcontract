@@ -4,10 +4,13 @@ from rest_framework.response import Response
 from django.db.models import Q
 from users.models import Circle, UserTree
 from django.contrib.auth import get_user_model
+from users.login.authentication import CookieJWTAuthentication
+
 
 User = get_user_model()
 
 class CircleContactsView(generics.GenericAPIView):
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self, request):

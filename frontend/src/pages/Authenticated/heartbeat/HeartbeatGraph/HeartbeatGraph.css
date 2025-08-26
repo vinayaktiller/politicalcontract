@@ -80,6 +80,10 @@
   .ecg-graph {
     min-width: 360px; /* Further reduced for small mobile */
   }
+  
+  .date-label {
+    font-size: 8px; /* Smaller font for mobile */
+  }
 }
 
 /* Scrollbar styling */

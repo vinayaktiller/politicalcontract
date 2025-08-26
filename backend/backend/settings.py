@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'channels',
     # 'django_prometheus',
-    'drf_spectacular', 
+    'drf_spectacular',
     'geographies',
     'users',
     'rest_framework',
@@ -113,19 +113,96 @@ DATABASES = {
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 ASGI_APPLICATION = 'backend.asgi.application'
-
-
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'users.authentication.CookieJWTAuthentication',  # Custom cookie auth
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # Fallback to header
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
     )
 }
+
+# REST_FRAMEWORK = {
+#     'DEFAULT_PERMISSION_CLASSES': [
+#         'rest_framework.permissions.AllowAny',
+#     ],
+#     'DEFAULT_AUTHENTICATION_CLASSES': (
+#         'rest_framework_simplejwt.authentication.JWTAuthentication',
+#     ),
+#     'DEFAULT_RENDERER_CLASSES': (
+#         'rest_framework.renderers.JSONRenderer',
+#     )
+# }
+
+
+
+# SIMPLE_JWT = {
+#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+#     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+#     'ROTATE_REFRESH_TOKENS': False,
+#     'BLACKLIST_AFTER_ROTATION': True,
+#     'AUTH_COOKIE': 'access_token',
+#     'AUTH_COOKIE_SECURE': False,  # Set to False for HTTP in development
+#     'AUTH_COOKIE_HTTP_ONLY': True,
+#     'AUTH_COOKIE_PATH': '/',
+#     'AUTH_COOKIE_SAMESITE': 'Lax',  # Keep as Lax for now
+#     'ALGORITHM': 'HS256',
+#      'SIGNING_KEY': '123445789',
+#     'VERIFYING_KEY': None,
+#     'AUDIENCE': None,
+#     'ISSUER': None,
+#     'USER_ID_FIELD': 'id',
+#     'USER_ID_CLAIM': 'user_id',
+#     'AUTH_HEADER_TYPES': ('Bearer',),
+#     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+#     'TOKEN_TYPE_CLAIM': 'token_type',
+# }
+
+# SIMPLE_JWT = {
+#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+#     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+#     'ROTATE_REFRESH_TOKENS': False,
+#     'BLACKLIST_AFTER_ROTATION': True,
+#     'AUTH_COOKIE': 'access_token',  # Cookie name
+#     'AUTH_COOKIE_SECURE': not DEBUG,
+#     'AUTH_COOKIE_HTTP_ONLY': True,
+#     'AUTH_COOKIE_PATH': '/',
+#     'AUTH_COOKIE_SAMESITE':'Lax' if DEBUG else 'None',
+#     'ALGORITHM': 'HS256',
+#     'SIGNING_KEY': SECRET_KEY,
+#     'VERIFYING_KEY': None,
+#     'AUDIENCE': None,
+#     'ISSUER': None,
+#     'USER_ID_FIELD': 'id',
+#     'USER_ID_CLAIM': 'user_id',
+#     'AUTH_HEADER_TYPES': ('Bearer',),
+#     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+#     'TOKEN_TYPE_CLAIM': 'token_type',
+
+# }
+
+# SIMPLE_JWT = {
+#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+#     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+#     'ROTATE_REFRESH_TOKENS': False,
+#     'BLACKLIST_AFTER_ROTATION': True,
+#     'ALGORITHM': 'HS256',
+#     'SIGNING_KEY': '123445789',
+#     'VERIFYING_KEY': None,
+#     'AUDIENCE': None,
+#     'ISSUER': None,
+#     'USER_ID_FIELD': 'id',
+#     'USER_ID_CLAIM': 'user_id',
+#     'AUTH_HEADER_TYPES': ('Bearer',),
+#     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+#     'TOKEN_TYPE_CLAIM': 'token_type',
+# }
+
+
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
@@ -142,6 +219,13 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
+    # New cookie settings for JWT in cookies:
+    'AUTH_COOKIE': 'access_token',                  # Name of the cookie where JWT is stored
+    'AUTH_COOKIE_SECURE': False,                     # Use True if HTTPS
+    'AUTH_COOKIE_HTTP_ONLY': True,                   # Recommended for security
+    'AUTH_COOKIE_PATH': '/',                          # Path scope of the cookie
+    'AUTH_COOKIE_SAMESITE': 'Lax',                    # Depends on your frontend/backend setup
+    # 'AUTH_COOKIE_DOMAIN': 'localhost',                # Add this line
 }
 
 
@@ -204,11 +288,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOWED_ORIGINS = [os.getenv('Frontendurl'),  "https://45e8-2405-201-c057-c039-b159-12fc-9adc-48c0.ngrok-free.app",]
+CORS_ALLOWED_ORIGINS = [os.getenv('Frontendurl'),  "https://45e8-2405-201-c057-c039-b159-12fc-9adc-48c0.ngrok-free.app", "http://127.0.0.1:3000",]
 
 CORS_ALLOW_CREDENTIALS = True
 
-CSRF_TRUSTED_ORIGINS = [os.getenv('Frontendurl'), "https://45e8-2405-201-c057-c039-b159-12fc-9adc-48c0.ngrok-free.app",]
+CSRF_TRUSTED_ORIGINS = [os.getenv('Frontendurl'), "https://45e8-2405-201-c057-c039-b159-12fc-9adc-48c0.ngrok-free.app","http://127.0.0.1:3000",]
 
 CSRF_COOKIE_NAME = "csrftoken"
 LOGGING = {
@@ -296,28 +380,28 @@ LOGGING = {
     }
 }
 
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': '123445789',
-    'VERIFYING_KEY': None,
-    'AUDIENCE': None,
-    'ISSUER': None,
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'user_id',
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-    'TOKEN_TYPE_CLAIM': 'token_type',
-}
+# SIMPLE_JWT = {
+#     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+#     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+#     'ROTATE_REFRESH_TOKENS': False,
+#     'BLACKLIST_AFTER_ROTATION': True,
+#     'ALGORITHM': 'HS256',
+#     'SIGNING_KEY': '123445789',
+#     'VERIFYING_KEY': None,
+#     'AUDIENCE': None,
+#     'ISSUER': None,
+#     'USER_ID_FIELD': 'id',
+#     'USER_ID_CLAIM': 'user_id',
+#     'AUTH_HEADER_TYPES': ('Bearer',),
+#     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+#     'TOKEN_TYPE_CLAIM': 'token_type',
+# }
 
 
 # REST Framework settings
 
 REST_FRAMEWORK = {
-   
+
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
@@ -332,7 +416,7 @@ CELERY_TIMEZONE = 'Asia/Kolkata'
 CELERY_BEAT_SCHEDULE = {
     'simulate-user-growth': {
         'task': 'users.tasks.add_live_users',
-        'schedule':300.0,  
+        'schedule':300.0,
     },
     'generate-daily-report': {
         'task': 'reports.tasks.generate_daily_report',

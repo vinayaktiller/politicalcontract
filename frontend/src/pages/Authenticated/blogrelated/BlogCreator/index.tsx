@@ -1,18 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import useBlogForm from './hooks/useBlogForm';
 import { BlogType, ReportType } from './types';
+
 import JourneyFields from './BlogTypeFields/JourneyFields';
+import SuccessfulExperienceFields from './BlogTypeFields/SuccessfulExperienceFields';
 import MilestoneFields from './BlogTypeFields/MilestoneFields';
 import ReportInsightFields from './BlogTypeFields/ReportInsightFields';
 import FailedInitiationFields from './BlogTypeFields/FailedInitiationFields';
 import ConsumptionFields from './BlogTypeFields/ConsumptionFields';
 import AnsweringQuestionFields from './BlogTypeFields/AnsweringQuestionFields';
+
 import './BlogCreator.css';
+import api from '../../../../api';
 
 const BLOG_TYPE_COMPONENTS: Record<BlogType, React.FC<any>> = {
   journey: JourneyFields,
-  successful_experience: JourneyFields,
+  successful_experience: SuccessfulExperienceFields,
   milestone: MilestoneFields,
   report_insight: ReportInsightFields,
   failed_initiation: FailedInitiationFields,
@@ -22,10 +26,13 @@ const BLOG_TYPE_COMPONENTS: Record<BlogType, React.FC<any>> = {
 
 const BlogCreator: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isTypeLocked, setIsTypeLocked] = useState(false);
+  const [sourceType, setSourceType] = useState<string>('');
   const isInitializedFromReport = useRef(false);
+  const [previousBlogType, setPreviousBlogType] = useState<BlogType | null>(null);
 
-  // Extract insight data from navigation state (report OR milestone)
+  // Extract insight data from navigation state
   const insightData = location.state as
     | {
         geographical_entity?: { id: number; name: string; type: string };
@@ -35,13 +42,20 @@ const BlogCreator: React.FC = () => {
         active_users?: number;
         date?: string;
         period?: string;
-        report_kind?: string; // 'report' | 'activity' or similar
-        milestone_kind?: string; // 'milestone' for milestones insight
+        report_kind?: string; 
+        milestone_kind?: string;
         title?: string;
         text?: string;
         photo_id?: string | number;
         milestone_id?: string | null;
-        type?: string | null; // 
+        type?: string | null;
+        question_kind?: string;
+        question_id?: string | null;
+        question_text?: string;
+        question_rank?: number;
+        target_user?: number | null;
+        name?: string;
+        profile_picture?: string;
       }
     | undefined;
 
@@ -56,7 +70,43 @@ const BlogCreator: React.FC = () => {
     getMaxLength,
   } = useBlogForm();
 
-  // Prepare extra props for ReportInsightFields without mutating formData
+  // Track blog type changes for cleanup
+  useEffect(() => {
+    if (previousBlogType === 'consumption' && formData.type !== 'consumption') {
+      
+      // User switched away from consumption type - clean up any temporary contributions
+      if (formData.contribution) {
+        api.delete(`/api/blog_related/contributions/${formData.contribution}/`)
+          .then(() => {
+            console.log('Cleaned up temporary contribution:', formData.contribution);
+          })
+          .catch(error => {
+            console.error('Failed to clean up contribution:', error);
+          });
+      }
+    }
+    
+    setPreviousBlogType(formData.type);
+  }, [formData.type, previousBlogType, formData.contribution]);
+
+  // Clean up on component unmount
+  useEffect(() => {
+    return () => {
+      if (formData.type === 'consumption' && formData.contribution) {
+        console.log('Component unmounting, cleaning up contribution:', formData.contribution);
+        // Clean up any temporary contributions when leaving the page
+        api.delete(`/api/blog_related/contributions/${formData.contribution}/`)
+          .then(() => {
+            console.log('Cleaned up temporary contribution on unmount:', formData.contribution);
+          })
+          .catch(error => {
+            console.error('Failed to clean up contribution on unmount:', error);
+          });
+      }
+    };
+  }, [formData.type, formData.contribution]);
+
+  // Extra props for different blog types
   const reportInsightExtraProps = {
     geographical_entity: insightData?.geographical_entity,
     new_users: insightData?.new_users,
@@ -67,25 +117,36 @@ const BlogCreator: React.FC = () => {
     level: insightData?.level,
   };
 
-  // Prepare extra props for MilestoneFields
   const milestoneExtraProps = {
-    milestone_id: insightData?.milestone_id? String(insightData.milestone_id) : null,
+    milestone_id: insightData?.milestone_id ? String(insightData.milestone_id) : null,
     title: insightData?.title,
     text: insightData?.text,
     photo_id: insightData?.photo_id,
     type: insightData?.type,
-    
     milestone_kind: insightData?.milestone_kind,
+  };
+
+  const questionExtraProps = {
+    question_id: insightData?.question_id,
+    question_text: insightData?.question_text,
+    question_rank: insightData?.question_rank,
+    question_kind: insightData?.question_kind,
+  };
+
+  const successfulExperienceExtraProps = {
+    target_user: insightData?.target_user,
+    name: insightData?.name,
+    profile_picture: insightData?.profile_picture,
   };
 
   const TypeSpecificFields = BLOG_TYPE_COMPONENTS[formData.type];
   const prevTypeRef = useRef(formData.type);
 
-  // Lock the form type and prefill when opened from a report or milestone insight
+  // Prefill & lock type depending on source
   useEffect(() => {
     if (insightData?.report_kind) {
-      // Lock type to report_insight for reports
       setIsTypeLocked(true);
+      setSourceType('report');
       isInitializedFromReport.current = true;
       setFormData(prev => ({
         ...prev,
@@ -95,8 +156,8 @@ const BlogCreator: React.FC = () => {
         content_type: 'micro',
       }));
     } else if (insightData?.milestone_kind) {
-      // Lock type to milestone for milestones
       setIsTypeLocked(true);
+      setSourceType('milestone');
       isInitializedFromReport.current = true;
       setFormData(prev => ({
         ...prev,
@@ -104,16 +165,38 @@ const BlogCreator: React.FC = () => {
         milestone_id: insightData.milestone_id,
         content_type: 'micro',
       }));
+    } else if (insightData?.question_kind) {
+      setIsTypeLocked(true);
+      setSourceType('question');
+      isInitializedFromReport.current = true;
+      setFormData(prev => ({
+        ...prev,
+        type: 'answering_question',
+        questionid: insightData.question_id ? parseInt(insightData.question_id) : null,
+        content_type: 'micro',
+      }));
+    } else if (insightData?.type === 'successful_experience') {
+      setIsTypeLocked(true);
+      setSourceType('successful_experience');
+      isInitializedFromReport.current = true;
+      setFormData(prev => ({
+        ...prev,
+        type: 'successful_experience',
+        target_user: insightData.target_user,
+        content_type: 'micro',
+      }));
     } else {
       setIsTypeLocked(false);
+      setSourceType('');
     }
   }, [insightData, setFormData]);
 
-  // Reset form when blog type changes (preserve content when switching between journey types)
+  // Reset form on blog type change
   useEffect(() => {
     const prevType = prevTypeRef.current;
     const JOURNEY_TYPES: BlogType[] = ['journey', 'successful_experience'];
-    const isSwitchingJourneyTypes = JOURNEY_TYPES.includes(formData.type) && JOURNEY_TYPES.includes(prevType);
+    const isSwitchingJourneyTypes =
+      JOURNEY_TYPES.includes(formData.type) && JOURNEY_TYPES.includes(prevType);
 
     if (!isSwitchingJourneyTypes && formData.type !== prevType && !isInitializedFromReport.current) {
       setFormData(prev => ({
@@ -162,62 +245,55 @@ const BlogCreator: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="blog-form" noValidate>
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="blog-type-select">Blog Type</label>
-            <select
-              id="blog-type-select"
-              name="type"
-              value={formData.type}
-              onChange={handleTypeChange}
-              disabled={isTypeLocked}
-              aria-label="Select blog type"
-              aria-disabled={isTypeLocked}
-              className={isTypeLocked ? 'disabled-select' : ''}
-            >
-              <option value="journey">Journey</option>
-              <option value="successful_experience">Successful Experience</option>
-              <option value="milestone">Milestone</option>
-              <option value="report_insight">Report Insight</option>
-              <option value="failed_initiation">Failed Initiation</option>
-              <option value="consumption">Content Consumption</option>
-              <option value="answering_question">Answering Question</option>
-            </select>
-            {isTypeLocked && (
-              <p className="input-hint" aria-live="polite">
-                Blog type is locked because you're creating from a {insightData?.milestone_kind ? 'milestone' : 'report'}
-              </p>
-            )}
+        {/* Only show blog type selection when not locked */}
+        {!isTypeLocked && (
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="blog-type-select">Blog Type</label>
+              <select
+                id="blog-type-select"
+                name="type"
+                value={formData.type}
+                onChange={handleTypeChange}
+                aria-label="Select blog type"
+              >
+                <option value="journey">Journey</option>
+                <option value="failed_initiation">Failed Initiation</option>
+                <option value="consumption">Content Consumption</option>
+              </select>
+            </div>
           </div>
-        </div>
+        )}
 
-        <TypeSpecificFields
-          formData={formData}
-          setFormData={setFormData}
-          handleChange={handleChange}
-          getMaxLength={getMaxLength}
-          isSubmitting={isSubmitting}
-          {...(formData.type === 'report_insight' ? reportInsightExtraProps : {})}
-          {...(formData.type === 'milestone' ? milestoneExtraProps : {})}
-        />
+        {TypeSpecificFields && (
+          <TypeSpecificFields
+            formData={formData}
+            setFormData={setFormData}
+            handleChange={handleChange}
+            getMaxLength={getMaxLength}
+            isSubmitting={isSubmitting}
+            {...(formData.type === 'report_insight' ? reportInsightExtraProps : {})}
+            {...(formData.type === 'milestone' ? milestoneExtraProps : {})}
+            {...(formData.type === 'answering_question' ? questionExtraProps : {})}
+            {...(formData.type === 'successful_experience' ? successfulExperienceExtraProps : {})}
+          />
+        )}
       </form>
     </div>
   );
 };
 
-// Helper to determine report type from insight data and report_kind
+// Helper to determine report type
 function determineReportType(period?: string, level?: string, kind?: string): ReportType | null {
   if (!period || !level) return null;
 
-  const periodCapitalized = period.charAt(0).toUpperCase() + period.slice(1).toLowerCase(); // Daily, Weekly, Monthly
-  const levelCapitalized = level.charAt(0).toUpperCase() + level.slice(1).toLowerCase(); // Village, District, ...
+  const periodCapitalized = period.charAt(0).toUpperCase() + period.slice(1).toLowerCase();
+  const levelCapitalized = level.charAt(0).toUpperCase() + level.slice(1).toLowerCase();
 
   if (kind && kind.toLowerCase().includes('activity')) {
-    // For activity reports pattern: activity_reports.DailyVillageActivityReport
     return `activity_reports.${periodCapitalized}${levelCapitalized}ActivityReport` as ReportType;
   }
 
-  // For regular reports pattern: report.VillageDailyReport
   return `report.${levelCapitalized}${periodCapitalized}Report` as ReportType;
 }
 

@@ -144,6 +144,8 @@ class InitiationNotification(models.Model):
             fresh_instance.reacted = True
             fresh_instance.save(update_fields=["reacted"])
             fresh_instance.update_status(self.Status.VERIFIED)
+            
+            return fresh_instance.applicant.verify_and_transfer()
 
     def mark_as_rejected(self):
         with transaction.atomic():
@@ -153,11 +155,38 @@ class InitiationNotification(models.Model):
             fresh_instance.update_status(self.Status.REJECTED)
 
     def mark_as_completed(self):
+        from pendingusers.models import PendingUser  # Import if not already at top
+        from users.models.petitioners import Petitioner
+
         with transaction.atomic():
+            # Lock and refresh the current notification instance
             fresh_instance = InitiationNotification.objects.select_for_update().get(pk=self.pk)
+
+            # Mark as completed
             fresh_instance.completed = True
             fresh_instance.save(update_fields=["completed"])
-            fresh_instance.applicant.verify_and_transfer()
+
+            # Get applicant and corresponding petitioner (if any)
+            applicant = fresh_instance.applicant
+            petitioner = None
+
+            if applicant:
+                try:
+                    petitioner = Petitioner.objects.get(gmail=applicant.gmail)
+                except Petitioner.DoesNotExist:
+                    logger.warning(f"Petitioner not found for gmail: {applicant.gmail}")
+
+            # Delete related PendingUser (applicant) and the notification itself
+            fresh_instance.delete()
+            if applicant:
+                applicant.delete()
+
+            # Return the petitioner instance (or None if not found)
+            return petitioner
+
+
+
+            
 
     def move_to_archive(self):
         from pendingusers.models.ArchivedPendingUser import ArchivedPendingUser

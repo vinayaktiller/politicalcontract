@@ -13,6 +13,8 @@ import { Notification, InitiationNotificationData } from '../notification_state/
 
 const InitiationNotification: React.FC = () => {
     const { notificationNumber } = useParams<{ notificationNumber: string }>();
+    console.log("Notification Number from URL:", notificationNumber);
+    
     const navigate = useNavigate();
     const dispatch: AppDispatch = useDispatch();
 
@@ -26,13 +28,13 @@ const InitiationNotification: React.FC = () => {
     console.log("Filtered Notifications:", notifications);
 
     const notification = notifications.find(n =>
-        n.notification_number === notificationNumber
+        n.id === Number(notificationNumber)
     );
 
     console.log("This Notification:", notification);
 
     const currentIndex = notifications.findIndex(n =>
-        n.notification_number === notificationNumber
+        n.id === Number(notificationNumber)
     );
 
     useEffect(() => {
@@ -64,7 +66,7 @@ const InitiationNotification: React.FC = () => {
         const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
         if (newIndex >= 0 && newIndex < notifications.length) {
             const newNotification = notifications[newIndex];
-            navigate(`/notifications/${newNotification.notification_number}`);
+            navigate(`/notifications/${newNotification.id}`);
         }
     };
 
@@ -82,7 +84,7 @@ const InitiationNotification: React.FC = () => {
     return (
         <div className="profile-container">
             <div className="profile-card">
-                <div className="profile-content">
+                <div className="in-profile-content">
                     <ProfileImage
                         imageUrl={isInitiationNotification(notificationData) ? notificationData.profile_picture || "default-profile.png" : "default-profile.png"}
                         name={isInitiationNotification(notificationData) ? `${notificationData.first_name} ${notificationData.last_name}` : "Unknown Applicant"}
@@ -113,7 +115,7 @@ const InitiationNotification: React.FC = () => {
                     gmail={isInitiationNotification(notificationData) ? notificationData.gmail : "Unknown"}
                 />
             </div>
-            <div className="navigation-buttons">
+            {/* <div className="navigation-buttons">
                 <button
                     className='navigation-button'
                     onClick={() => handleNavigation('prev')}
@@ -128,7 +130,7 @@ const InitiationNotification: React.FC = () => {
                 >
                     Next
                 </button>
-            </div>
+            </div> */}
         </div>
     );
 };

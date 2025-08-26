@@ -14,55 +14,41 @@ def UserCheck(email):
     """
     Determines the user's type based on their email.
 
-    This function checks if the provided email corresponds to an existing user in either the 
-    `Petitioner` or `PendingUser` database models. It categorizes the user accordingly:
-    
-    - **'olduser'**: The user exists in the system and has a username.
-    - **'pendinguser'**: The user exists in the `PendingUser` model but is not yet registered.
-    - **'newuser'**: The user does not exist in either database model.
-
-    Additionally, logging and Prometheus metrics are used to track classification attempts.
-
-    Args:
-        email (str): The email address to check against the database.
+    Categories:
+    - 'pendinguser': If user exists in both Petitioner and PendingUser, or only PendingUser.
+    - 'olduser': If user exists only in Petitioner.
+    - 'newuser': If user does not exist in either.
 
     Returns:
-        tuple: A tuple containing:
-            - **user_type (str)**: One of 'olduser', 'pendinguser', or 'newuser'.
-            - **user instance or None**: The corresponding user object if found, otherwise None.
+        tuple: (user_type, user_instance or None)
     """
-    try:
-        petitioner = Petitioner.objects.get(gmail=email)
+    petitioner = Petitioner.objects.filter(gmail=email).first()
+    pending_user = PendingUser.objects.filter(gmail=email).first()
+
+    if pending_user:
+        # If the email exists in PendingUser, classify as 'pendinguser' 
+        user_type = 'pendinguser'
+        logger.info(f"UserCheck: {email} classified as {user_type}")
+        user_check_attempts.labels(user_type=user_type).inc()
+        return user_type, pending_user
+
+    elif petitioner:
+        # If only in Petitioner, classify as 'olduser'
         user_type = 'olduser'
         petitioner.is_online = True
         petitioner.save()
         logger.info(f"User {email} updated {petitioner.is_online}")
-        
-        # Logging and metrics
         logger.info(f"UserCheck: {email} classified as {user_type}")
         user_check_attempts.labels(user_type=user_type).inc()
-        
         return user_type, petitioner
 
-    except Petitioner.DoesNotExist:
-        try:
-            pending_user = PendingUser.objects.get(gmail=email)
-            user_type = 'pendinguser'
-            
-            # Logging and metrics
-            logger.info(f"UserCheck: {email} classified as {user_type}")
-            user_check_attempts.labels(user_type=user_type).inc()
-            
-            return user_type, pending_user
+    else:
+        # Not found in either
+        user_type = 'newuser'
+        logger.info(f"UserCheck: {email} classified as {user_type}")
+        user_check_attempts.labels(user_type=user_type).inc()
+        return user_type, None
 
-        except PendingUser.DoesNotExist:
-            user_type = 'newuser'
-
-            # Logging and metrics
-            logger.info(f"UserCheck: {email} classified as {user_type}")
-            user_check_attempts.labels(user_type=user_type).inc()
-            
-            return user_type, None
 
 
 def get_tokens_for_user(user):

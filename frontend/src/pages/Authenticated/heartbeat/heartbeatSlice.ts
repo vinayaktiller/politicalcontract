@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '../../../api';
-import { format, isToday, subDays, eachDayOfInterval } from 'date-fns';
+import { format, isToday } from 'date-fns';
 
 interface ActivityHistoryItem {
   date: string;
@@ -51,13 +51,19 @@ export const checkUserActivity = createAsyncThunk<
       );
       return response.data as CheckUserActivityResponse;
     } catch (err: any) {
-      return rejectWithValue(err.response?.data || 'Failed to check activity');
+      // Ensure error message is a string
+      const message = err.response?.data
+        ? typeof err.response.data === 'string'
+          ? err.response.data
+          : JSON.stringify(err.response.data)
+        : 'Failed to check activity';
+      return rejectWithValue(message);
     }
   }
 );
 
 export const fetchActivityHistory = createAsyncThunk<
-  ActivityHistoryItem[],  // Changed to return array directly
+  ActivityHistoryItem[],
   number
 >(
   'heartbeat/fetchActivityHistory',
@@ -67,11 +73,15 @@ export const fetchActivityHistory = createAsyncThunk<
         `/api/activity_reports/heartbeat/activity-history/`,
         { params: { user_id: userId } }
       );
-      // Access history property from response
       const data = response.data as { history: ActivityHistoryItem[] };
       return data.history;
     } catch (err: any) {
-      return rejectWithValue(err.response?.data || 'Failed to fetch history');
+      const message = err.response?.data
+        ? typeof err.response.data === 'string'
+          ? err.response.data
+          : JSON.stringify(err.response.data)
+        : 'Failed to fetch history';
+      return rejectWithValue(message);
     }
   }
 );
@@ -91,7 +101,12 @@ export const markUserActive = createAsyncThunk(
       await dispatch(fetchActivityHistory(userId));
       return today;
     } catch (err: any) {
-      return rejectWithValue(err.response?.data || 'Failed to mark active');
+      const message = err.response?.data
+        ? typeof err.response.data === 'string'
+          ? err.response.data
+          : JSON.stringify(err.response.data)
+        : 'Failed to mark active';
+      return rejectWithValue(message);
     }
   }
 );
@@ -120,6 +135,7 @@ const heartbeatSlice = createSlice({
     builder
       .addCase(checkUserActivity.pending, (state) => {
         state.status = 'loading';
+        state.error = null;
       })
       .addCase(
         checkUserActivity.fulfilled,
@@ -136,6 +152,7 @@ const heartbeatSlice = createSlice({
           state.status = 'succeeded';
           state.streak = streak_count;
           state.lastUpdated = format(new Date(), 'yyyy-MM-dd');
+          state.error = null;
           
           if (is_active_today) {
             state.heartState = streak_count >= 5 ? 'hyperactive' : 'active';
@@ -157,11 +174,12 @@ const heartbeatSlice = createSlice({
       })
       .addCase(fetchActivityHistory.pending, (state) => {
         state.historyStatus = 'loading';
+        state.historyError = null;
       })
       .addCase(fetchActivityHistory.fulfilled, (state, action) => {
         state.historyStatus = 'succeeded';
-        // Store the history array directly
         state.activityHistory = action.payload;
+        state.historyError = null;
       })
       .addCase(fetchActivityHistory.rejected, (state, action) => {
         state.historyStatus = 'failed';
@@ -169,10 +187,12 @@ const heartbeatSlice = createSlice({
       })
       .addCase(markUserActive.pending, (state) => {
         state.status = 'loading';
+        state.error = null;
       })
       .addCase(markUserActive.fulfilled, (state, action) => {
         state.lastActiveDate = action.payload;
         state.lastUpdated = format(new Date(), 'yyyy-MM-dd');
+        state.error = null;
       })
       .addCase(markUserActive.rejected, (state, action) => {
         state.status = 'failed';

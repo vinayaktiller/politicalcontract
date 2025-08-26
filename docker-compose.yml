@@ -20,7 +20,7 @@ services:
       - DATABASE_HOST=host.docker.internal
       - APP_ENV=local
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     networks:
       - app-network
     depends_on:
@@ -50,7 +50,7 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     stdin_open: true
     tty: true
     depends_on:

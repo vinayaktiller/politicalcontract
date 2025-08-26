@@ -50,16 +50,15 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
           notification_number: notification.notification_number,
         }));
       } else {
-        const routeBase = notificationRoutes[notification.notification_type];
-        const destination = routeBase 
-          ? `${routeBase}/${notification.notification_number}`
-          : `/notifications/${notificationNumber}`;
-        navigate(destination);
-      }
-      toggleNotifications();
+      const routeBase = notificationRoutes[notification.notification_type];
+      const destination = routeBase 
+        ? `${routeBase}/${notification.id}`
+        : `/notifications/${notification.id}`;
+      navigate(destination);
     }
-  };
-
+    toggleNotifications();
+  }
+};
   const classifyNotifications = (notificationGroup: Notification[]) => {
     return notificationGroup.reduce((acc, notification) => {
       const type = notification.notification_type;
@@ -71,6 +70,8 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
   };
 
   const newNotifications = notifications.filter(n => !n.notification_freshness);
+  console.log('New Notifications:', newNotifications);
+  console.log('Old Notifications:', notifications.filter(n => n.notification_freshness));
   const oldNotifications = notifications.filter(n => n.notification_freshness);
   const groupedNewNotifications = classifyNotifications(newNotifications);
   const groupedOldNotifications = classifyNotifications(oldNotifications);

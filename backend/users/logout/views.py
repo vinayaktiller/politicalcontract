@@ -9,7 +9,7 @@ class LogoutView(APIView):
 
         try:
             petitioner = Petitioner.objects.get(id=user_id)
-            petitioner.is_online = False  # Set is_online to False
+            petitioner.is_online = False
             petitioner.save()
             return Response({"message": "User logged out successfully"}, status=status.HTTP_200_OK)
         except Petitioner.DoesNotExist:

@@ -36,7 +36,7 @@
 /* Form container */
 .form-step {
   background: white;
-  padding: 1.5rem;
+  /* padding: 1.5rem; */
   border-radius: 10px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
@@ -74,7 +74,7 @@
 .form-section {
   box-sizing: border-box;
   background: #f9f9f9;
-  padding: 1rem;
+  /* padding: 1rem; */
   border-radius: 8px;
   border: 1px solid #eee;
   margin: 0 -0.5rem;

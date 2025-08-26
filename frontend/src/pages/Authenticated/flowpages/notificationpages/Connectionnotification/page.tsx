@@ -25,13 +25,13 @@ const ConnectionNotification: React.FC = () => {
     console.log("Filtered Notifications:", notifications);
 
     const notification = notifications.find(n =>
-        n.notification_number === notificationNumber
+        n.id === Number(notificationNumber)
     );
 
     console.log("This Notification:", notification);
 
     const currentIndex = notifications.findIndex(n =>
-        n.notification_number === notificationNumber
+        n.id === Number(notificationNumber)
     );
 
     useEffect(() => {
@@ -50,7 +50,7 @@ const ConnectionNotification: React.FC = () => {
         const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
         if (newIndex >= 0 && newIndex < notifications.length) {
             const newNotification = notifications[newIndex];
-            navigate(`/Connectionnotifications/${newNotification.notification_number}`);
+            navigate(`/Connectionnotifications/${newNotification.id}`);
         }
     };
 

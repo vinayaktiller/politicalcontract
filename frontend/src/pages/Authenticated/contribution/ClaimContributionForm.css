@@ -1,3 +1,4 @@
+/* ClaimContributionForm.css */
 /* Mobile First Design */
 .contribution-page-container {
   text-align: center;
@@ -5,20 +6,25 @@
   width: 100%;
   background-color: white;
   min-height: 95vh;
+  
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .contribution-page-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-  width: 100%;
-  max-width: 600px;
-  padding: 1.5rem;
-  position: relative;
-  overflow: hidden;
+   display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  margin: 0 auto;
+  width: 100%; /* Ensure it takes up the full width of the center div */
+  height: 100%; /* Ensure it takes up the full height of the center div */
+  font-size: 20px;
+  font-family: 'Inter', Arial, sans-serif; /* Apply Inter font */
+  background-color: white;
+  max-width: 100%; /* Remove or adjust as necessary */
+  max-height: 100vh;
+  padding: 16px;
 }
 
 .contribution-page-card::before {
@@ -198,6 +204,99 @@
   flex-shrink: 0;
 }
 
+/* Team Members Section */
+.team-members-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.add-from-contacts-btn {
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.add-from-contacts-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.or-separator {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.manual-id-input {
+  display: flex;
+  gap: 8px;
+}
+
+.manual-id-input input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.manual-id-input button {
+  padding: 8px 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.manual-id-input button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.selected-team-members {
+  margin-top: 15px;
+}
+
+.selected-team-members h4 {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #333;
+}
+
+.team-members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.team-member-box-wrapper {
+  position: relative;
+}
+
+.remove-member-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.remove-member-btn:hover {
+  background: #cc0000;
+}
+
 /* Tablet Styles */
 @media (min-width: 768px) {
   .contribution-page-container {
@@ -222,6 +321,15 @@
   
   .contribution-form-group label {
     font-size: 1rem;
+  }
+  
+  .team-members-input-container {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .or-separator {
+    margin: 0 10px;
   }
 }
 
@@ -248,5 +356,9 @@
   .contribution-submit-btn {
     padding: 1.2rem;
     font-size: 1.2rem;
+  }
+  
+  .team-members-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
 }

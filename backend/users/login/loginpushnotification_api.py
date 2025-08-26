@@ -7,6 +7,7 @@ from notifications.login_push.services.push_notifications import handle_user_not
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from users.models.petitioners import Petitioner
+from users.login.authentication import CookieJWTAuthentication
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +16,7 @@ class LoginPushNotificationAPIView(APIView):
     API View to trigger login push notification after validating Petitioner instance via user_id.
     """
 
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):

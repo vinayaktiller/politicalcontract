@@ -1,6 +1,7 @@
 from blog.models.blogsize import MicroContent, ShortEssayContent, ArticleContent
 import uuid
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 class Contribution(models.Model):
 
@@ -9,6 +10,18 @@ class Contribution(models.Model):
     title = models.CharField(max_length=400, null=True, blank=True)  # Title of the contribution
     discription = models.TextField(null=True, blank=True)  # Description of the contribution
     owner = models.BigIntegerField(null=True, blank=True)
+    teammembers = ArrayField(
+        models.BigIntegerField(), # List of team member IDs
+        default=list,
+        null=True, blank=True
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    byconsumer= models.BigIntegerField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    
+    
 
     class Meta:
         db_table = 'blog_related"."contribution'        
