@@ -104,7 +104,7 @@ const ReportInsightFields: React.FC<Props> = ({
         <div className="header-grid">
           {/* LEFT: date (top), second line (below) */}
           <div className="header-left">
-            <div className="date-line" aria-label="Report Date">{formatDate(date)}</div>
+            <div className="date-line" aria-label="Report Date">{date}</div>
             <div className="second-line truncate" aria-label="Report Period and Kind" title={secondLineText}>
               {secondLineText}
             </div>

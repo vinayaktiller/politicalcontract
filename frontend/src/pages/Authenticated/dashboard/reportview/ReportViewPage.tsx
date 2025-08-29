@@ -130,7 +130,7 @@ const ReportViewPage = () => {
       id: report.id,
       level: report.level,
       new_users: report.new_users,
-      date: report.date,
+      date: getFormattedDateText(),
 
       period: period,
       report_kind: "report",
@@ -168,6 +168,28 @@ const ReportViewPage = () => {
     }
     return `${entity.name} Report`;
   };
+
+  const getFormattedDateText = () => {
+    if (!report) return "";
+    if (period === "daily" && report.date) {
+      return new Date(report.date).toLocaleDateString(); // e.g. "8/27/2025"
+    }
+    if (period === "weekly" && report.week_number && report.year && report.week_start_date) {
+      // Extract month number from week_start_date string
+      const startDate = new Date(report.week_start_date);
+      const monthAbbr = startDate.toLocaleString("default", { month: "short" });
+      return `Week ${report.week_number}, ${monthAbbr} ${report.year}`;
+    }
+    if (period === "monthly" && report.month && report.year) {
+      const monthName = new Date(report.year, report.month - 1).toLocaleString(
+        "default",
+        { month: "long" }
+      );
+      return `${monthName} ${report.year}`; // e.g. "August 2025"
+    }
+    return ""; // fallback
+  };
+
 
   if (loading) {
     console.log("⏳ Loading state active...");

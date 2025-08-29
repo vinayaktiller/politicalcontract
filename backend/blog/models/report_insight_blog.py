@@ -58,14 +58,14 @@ class ReportReference(models.Model):
 
     class Meta:
         abstract = True
-class micro_report_insight_blog(ReportReference, MicroContent):
+class report_insight_micro(ReportReference, MicroContent):
     class Meta:
-        db_table = 'blog"."report_insight_blog_micro'  # Changed
+        db_table = 'blog"."report_insight_micro'  # Changed
 
-class short_essay_report_insight_blog(ReportReference, ShortEssayContent):
+class report_insight_short_essay(ReportReference, ShortEssayContent):
     class Meta:
-        db_table = 'blog"."report_insight_blog_short_essay'  # Changed
+        db_table = 'blog"."report_insight_short_essay'  # Changed
 
-class article_report_insight_blog(ReportReference, ArticleContent):
+class report_insight_article(ReportReference, ArticleContent):
     class Meta:
-        db_table = 'blog"."report_insight_blog_article'  # Changed
+        db_table = 'blog"."report_insight_article'  # Changed

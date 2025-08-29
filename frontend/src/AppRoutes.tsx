@@ -44,8 +44,15 @@ import MilestonePreviewPage from "./pages/Authenticated/milestone/MilestonePrevi
 import BlogCreator from "./pages/Authenticated/blogrelated/BlogCreator/index";
 import ClaimContributionForm from "./pages/Authenticated/contribution/ClaimContributionForm";
 import QuestionsPage from "./pages/Authenticated/questionspage/QuestionsPage";
+import BlogListPage from "./pages/Authenticated/blogrelated/blogpage/BlogListPage";
+import ContributionsList from "./pages/Authenticated/ContributionsList/ContributionsList";
 
-const clientId = "719395873709-ese7vg45i9gfndador7q6rmq3untnkcr.apps.googleusercontent.com";
+// 🔥 New imports for new routes
+// import ProfilePage from "./pages/Authenticated/profile/ProfilePage";
+import BlogDetailPage from "./pages/Authenticated/blogrelated/BlogDetailPage/BlogDetailPage";
+
+const clientId =
+  "719395873709-ese7vg45i9gfndador7q6rmq3untnkcr.apps.googleusercontent.com";
 
 const AppRoutes: React.FC = () => {
   console.log("AppRoutes component is mounted!");
@@ -73,10 +80,22 @@ const AppRoutes: React.FC = () => {
             <Route path="make-connections" element={<ConnexionVerification />} />
 
             {/* Notification Routes */}
-            <Route path="Initiationnotifications/:notificationNumber" element={<InitiationNotification />} />
-            <Route path="Connectionnotifications/:notificationNumber" element={<ConnectionNotification />} />
-            <Route path="ConnectionStatusNotifications/:notificationNumber" element={<ConnectionStatusNotification />} />
-            <Route path="GroupSpeakerInvitation/:notificationNumber" element={<GroupSpeakerInvitation />} />
+            <Route
+              path="Initiationnotifications/:notificationNumber"
+              element={<InitiationNotification />}
+            />
+            <Route
+              path="Connectionnotifications/:notificationNumber"
+              element={<ConnectionNotification />}
+            />
+            <Route
+              path="ConnectionStatusNotifications/:notificationNumber"
+              element={<ConnectionStatusNotification />}
+            />
+            <Route
+              path="GroupSpeakerInvitation/:notificationNumber"
+              element={<GroupSpeakerInvitation />}
+            />
 
             <Route path="group-registration" element={<GroupRegistrationForm />} />
             <Route path="my-groups" element={<MyGroupsPage />} />
@@ -87,21 +106,52 @@ const AppRoutes: React.FC = () => {
             <Route path="connections/:id" element={<ConnectionPage />} />
             <Route path="breakdown-id" element={<BreakdownIdPage />} />
 
+            {/* Reports */}
             <Route path="reports-list" element={<ReportsListPage />} />
             <Route path="dashboards" element={<DashboardsPage />} />
-            <Route path="reports/:period/:reportId/:level" element={<ReportViewPage />} />
+            <Route
+              path="reports/:period/:reportId/:level"
+              element={<ReportViewPage />}
+            />
             <Route path="reports/overall" element={<OverallReportPage />} />
-            <Route path="reports/overall/:level/:entityId" element={<OverallReportPage />} />
-            <Route path="activity-reports/:period/:reportId/:level" element={<ActivityReportViewPage />} />
-            <Route path="activity-reports-list" element={<ActivityReportListPage />} />
+            <Route
+              path="reports/overall/:level/:entityId"
+              element={<OverallReportPage />}
+            />
+            <Route
+              path="activity-reports/:period/:reportId/:level"
+              element={<ActivityReportViewPage />}
+            />
+            <Route
+              path="activity-reports-list"
+              element={<ActivityReportListPage />}
+            />
 
+            {/* Messages */}
             <Route path="messages/chatlist" element={<ChatList />} />
             <Route path="chat/:conversationId" element={<ChatPage />} />
+
+            {/* Milestones */}
             <Route path="milestones" element={<MilestonePage />} />
             <Route path="milestone-preview" element={<MilestonePreviewPage />} />
+
+            {/* Blogs */}
+            <Route path="blogs" element={<BlogListPage />} />
             <Route path="blog-creator" element={<BlogCreator />} />
+            <Route path="blog/:blogId" element={<BlogDetailPage />} /> ✅ New
+
+            {/* Contributions */}
             <Route path="claim-contribution" element={<ClaimContributionForm />} />
+            <Route path="contributions">
+              <Route index element={<ContributionsList />} />
+              <Route path=":userId" element={<ContributionsList />} />
+            </Route>
+
+            {/* Questions */}
             <Route path="questions" element={<QuestionsPage />} />
+
+            {/* Profiles */}
+            {/* <Route path="profile/:userId" element={<ProfilePage />} /> ✅ New */}
           </Route>
         </Route>
       </Routes>

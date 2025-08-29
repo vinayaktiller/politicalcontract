@@ -6,5 +6,6 @@ from .answeringquestion_blog import AnsweringQuestionBlog, MicroAnsweringQuestio
 from .failed_intitations_blog import BaseFailedInitiationExperience, MicroFailedInitiationExperience, ShortEssayFailedInitiationExperience, ArticleFailedInitiationExperience
 from .successful_experience_blog import SuccessfulExperienceBlog, MicroSuccessfulExperience, ShortEssaySuccessfulExperience, ArticleSuccessfulExperience
 from .consumption import MicroConsumption, ShortEssayConsumption, ArticleConsumption
-from .report_insight_blog import micro_report_insight_blog, short_essay_report_insight_blog, article_report_insight_blog
+from .report_insight_blog import report_insight_micro, report_insight_short_essay, report_insight_article, ReportReference
 from .milestoneblog import MicroMilestoneJourneyBlog, ShortEssayMilestoneJourneyBlog, ArticleMilestoneJourneyBlog
+from .comments import Comment

@@ -91,41 +91,42 @@
 
 // export default api;
 
-
-
 // api.js
 import axios from "axios";
 import handleLogout from "./login/logout";
 
-// Set baseURL to your backend server
+// =============================
+// Base axios instance for normal API requests
+// =============================
 const api = axios.create({
   baseURL: "http://127.0.0.1:8000",
   headers: { "Content-Type": "application/json" },
   withCredentials: true,
 });
 
-// Flag to prevent multiple refresh attempts
+// =============================
+// Separate axios instance for token refresh
+// (no interceptors to avoid recursion)
+// =============================
+const refreshApi = axios.create({
+  baseURL: "http://127.0.0.1:8000",
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
+});
+
+// =============================
+// Queue handling for parallel requests
+// =============================
 let isRefreshing = false;
+
 interface FailedQueueItem {
   resolve: (value?: unknown) => void;
   reject: (reason?: any) => void;
 }
-
 let failedQueue: FailedQueueItem[] = [];
 
-interface ProcessQueuePromise {
-  resolve: (value?: unknown) => void;
-  reject: (reason?: any) => void;
-}
-
-type ProcessQueueError = unknown;
-type ProcessQueueToken = string | null;
-
-const processQueue = (
-  error: ProcessQueueError,
-  token: ProcessQueueToken = null
-): void => {
-  failedQueue.forEach((prom: ProcessQueuePromise) => {
+const processQueue = (error: unknown, token: string | null = null): void => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else {
@@ -135,51 +136,56 @@ const processQueue = (
   failedQueue = [];
 };
 
+// =============================
+// Response interceptor
+// =============================
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
-    // If the error is 401 and it's not a refresh request
+
+    // If unauthorized and request wasn't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        // If we're already refreshing, add the request to the queue
+        // If another refresh is happening, wait for it
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers['Authorization'] = 'Bearer ' + token;
-          return api(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
+        })
+          .then((token) => {
+            if (token) {
+              originalRequest.headers["Authorization"] = "Bearer " + token;
+            }
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
       }
-      
+
       originalRequest._retry = true;
       isRefreshing = true;
-      
+
       try {
-        // Attempt to refresh the token
-        await api.post('/api/users/token/refresh-cookie/');
-        
-        // Process the queue
+        console.log("🔄 Attempting to refresh token...");
+        await refreshApi.post("/api/users/token/refresh-cookie/");
+        console.log("✅ Token refreshed successfully");
+
+        // Wake up pending requests
         processQueue(null, null);
-        
-        // Retry the original request
+
+        // Retry the failed request
         return api(originalRequest);
       } catch (refreshError) {
-        // If refresh fails, process the queue with error
+        console.error("❌ Refresh token expired or invalid, logging out...");
         processQueue(refreshError, null);
-        
-        // Logout the user
+
         handleLogout();
         window.location.reload();
-        
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
-    
+
+    // If not 401, just reject normally
     return Promise.reject(error);
   }
 );

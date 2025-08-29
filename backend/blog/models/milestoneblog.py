@@ -30,12 +30,12 @@ class MilestoneJourneyBlog(JourneyBlog):
 
 class MicroMilestoneJourneyBlog(MilestoneJourneyBlog, MicroContent):
     class Meta:
-        db_table = 'blog"."milestone_journey_blog_micro'  # Changed
+        db_table = 'blog"."milestone_journey_micro'  # Changed
 
 class ShortEssayMilestoneJourneyBlog(MilestoneJourneyBlog, ShortEssayContent):
     class Meta:
-        db_table = 'blog"."milestone_journey_blog_short_essay'  # Changed
+        db_table = 'blog"."milestone_journey_short_essay'  # Changed
 
 class ArticleMilestoneJourneyBlog(MilestoneJourneyBlog, ArticleContent):
     class Meta:
-        db_table = 'blog"."milestone_journey_blog_article'  # Changed
+        db_table = 'blog"."milestone_journey_article'  # Changed

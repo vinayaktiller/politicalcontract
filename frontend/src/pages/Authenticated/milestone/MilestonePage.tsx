@@ -566,7 +566,7 @@ const MilestonePage: React.FC = () => {
             
             const handleWriteInsight = () => {
               const insightData = {
-                milestone_id: milestone.milestone_id,
+                milestone_id: milestone.id,
                 user_id: milestone.user_id,
                 title: milestone.title,
                 text: milestone.text,

@@ -121,9 +121,9 @@ class BlogCreateSerializer(serializers.Serializer):
 
         elif blog_type == 'report_insight':
             model_map = {
-                'micro': micro_report_insight_blog,
-                'short_essay': short_essay_report_insight_blog,
-                'article': article_report_insight_blog
+                'micro': report_insight_micro,  
+                'short_essay': report_insight_short_essay,
+                'article': report_insight_article
             }
             blog = model_map[content_type].objects.create(
                 id=base_blog.id,

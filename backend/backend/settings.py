@@ -427,17 +427,17 @@ CELERY_BEAT_SCHEDULE = {
     },
     'simulate-activity-every-3-minutes': {
         'task': 'activity_reports.tasks.simulate_realtime_activity',
-        'schedule': crontab(minute='*/3'),  # Every 3 minutes
+        'schedule': crontab(minute='*/10'),  # Every 3 minutes
         'options': {
             'expires': 120,  # Expire after 2 minutes if not run
         }
     },
-    'populate-milestones-sequence': {
-        'task': 'users.tasks.populate_milestones_sequence',
-        'schedule': crontab(minute='*/3'),  # Every 180 seconds (3 minutes)
-        'options': {
-            'expires': 120,  # Expire after 2 minutes if not run
-        }
-    },
+    # 'populate-milestones-sequence': {
+    #     'task': 'users.tasks.populate_milestones_sequence',
+    #     'schedule': crontab(minute='*/10'),  # Every 180 seconds (3 minutes)
+    #     'options': {
+    #         'expires': 120,  # Expire after 2 minutes if not run
+    #     }
+    # },
 
 }

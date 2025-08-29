@@ -1,4 +1,3 @@
-// ClaimContributionForm.tsx
 import React, { useState, useEffect } from 'react';
 import api from '../../../api';
 import './ClaimContributionForm.css';
@@ -7,6 +6,7 @@ import { fetchCircleContacts, selectCircleContacts, selectCircleStatus } from '.
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch } from '../../../store';
 import UserBox from '../mygroups/GroupDetailsPage/UserBox/UserBox';
+import ConflictModal from './ConflictModal/ConflictModal';
 
 interface TeamMember {
   id: number;
@@ -14,6 +14,27 @@ interface TeamMember {
   profile_pic: string | null;
   audience_count: number;
   shared_audience_count: number;
+}
+
+interface OwnerDetails {
+  id: number;
+  name: string;
+  profile_pic: string | null;
+}
+
+interface Contribution {
+  id: string;
+  link: string;
+  title: string;
+  owner: number;
+  created_at: string;
+  owner_details?: OwnerDetails;
+}
+
+interface DisputedData {
+  title: string;
+  description: string;
+  teammembers: number[];
 }
 
 const ClaimContributionForm = () => {
@@ -26,9 +47,27 @@ const ClaimContributionForm = () => {
   const [manualIdInput, setManualIdInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [validatingIds, setValidatingIds] = useState(false);
+  
+  // Conflict reporting state
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [existingContribution, setExistingContribution] = useState<Contribution | null>(null);
+  const [conflictData, setConflictData] = useState({
+    conflict_type: 'ownership',
+    explanation: '',
+    evidence_urls: [] as string[],
+    current_evidence_url: ''
+  });
+  const [disputedData, setDisputedData] = useState<DisputedData>({
+    title: '',
+    description: '',
+    teammembers: []
+  });
+  const [submittingConflict, setSubmittingConflict] = useState(false);
+  const [conflictSubmitted, setConflictSubmitted] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
   const contacts = useSelector(selectCircleContacts);
@@ -40,10 +79,40 @@ const ClaimContributionForm = () => {
     }
   }, [showContactsModal, contactsStatus, dispatch]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (name in conflictData) {
+      setConflictData(prev => ({ ...prev, [name]: value }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+    
     setError(null);
+  };
+
+  const handleAddEvidenceUrl = () => {
+    if (conflictData.current_evidence_url.trim()) {
+      setConflictData(prev => ({
+        ...prev,
+        evidence_urls: [...prev.evidence_urls, prev.current_evidence_url],
+        current_evidence_url: ''
+      }));
+    }
+  };
+
+  const handleRemoveEvidenceUrl = (index: number) => {
+    setConflictData(prev => ({
+      ...prev,
+      evidence_urls: prev.evidence_urls.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleEvidenceUrlChange = (value: string) => {
+    setConflictData(prev => ({
+      ...prev,
+      current_evidence_url: value
+    }));
   };
 
   const handleAddFromContacts = (contactId: number) => {
@@ -112,31 +181,100 @@ const ClaimContributionForm = () => {
         teammembers: teamMemberIds
       };
 
-      console.log("Submitting contribution payload:", payload);
+      const response = await api.post('/api/blog_related/contributions/create/', payload);
 
-      await api.post('/api/blog_related/contributions/create/', payload);
-
+      // Handle different success messages based on response status
+      if (response.status === 200) {
+        setSuccessMessage('Contribution claimed successfully! This URL was already being used in blogs and has now been claimed by you.');
+      } else if (response.status === 201) {
+        setSuccessMessage('Contribution claimed successfully! A new contribution has been created.');
+      }
+      
       setSuccess(true);
       setFormData({ link: '', title: '', discription: '' });
       setTeamMembers([]);
     } catch (err: any) {
       console.error('Error claiming contribution:', err.response?.data || err.message);
-      const errorMsg =
-        err.response?.data?.detail ||
-        err.response?.data?.link?.[0] || 
-        'Failed to claim contribution';
+      
+      // Handle conflict case
+      if (err.response?.status === 409 && err.response.data?.conflict) {
+        setExistingContribution(err.response.data.existing_contribution);
+        // Store the disputed data for conflict reporting
+        setDisputedData({
+          title: formData.title,
+          description: formData.discription,
+          teammembers: teamMembers.map(member => member.id)
+        });
+        setShowConflictModal(true);
+        return;
+      }
+      
+      let errorMsg = 'Failed to claim contribution';
+      if (err.response?.data?.detail) {
+        errorMsg = err.response.data.detail;
+      } else if (err.response?.data?.link) {
+        errorMsg = err.response.data.link[0];
+      }
+      
       setError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleSubmitConflict = async () => {
+    setSubmittingConflict(true);
+    
+    try {
+      const userId = localStorage.getItem("user_id");
+      if (!userId) {
+        setError("User not logged in.");
+        setSubmittingConflict(false);
+        return;
+      }
+
+      const payload = {
+        contribution: existingContribution?.id,
+        conflict_type: conflictData.conflict_type,
+        explanation: conflictData.explanation,
+        evidence_urls: conflictData.evidence_urls,
+        // Include disputed data in the payload
+        disputed_title: disputedData.title,
+        disputed_description: disputedData.description,
+        disputed_teammembers: disputedData.teammembers
+      };
+
+      await api.post('/api/blog_related/contributions/conflict/', payload);
+      
+      setConflictSubmitted(true);
+      setShowConflictModal(false);
+      setSuccessMessage('Conflict report submitted successfully. Our team will review it and get back to you.');
+      setSuccess(true);
+    } catch (err: any) {
+      console.error('Error submitting conflict:', err.response?.data || err.message);
+      setError('Failed to submit conflict report. Please try again.');
+    } finally {
+      setSubmittingConflict(false);
+    }
+  };
+
+  const handleCloseConflictModal = () => {
+    setShowConflictModal(false);
+    setConflictData({
+      conflict_type: 'ownership',
+      explanation: '',
+      evidence_urls: [],
+      current_evidence_url: ''
+    });
+  };
+
   return (
     <div className="contribution-page-container">
       <div className="contribution-page-card">
         <div className="contribution-page-header">
+          <div className="contribution-icon">📝</div>
           <h1>Claim Your Contribution</h1>
-          <p>Share your published work and get recognition</p>
+          <p>Share your published work and get the recognition you deserve</p>
         </div>
 
         {success && (
@@ -144,7 +282,7 @@ const ClaimContributionForm = () => {
             <svg className="contribution-success-icon" viewBox="0 0 24 24">
               <path fill="currentColor" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M11,16.5L18,9.5L16.59,8.09L11,13.67L7.91,10.59L6.5,12L11,16.5Z" />
             </svg>
-            <p>Contribution claimed successfully!</p>
+            <p>{successMessage}</p>
           </div>
         )}
 
@@ -171,9 +309,6 @@ const ClaimContributionForm = () => {
                 required
                 className={error?.includes('URL') ? 'contribution-input-error' : ''}
               />
-              <div className="contribution-input-hint">
-                Paste the direct link to your published content
-              </div>
             </div>
 
             <div className="contribution-form-group">
@@ -186,9 +321,6 @@ const ClaimContributionForm = () => {
                 onChange={handleChange}
                 placeholder="My Amazing Article/Video"
               />
-              <div className="contribution-input-hint">
-                A descriptive title for your contribution
-              </div>
             </div>
 
             <div className="contribution-form-group">
@@ -216,6 +348,9 @@ const ClaimContributionForm = () => {
                 className="add-from-contacts-btn"
                 onClick={() => setShowContactsModal(true)}
               >
+                <svg className="contact-icon" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" />
+                </svg>
                 Add from Contacts
               </button>
               <span className="or-separator">or</span>
@@ -279,7 +414,12 @@ const ClaimContributionForm = () => {
                 <span className="contribution-spinner"></span> Processing...
               </>
             ) : (
-              'Claim Contribution'
+              <>
+                <svg className="claim-icon" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M10,17L6,13L7.41,11.59L10,14.17L16.59,7.58L18,9M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z" />
+                </svg>
+                Claim Contribution
+              </>
             )}
           </button>
 
@@ -300,6 +440,21 @@ const ClaimContributionForm = () => {
           isRefreshing={contactsStatus === 'loading'}
         />
       )}
+
+      {/* Conflict Modal */}
+      <ConflictModal
+        show={showConflictModal}
+        existingContribution={existingContribution}
+        conflictData={conflictData}
+        disputedData={disputedData}
+        submittingConflict={submittingConflict}
+        onClose={handleCloseConflictModal}
+        onSubmit={handleSubmitConflict}
+        onChange={handleChange}
+        onAddEvidenceUrl={handleAddEvidenceUrl}
+        onRemoveEvidenceUrl={handleRemoveEvidenceUrl}
+        onEvidenceUrlChange={handleEvidenceUrlChange}
+      />
     </div>
   );
 };

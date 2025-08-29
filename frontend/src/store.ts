@@ -17,6 +17,7 @@ import celebrationSlice from './pages/Authenticated/milestone/celebration/celebr
 // import journeyBlogSlice from './pages/Authenticated/BlogPage/BlogSlice'; // Updated import name
 import circleContactsSlice from './pages/Authenticated/blogrelated/BlogCreator/CircleContacts/circleContactsSlice';
 import questionsSlice from './pages/Authenticated/questionspage/questionsSlice';
+import blogSlice from './pages/Authenticated/blogrelated/blogpage/blogSlice';
 
 // Middleware
 import { chatPersistenceMiddleware } from './pages/Authenticated/messages/ChatPage/Chatpagetypes';
@@ -54,7 +55,8 @@ const rootReducer = combineReducers({
   celebration: celebrationSlice, // Fixed reducer name
   circleContacts: circleContactsSlice, // Fixed reducer name
   questions: questionsSlice, // Fixed reducer name
-  // journeyBlogs: journeyBlogSlice, // Fixed reducer name
+  blog: blogSlice,
+  
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
@@ -76,6 +78,7 @@ const persistConfig: PersistConfig<RootState> = {
     'chat', // Added chat to whitelist
     'circleContacts', // Added circleContacts to whitelist
     'questions', // Added questions to whitelist
+    'blog',
 
     // 'journeyBlogs', // Added journeyBlogs to whitelist
   ],

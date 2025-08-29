@@ -14,6 +14,8 @@ class BaseBlogModel(models.Model):
     type= models.CharField(max_length=50, blank=True, null=True)  # Type of the blog entry
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    comments = ArrayField(models.UUIDField(), blank=True, default=list)
+
 
     class Meta:
          db_table = 'blog"."base_blog_model'
