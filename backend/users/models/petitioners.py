@@ -39,8 +39,6 @@ class Petitioner(AbstractBaseUser):
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
     
-    
-    
     date_of_birth = models.DateField()
     age = models.PositiveIntegerField(editable=False)
     gender = models.CharField(max_length=20, choices=GENDER_CHOICES)

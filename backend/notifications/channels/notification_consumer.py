@@ -1,5 +1,4 @@
-# src/features/notifications/consumers.py
-
+# consumers.py - Modified NotificationConsumer
 import json
 import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -13,12 +12,13 @@ from notifications.channels_handlers.connection_notification_handler import hand
 from notifications.channels_handlers.connection_status_handler import handle_connection_status
 from notifications.channels_handlers.speaker_invitation_handler import handle_speaker_invitation
 from notifications.channels_handlers.chat_system_handler import handle_chat_system
-from notifications.channels_handlers.milestone_handler import handle_milestone_notification  # <- milestone handler import
+from notifications.channels_handlers.milestone_handler import handle_milestone_notification
+from users.models import Circle  # Add this import
 
 logger = logging.getLogger(__name__)
 
 class NotificationConsumer(AsyncWebsocketConsumer):
-    """WebSocket consumer for handling real-time notifications and chat events."""
+    """WebSocket consumer for handling real-time notifications, chat events, and blog updates."""
 
     async def connect(self):
         """Handles WebSocket connection."""
@@ -36,7 +36,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         # Fetch undelivered messages
         await self.fetch_undelivered_messages()
 
-        # Fetch undelivered milestones (milestone integration)
+        # Fetch undelivered milestones
         await self.fetch_undelivered_milestones()
 
     async def disconnect(self, close_code):
@@ -63,7 +63,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def notify_connection_status(self, online):
         """Notify user's connections about online/offline status change."""
         try:
-            from users.models import Circle
             connections = await sync_to_async(list)(
                 Circle.objects.filter(
                     Q(userid=self.user_id) | Q(otherperson=self.user_id)
@@ -100,7 +99,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error(f"Error fetching undelivered messages: {str(e)}")
 
-    # New milestone fetching method
     async def fetch_undelivered_milestones(self):
         """Fetch undelivered milestones for the user"""
         try:
@@ -148,8 +146,12 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             data = json.loads(text_data)
             category = data.get("category")
 
-            # Handle milestone notifications (integrated)
-            if category == "milestone":
+            # Handle blog updates
+            if category == "blog_update":
+                await self.handle_blog_update(data)
+
+            # Handle milestone notifications
+            elif category == "milestone":
                 await handle_milestone_notification(self, data)
 
             # Handle chat system events
@@ -190,6 +192,20 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 "source": "receive_handler"
             }))
 
+    async def handle_blog_update(self, data):
+        """Handle blog update messages"""
+        action = data.get("action")
+        
+        if action == "subscribe_to_blog":
+            blog_id = data.get("blog_id")
+            # Subscribe to updates for this specific blog
+            await self.channel_layer.group_add(f"blog_{blog_id}", self.channel_name)
+            
+        elif action == "unsubscribe_from_blog":
+            blog_id = data.get("blog_id")
+            # Unsubscribe from updates for this blog
+            await self.channel_layer.group_discard(f"blog_{blog_id}", self.channel_name)
+
     async def handle_message_status_update(self, data):
         """Handle client-side message status updates."""
         try:
@@ -221,3 +237,27 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
         logger.info(f"Sending notification to user {self.user_id}: {event}")
         await self.send(text_data=json.dumps(event))
+        
+    async def blog_update(self, event):
+        """Sends blog updates to the WebSocket client"""
+        await self.send(text_data=json.dumps(event))
+    async def comment_update(self, event):
+        """Sends comment updates to the WebSocket client"""
+        await self.send(text_data=json.dumps(event))
+    async def comment_like_update(self, event):
+        """Sends comment like updates to the WebSocket client"""
+        await self.send(text_data=json.dumps(event))
+    async def reply_update(self, event):
+        """Sends reply updates to the WebSocket client"""
+        await self.send(text_data=json.dumps(event))
+    async def blog_created(self, event):
+        """Sends blog creation updates to the WebSocket client"""
+        print("Sending blog creation update to WebSocket client")
+        await self.send(text_data=json.dumps({
+            "type": "blog_created",
+            "blog_id": event["blog_id"],
+            "action": event["action"],
+            "blog_type": event["blog_type"],
+            "blog": event["blog"],
+            "user_id": event["user_id"]
+        }))

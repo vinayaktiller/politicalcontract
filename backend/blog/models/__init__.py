@@ -9,3 +9,4 @@ from .consumption import MicroConsumption, ShortEssayConsumption, ArticleConsump
 from .report_insight_blog import report_insight_micro, report_insight_short_essay, report_insight_article, ReportReference
 from .milestoneblog import MicroMilestoneJourneyBlog, ShortEssayMilestoneJourneyBlog, ArticleMilestoneJourneyBlog
 from .comments import Comment
+from .blogload import BlogLoad

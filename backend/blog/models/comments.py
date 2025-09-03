@@ -46,3 +46,14 @@ class Comment(models.Model):
 
     def __str__(self) -> str:
         return f"Comment({self.id}) by {self.user_id}"
+    def get_root_blog_id(self):
+        """
+        Traverse up the comment hierarchy to find the root blog ID
+        """
+        current = self
+        while current.parent_type != 'blog':
+            try:
+                current = Comment.objects.get(id=current.parent)
+            except Comment.DoesNotExist:
+                return None
+        return current.parent

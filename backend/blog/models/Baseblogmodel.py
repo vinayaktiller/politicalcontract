@@ -19,3 +19,16 @@ class BaseBlogModel(models.Model):
 
     class Meta:
          db_table = 'blog"."base_blog_model'
+    def get_all_comments(self):
+        """Get all comments for this blog with their replies in a hierarchical structure"""
+        from ..blogpage.serializers import CommentSerializer  # Avoid circular import
+        from .comments import Comment
+        
+        # Get top-level comments (parent_type='blog')
+        top_level_comments = Comment.objects.filter(
+            parent_type='blog', 
+            parent=self.id
+        ).order_by('created_at')
+        
+        # Serialize with replies
+        return CommentSerializer(top_level_comments, many=True, context={}).data

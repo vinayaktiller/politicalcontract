@@ -43,12 +43,15 @@ const Navigationbar: React.FC<NavigationbarProps> = ({ toggleNav }) => {
             <Link to={`/connections/${userId}`} onClick={handleNavClick}>Friends</Link>
           </>
         )}
-        
-        <Link to={'/my-groups/'} onClick={handleNavClick}>My Groups</Link>
+
         <Link to={'dashboards/'} onClick={handleNavClick}>Dashboard</Link>
-        <Link to={`/home/`} onClick={handleNavClick}>testing page</Link>
-        <Link to={`/messages/chatlist`} onClick={handleNavClick}>Messages</Link>
+        
+        <Link to={`/messages/chatlist`} onClick={handleNavClick}>Conversations</Link>
+        <Link to={'/blogs/'} onClick={handleNavClick}>Blogs</Link>
         <Link to={`/milestones`} onClick={handleNavClick}>Milestones</Link>
+        <Link to={'/my-groups/'} onClick={handleNavClick}>My Groups</Link>
+        
+        <Link to={`/home/`} onClick={handleNavClick}>More</Link>
         
       </div>
       <div className='navbar-bottom'>

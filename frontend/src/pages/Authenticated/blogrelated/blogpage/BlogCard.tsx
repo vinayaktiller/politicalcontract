@@ -1,5 +1,6 @@
 import React from 'react';
 import { Blog } from './blogTypes';
+import './BlogListPage.css';
 
 interface BlogCardProps {
   blog: Blog;
@@ -22,48 +23,36 @@ const BlogCard: React.FC<BlogCardProps> = ({
   onReportClick,
   formatReportTitle
 }) => {
+  // Calculate actual comment count (excluding temporary IDs)
+  const actualCommentCount = blog.footer.comments.filter(id => !id.startsWith('temp-')).length;
+
   return (
     <li 
       key={blog.id} 
       className="blog-card"
-      style={{ 
-        marginBottom: '2rem', 
-        border: '1px solid #eee', 
-        borderRadius: '8px',
-        padding: '1.5rem',
-        transition: 'all 0.2s ease'
-      }}
       onClick={() => onBlogClick(blog.id)}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+      <div className="blog-card-header">
         <img
           src={blog.header.user.profile_pic || '/default-profile.png'}
           alt={blog.header.user.name}
-          style={{ 
-            width: '50px', 
-            height: '50px', 
-            borderRadius: '50%', 
-            marginRight: '1rem', 
-            objectFit: 'cover',
-            cursor: 'pointer'
-          }}
+          className="blog-card-user-image"
           onClick={(e) => onUserClick(blog.header.user.id, e)}
         />
-        <div style={{ flex: 1 }}>
+        <div className="blog-card-user-info">
           <h3 
-            style={{ margin: 0, cursor: 'pointer' }}
+            className="blog-card-user-name user-clickable"
             onClick={(e) => onUserClick(blog.header.user.id, e)}
-            className="user-clickable"
           >
             {blog.header.user.name}
           </h3>
-          <p style={{ margin: 0, color: '#666' }}>{blog.header.user.relation}</p>
-          <p style={{ margin: 0, color: '#666' }}>
+          <p className="blog-card-user-relation">{blog.header.user.relation}</p>
+          <p className="blog-card-meta">
             {new Date(blog.header.created_at).toLocaleString()} • {blog.header.type}
           </p>
           {blog.header.narrative && (
-            <p style={{ margin: '0.5rem 0 0 0', fontStyle: 'italic', color: '#666' }}>
+            <p className="blog-card-narrative">
               {blog.header.narrative}
             </p>
           )}
@@ -71,25 +60,24 @@ const BlogCard: React.FC<BlogCardProps> = ({
       </div>
 
       {/* Body */}
-      <div style={{ marginBottom: '1rem' }}>
+      <div className="blog-card-body">
         {/* Target user */}
         {blog.body.body_type_fields.target_user && (
           <div 
-            style={{ display: 'flex', alignItems: 'center', margin: '0.5rem 0', cursor: 'pointer' }}
+            className="blog-card-target-user user-clickable"
             onClick={(e) => {
               e.stopPropagation();
               onUserClick(blog.body.body_type_fields.target_user!.id, e);
             }}
-            className="user-clickable"
           >
             <img
               src={blog.body.body_type_fields.target_user.profile_pic || '/default-profile.png'}
               alt={blog.body.body_type_fields.target_user.name}
-              style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '0.5rem', objectFit: 'cover' }}
+              className="blog-card-target-user-image"
             />
-            <div>
-              <span style={{ fontWeight: 'bold' }}>{blog.body.body_type_fields.target_user.name}</span>
-              <span style={{ color: '#666', marginLeft: '0.5rem' }}>
+            <div className="blog-card-target-user-info">
+              <span className="blog-card-target-user-name">{blog.body.body_type_fields.target_user.name}</span>
+              <span className="blog-card-target-user-relation">
                 ({blog.body.body_type_fields.target_user.relation})
               </span>
             </div>
@@ -98,28 +86,23 @@ const BlogCard: React.FC<BlogCardProps> = ({
 
         {/* Milestone */}
         {blog.body.body_type_fields.milestone && (
-          <div style={{ margin: '1rem 0', border: '1px solid #e0e0e0', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ padding: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0' }}>
+          <div className="blog-card-milestone">
+            <div className="blog-card-milestone-content">
+              <h4 className="blog-card-milestone-title">
                 {blog.body.body_type_fields.milestone.title}
               </h4>
               {blog.body.body_type_fields.milestone.text && (
-                <p style={{ margin: '0 0 1rem 0', color: '#666' }}>
+                <p className="blog-card-milestone-text">
                   {blog.body.body_type_fields.milestone.text}
                 </p>
               )}
             </div>
             {blog.body.body_type_fields.milestone.photo_url && (
-              <div style={{ position: 'relative', width: '100%', height: '300px', overflow: 'hidden' }}>
+              <div className="blog-card-milestone-image-container">
                 <img
                   src={blog.body.body_type_fields.milestone.photo_url}
                   alt={blog.body.body_type_fields.milestone.title}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    display: 'block'
-                  }}
+                  className="blog-card-milestone-image"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = 'http://localhost:3000/initiation/1.jpg';
@@ -133,8 +116,7 @@ const BlogCard: React.FC<BlogCardProps> = ({
         {/* Report insight details */}
         {blog.header.type === 'report_insight' && blog.body.body_type_fields.report_kind && (
           <div
-            className="report-insight-nav"
-            style={{ margin: '1rem 0', padding: '1rem', border: '1px solid #e0e0e0', borderRadius: '8px' }}
+            className="blog-card-report report-insight-nav"
             tabIndex={0}
             role="button"
             onClick={(e) =>
@@ -158,24 +140,24 @@ const BlogCard: React.FC<BlogCardProps> = ({
             }}
             aria-label="Visit report insight"
           >
-            <h4 style={{ margin: '0 0 0.5rem 0' }}>
+            <h4 className="blog-card-report-title">
               {formatReportTitle(
                 blog.body.body_type_fields.report_kind,
                 blog.body.body_type_fields.time_type || ''
               )}
             </h4>
             {blog.body.body_type_fields.date && (
-              <p style={{ margin: '0 0 0.5rem 0', color: '#666' }}>
+              <p className="blog-card-report-date">
                 {blog.body.body_type_fields.date}
               </p>
             )}
             {blog.body.body_type_fields.location && (
-              <p style={{ margin: '0 0 0.5rem 0', color: '#666' }}>
+              <p className="blog-card-report-location">
                 <strong>📍</strong> {blog.body.body_type_fields.location}
               </p>
             )}
             {blog.body.body_type_fields.new_users !== undefined && (
-              <p style={{ margin: '0 0 0.5rem 0', color: '#666' }}>
+              <p className="blog-card-report-users">
                 <strong>New Users:</strong> {blog.body.body_type_fields.new_users}
               </p>
             )}
@@ -186,12 +168,12 @@ const BlogCard: React.FC<BlogCardProps> = ({
         {blog.header.type === 'report_insight' && !blog.body.body_type_fields.report_kind && (
           <>
             {blog.body.body_type_fields.report_type && (
-              <p>
+              <p className="blog-card-report-type">
                 <strong>Report Type:</strong> {blog.body.body_type_fields.report_type}
               </p>
             )}
             {blog.body.body_type_fields.report_id && (
-              <p>
+              <p className="blog-card-report-id">
                 <strong>Report ID:</strong> {blog.body.body_type_fields.report_id}
               </p>
             )}
@@ -200,12 +182,12 @@ const BlogCard: React.FC<BlogCardProps> = ({
         {blog.header.type === 'consumption' && (
           <>
             {blog.body.body_type_fields.title && (
-              <p>
+              <p className="blog-card-consumption-title">
                 <strong>Title:</strong> {blog.body.body_type_fields.title}
               </p>
             )}
             {blog.body.body_type_fields.url && (
-              <p style={{ marginTop: '0.5rem' }}>
+              <p className="blog-card-consumption-url">
                 <strong>URL:</strong>{' '}
                 {blog.body.body_type_fields.url ? (
                   <a 
@@ -224,28 +206,24 @@ const BlogCard: React.FC<BlogCardProps> = ({
           </>
         )}
         {blog.header.type === 'answering_question' && blog.body.body_type_fields.question?.text && (
-          <p>
+          <p className="blog-card-question">
             {blog.body.body_type_fields.question?.text}
           </p>
         )}
         {blog.header.type === 'failed_initiation' && (
           <>
             {blog.body.body_type_fields.location && (
-              <p style={{ margin: '0 0 0.5rem 0', color: '#666' }}>
+              <p className="blog-card-failed-location">
                 <strong>📍</strong> {blog.body.body_type_fields.location}
               </p>
             )}
             {blog.body.body_type_fields.target_details && (
-              <p>
+              <p className="blog-card-target-details">
                 <strong>Other Details:</strong> {blog.body.body_type_fields.target_details}
               </p>
             )}
             {blog.body.body_type_fields.failure_reason && (
-              <p style={{
-                paddingTop: '1rem',
-                stroke: 'black',
-                borderRadius: '4px'
-              }}>
+              <p className="blog-card-failure-reason">
                 <strong>Failure Reason:</strong> {blog.body.body_type_fields.failure_reason}
               </p>
             )}
@@ -253,29 +231,19 @@ const BlogCard: React.FC<BlogCardProps> = ({
         )}
 
         {/* Body text */}
-        <div
-          style={{
-            marginTop: '1rem',
-            padding: '1rem',
-            backgroundColor: '#f5f5f5',
-            borderRadius: '4px'
-          }}
-        >
-          <p style={{ margin: 0 }}>{blog.body.body_text ?? 'No content available'}</p>
+        <div className="blog-card-body-text">
+          <p>{blog.body.body_text ?? 'No content available'}</p>
         </div>
       </div>
 
       {/* Footer with reaction buttons */}
       <div 
-        style={{ display: 'flex',  alignItems: 'center' }}
+        className="blog-card-footer"
         onClick={(e) => e.stopPropagation()}
       >
         <button 
           className={`reaction-btn btn-like ${blog.footer.has_liked ? 'active' : ''}`}
           onClick={(e) => onLikeClick(blog.id, e)}
-          style={{
-            backgroundColor: 'transparent',
-          }}
         >
           <i className="far fa-heart"></i> Like ({blog.footer.likes.length})
         </button>
@@ -283,19 +251,15 @@ const BlogCard: React.FC<BlogCardProps> = ({
         <button 
           className={`reaction-btn btn-share ${blog.footer.has_shared ? 'active' : ''}`}
           onClick={(e) => onShareClick(blog.id, e)}
-          style={{
-            backgroundColor: 'transparent',
-          }}
         >
           <i className="far fa-share-square"></i> {blog.footer.has_shared ? 'Unshare' : 'Share'} ({blog.footer.shares.length})
         </button>
         
         <span 
-          style={{ backgroundColor: 'transparent', color: '#666', cursor: 'pointer' }}
+          className="reaction-btn blog-card-comment-btn"
           onClick={(e) => onCommentClick(blog.id, e)}
-          className="reaction-btn"
         >
-          <i className="far fa-comment"></i> Comments ({blog.footer.comments.length})
+          <i className="far fa-comment"></i> Comments ({actualCommentCount})
         </span>
       </div>
     </li>

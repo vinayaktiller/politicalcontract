@@ -1,8 +1,25 @@
+
+// blogTypes.ts
 export interface User {
   id: number;
   name: string;
   profile_pic: string | null;
   relation: string;
+}
+
+// blogTypes.ts
+export interface Comment {
+  id: string;
+  user: User;
+  text: string;
+  likes: number[];
+  dislikes: number[];
+  created_at: string;
+  replies: Comment[];
+  // Add these new properties
+  has_liked?: boolean;
+  is_replying?: boolean; // For UI state
+  reply_text?: string; // For UI state
 }
 
 export interface Milestone {
@@ -69,6 +86,7 @@ export interface Blog {
   header: BlogHeader;
   body: BlogBody;
   footer: BlogFooter;
+  comments: Comment[]; // Add comments to Blog interface
 }
 
 export interface BlogsState {
@@ -91,4 +109,12 @@ export interface LikeActionResponse {
 
 export interface ShareActionResponse {
   action: string;
+}
+
+export interface CommentActionResponse {
+  action: string;
+  comment?: Comment;
+  comment_id?: string;
+  likes_count?: number;
+
 }

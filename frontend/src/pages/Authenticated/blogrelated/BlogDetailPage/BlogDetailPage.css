@@ -1,0 +1,573 @@
+/* BlogDetailPage.css */
+/* Mobile First Approach - Left Aligned */
+
+/* Container Styles */
+.BlogDetailPage-container {
+  padding: 16px;
+  padding-bottom: 2vh;
+  overflow: auto;
+  height: 95vh;
+  width: 100%;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.BlogDetailPage-loading,
+.BlogDetailPage-error,
+.BlogDetailPage-not-found {
+  padding: 2rem;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.BlogDetailPage-back-button {
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 2px solid #000000;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  font-size: 0.9rem;
+  align-self: flex-start;
+}
+
+.BlogDetailPage-back-button:hover {
+  background-color: #f0f0f0;
+}
+
+/* Content Styles */
+.BlogDetailPage-content {
+  margin-bottom: 2rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 1rem;
+  background: transparent;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Header Styles */
+.BlogDetailPage-header {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.BlogDetailPage-user-image {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 1rem;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.BlogDetailPage-user-info {
+  flex: 1;
+}
+
+.BlogDetailPage-user-name {
+  margin: 0;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #333;
+  text-align: left;
+}
+
+.BlogDetailPage-user-name:hover {
+  text-decoration: underline;
+}
+
+.BlogDetailPage-user-relation,
+.BlogDetailPage-meta {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.BlogDetailPage-narrative {
+  margin: 0.5rem 0 0 0;
+  font-style: italic;
+  color: #666;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+/* Body Styles */
+.BlogDetailPage-body {
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.BlogDetailPage-target-user {
+  display: flex;
+  align-items: center;
+  margin: 0.5rem 0;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.BlogDetailPage-target-user:hover {
+  background-color: #f5f5f5;
+}
+
+.BlogDetailPage-target-user-image {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  object-fit: cover;
+}
+
+.BlogDetailPage-target-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.BlogDetailPage-target-user-name {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.BlogDetailPage-target-user-relation {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+.BlogDetailPage-milestone {
+  margin: 1rem 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.BlogDetailPage-milestone-content {
+  padding: 1rem;
+  text-align: left;
+}
+
+.BlogDetailPage-milestone-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #333;
+  text-align: left;
+}
+
+.BlogDetailPage-milestone-text {
+  margin: 0 0 1rem 0;
+  color: #666;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.BlogDetailPage-milestone-image-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.BlogDetailPage-milestone-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.BlogDetailPage-report {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.BlogDetailPage-report:hover {
+  box-shadow: 0 2px 12px rgba(40,80,120,0.11), 0 2px 4px rgba(40,80,120,0.15);
+  border-color: #288fef;
+  background: #f2faff;
+}
+
+.BlogDetailPage-report-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #333;
+  text-align: left;
+}
+
+.BlogDetailPage-report-date,
+.BlogDetailPage-report-location,
+.BlogDetailPage-report-users {
+  margin: 0 0 0.5rem 0;
+  color: #666;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.BlogDetailPage-consumption-title,
+.BlogDetailPage-consumption-url,
+.BlogDetailPage-question,
+.BlogDetailPage-failed-location,
+.BlogDetailPage-target-details,
+.BlogDetailPage-failure-reason {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  color: #333;
+  text-align: left;
+}
+
+.BlogDetailPage-link {
+  color: #1890ff;
+  text-decoration: none;
+}
+
+.BlogDetailPage-link:hover {
+  text-decoration: underline;
+}
+
+.BlogDetailPage-failure-reason {
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+}
+
+.BlogDetailPage-body-text {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.BlogDetailPage-body-text p {
+  margin: 0;
+  color: #333;
+  line-height: 1.5;
+}
+
+/* Action Buttons */
+.BlogDetailPage-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  justify-content: flex-start;
+}
+
+.BlogDetailPage-action-btn {
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background: white;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #555;
+  white-space: nowrap;
+}
+
+.BlogDetailPage-action-btn:hover {
+  background: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.BlogDetailPage-action-btn.BlogDetailPage-active {
+  background: #e6f7ff;
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+/* Comments Section */
+.BlogDetailPage-comments {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+  text-align: left;
+}
+
+.BlogDetailPage-comments-title {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: #333;
+  text-align: left;
+}
+
+.BlogDetailPage-comment-form {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.BlogDetailPage-comment-input {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.BlogDetailPage-comment-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.BlogDetailPage-comment-submit {
+  align-self: flex-end;
+  padding: 0.5rem 1.5rem;
+  background: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.BlogDetailPage-comment-submit:hover:not(:disabled) {
+  background: #40a9ff;
+}
+
+.BlogDetailPage-comment-submit:disabled {
+  background: #bae7ff;
+  cursor: not-allowed;
+}
+
+/* Comment List */
+.BlogDetailPage-comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.BlogDetailPage-no-comments {
+  text-align: center;
+  color: #999;
+  font-style: italic;
+  padding: 1rem;
+}
+
+.BlogDetailPage-comment {
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fff;
+  text-align: left;
+  box-sizing: border-box;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.BlogDetailPage-comment-reply {
+  border-left: 3px solid #f0f0f0;
+  background-color: #f9f9f9;
+}
+
+.BlogDetailPage-comment-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.BlogDetailPage-comment-user-image {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.BlogDetailPage-comment-user-info {
+  flex: 1;
+  text-align: left;
+}
+
+.BlogDetailPage-comment-user-name {
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #333;
+  margin: 0;
+  text-align: left;
+}
+
+.BlogDetailPage-comment-user-name:hover {
+  text-decoration: underline;
+}
+
+.BlogDetailPage-comment-date {
+  margin: 0;
+  color: #666;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.BlogDetailPage-comment-text {
+  margin: 0.5rem 0 0 0;
+  color: #333;
+  line-height: 1.4;
+  font-size: 0.9rem;
+  text-align: left;
+  word-break: break-word;
+}
+
+.BlogDetailPage-comment-replies {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Comment Actions */
+.BlogDetailPage-comment-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.BlogDetailPage-comment-action {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #666;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.BlogDetailPage-comment-action:hover {
+  background-color: #f0f0f0;
+}
+
+.BlogDetailPage-comment-action.BlogDetailPage-active {
+  color: #007bff;
+  background-color: #e6f7ff;
+}
+
+/* Reply Form */
+.BlogDetailPage-reply-form {
+  margin-top: 15px;
+  border-left: 3px solid #f0f0f0;
+  padding-left: 15px;
+}
+
+.BlogDetailPage-reply-input {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  resize: vertical;
+  margin-bottom: 10px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.BlogDetailPage-reply-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.BlogDetailPage-reply-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.BlogDetailPage-reply-cancel,
+.BlogDetailPage-reply-submit {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.BlogDetailPage-reply-cancel {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.BlogDetailPage-reply-cancel:hover {
+  background-color: #e0e0e0;
+}
+
+.BlogDetailPage-reply-submit {
+  background-color: #007bff;
+  color: white;
+}
+
+.BlogDetailPage-reply-submit:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.BlogDetailPage-reply-submit:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Tablet and Desktop Styles */
+@media (min-width: 768px) {
+  .BlogDetailPage-container {
+    padding: 20px 30px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .BlogDetailPage-content {
+    padding: 1.5rem;
+  }
+  
+  .BlogDetailPage-milestone-image-container {
+    height: 300px;
+  }
+  
+  .BlogDetailPage-user-name {
+    font-size: 1.2rem;
+  }
+  
+  .BlogDetailPage-milestone-title {
+    font-size: 1.1rem;
+  }
+  
+  .BlogDetailPage-comment-form {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+  
+  .BlogDetailPage-comment-input {
+    flex: 1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .BlogDetailPage-container {
+    max-width: 900px;
+  }
+}

@@ -1,173 +1,47 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import api from "../../../../api";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchBlog,
+  fetchComments,
+  likeBlog,
+  shareBlog,
+  addCommentToBlog,
+  likeComment,
+  addReplyToCommentThunk,
+} from "../blogpage/blogThunks";
+import { setReplyingState, setReplyText } from "../blogpage/blogSlice";
+import { AppDispatch, RootState } from "../../../../store";
+import "./BlogDetailPage.css";
 
-// ------------------
-// Types
-// ------------------
-interface User {
-  id: number;
-  name: string;
-  profile_pic: string | null;
-  relation: string;
-}
-
-interface Milestone {
-  id: string;
-  title: string;
-  text: string;
-  photo_url: string | null;
-  type: string | null;
-  photo_id: number | null;
-}
-
-interface BlogHeader {
-  user: User;
-  type: string;
-  created_at: string;
-  narrative?: string;
-}
-
-interface BlogBody {
-  body_text: string | null;
-  body_type_fields: {
-    target_user?: User;
-    milestone?: Milestone;
-    report_type?: string | null;
-    report_id?: string | null;
-    report_kind?: string;
-    time_type?: string;
-    id?: string;
-    level?: string;
-    location?: string;
-    new_users?: number;
-    date?: string;
-    url?: string | null;
-    contribution?: string | null;
-    questionid?: number | null;
-    country_id?: number | null;
-    state_id?: number | null;
-    district_id?: number | null;
-    subdistrict_id?: number | null;
-    village_id?: number | null;
-    target_details?: string | null;
-    failure_reason?: string | null;
-    title?: string | null;
-    question?: {
-      id: number | null;
-      text: string | null;
-      rank: number | null;
-    };
-  };
-}
-
-interface BlogFooter {
-  likes: number[];
-  relevant_count: number[];
-  irrelevant_count: number[];
-  shares: number[];
-  comments: string[];
-  has_liked: boolean;
-  has_shared: boolean;
-}
-
-interface Blog {
-  id: string;
-  header: BlogHeader;
-  body: BlogBody;
-  footer: BlogFooter;
-}
-
-interface Comment {
-  id: string;
-  user: User;
-  text: string;
-  created_at: string;
-  replies?: Comment[];
-}
-
-// API Response Types
-interface ApiResponse<T> {
-  data: T;
-  status: number;
-  statusText: string;
-  headers: any;
-  config: any;
-}
-
-interface BlogApiResponse {
-  blog?: Blog;
-}
-
-interface CommentsApiResponse {
-  comments?: Comment[];
-}
-
-interface LikeShareResponse {
-  action: string;
-}
-
-interface CommentApiResponse {
-  comment?: Comment;
-}
-
-// ------------------
-// Component
-// ------------------
 const BlogDetailPage: React.FC = () => {
   const { blogId } = useParams<{ blogId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const [blog, setBlog] = useState<Blog | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const dispatch = useDispatch<AppDispatch>();
+
   const [newComment, setNewComment] = useState("");
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [commentLoading, setCommentLoading] = useState<boolean>(false);
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
 
-  // ------------------
-  // Fetch Blog + Comments
-  // ------------------
-  useEffect(() => {
-    const fetchBlog = async () => {
-      if (!blogId) return;
+  // Fetch blog and type from Redux state
+  const { blog, blogType } = useSelector((state: RootState) => {
+    if (!blogId) return { blog: null, blogType: null };
+    for (const type of Object.keys(state.blog.blogs)) {
+      const foundBlog = state.blog.blogs[type].blogs.find(b => b.id === blogId);
+      if (foundBlog) return { blog: foundBlog, blogType: type };
+    }
+    return { blog: null, blogType: null };
+  });
 
-      try {
-        setLoading(true);
-        const response = await api.get<BlogApiResponse>(`/api/blog/blogs/${blogId}/`);
-        
-        // Check if the response has a nested blog property
-        const blogData = (response.data as BlogApiResponse).blog || response.data;
-        setBlog(blogData as Blog);
-        console.log("Blog fetched:", blogData);
+  const loading = useSelector((state: RootState) => state.blog.status === "loading");
+  const error = useSelector((state: RootState) => state.blog.error);
 
-        setError(null);
-
-        const commentsResponse = await api.get<CommentsApiResponse>(
-          `/api/blog/blogs/${blogId}/comments/`
-        );
-        
-        // Check if comments are nested in a property
-        const commentsData = (commentsResponse.data as CommentsApiResponse).comments || commentsResponse.data;
-        setComments(commentsData as Comment[]);
-      } catch (err: any) {
-        setError(err.message || "Error loading blog");
-        setBlog(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBlog();
-  }, [blogId]);
-
-  // ------------------
-  // Scroll to comments if asked
-  // ------------------
+  // Scroll to comments if coming from a location with focusComment
   useEffect(() => {
     if ((location.state as any)?.focusComment) {
       setTimeout(() => {
-        const commentsSection = document.getElementById("comments-section");
+        const commentsSection = document.getElementById("BlogDetailPage-comments-section");
         if (commentsSection) {
           commentsSection.scrollIntoView({ behavior: "smooth" });
           commentsSection.focus();
@@ -176,62 +50,33 @@ const BlogDetailPage: React.FC = () => {
     }
   }, [location.state]);
 
-  // ------------------
+  // Toggle expanded state for comments
+  const toggleExpandedComment = (commentId: string) => {
+    setExpandedComments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(commentId)) {
+        newSet.delete(commentId);
+      } else {
+        newSet.add(commentId);
+      }
+      return newSet;
+    });
+  };
+
   // Actions
-  // ------------------
   const handleLike = async () => {
-    if (!blog) return;
-
+    if (!blog || !blogType) return;
     try {
-      const response = await api.post<LikeShareResponse>(`/api/blog/blogs/${blog.id}/like/`);
-      const data = response.data;
-
-      setBlog((prevBlog) => {
-        if (!prevBlog) return null;
-        return {
-          ...prevBlog,
-          footer: {
-            ...prevBlog.footer,
-            likes:
-              data.action === "added"
-                ? [...prevBlog.footer.likes, 0]
-                : prevBlog.footer.likes.slice(0, -1),
-            has_liked: data.action === "added",
-          },
-        };
-      });
+      dispatch(likeBlog({ blogType, blogId: blog.id }));
     } catch (err) {
       console.error("Error liking blog:", err);
     }
   };
 
   const handleShare = async () => {
-    if (!blog) return;
-
+    if (!blog || !blogType) return;
     try {
-      const response = await api.post<LikeShareResponse>(`/api/blog/blogs/${blog.id}/share/`);
-      const data = response.data;
-
-      setBlog((prevBlog) => {
-        if (!prevBlog) return null;
-        return {
-          ...prevBlog,
-          footer: {
-            ...prevBlog.footer,
-            shares:
-              data.action === "added"
-                ? [...prevBlog.footer.shares, 0]
-                : prevBlog.footer.shares.slice(0, -1),
-            has_shared: data.action === "added",
-          },
-        };
-      });
-
-      alert(
-        data.action === "added"
-          ? "Blog shared successfully!"
-          : "Blog unshared successfully!"
-      );
+      dispatch(shareBlog({ blogType, blogId: blog.id }));
     } catch (err) {
       console.error("Error sharing blog:", err);
       alert("Error sharing blog. Please try again.");
@@ -240,31 +85,17 @@ const BlogDetailPage: React.FC = () => {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!blog || !newComment.trim()) return;
-
+    if (!blog || !blogType || !newComment.trim()) return;
     try {
       setCommentLoading(true);
-      const response = await api.post<CommentApiResponse>(`/api/blog/blogs/${blog.id}/comments/`, {
-        text: newComment.trim(),
-      });
-
-      const commentData = (response.data as CommentApiResponse).comment || response.data;
-      setComments((prevComments) => [
-        commentData as Comment,
-        ...prevComments,
-      ]);
+      await dispatch(
+        addCommentToBlog({
+          blogType,
+          blogId: blog.id,
+          text: newComment,
+        })
+      ).unwrap();
       setNewComment("");
-
-      setBlog((prevBlog) => {
-        if (!prevBlog) return null;
-        return {
-          ...prevBlog,
-          footer: {
-            ...prevBlog.footer,
-            comments: [...prevBlog.footer.comments, "new-comment-id"],
-          },
-        };
-      });
     } catch (err) {
       console.error("Error posting comment:", err);
       alert("Error posting comment. Please try again.");
@@ -277,16 +108,193 @@ const BlogDetailPage: React.FC = () => {
     navigate(`/profile/${userId}`);
   };
 
-  const formatReportTitle = (
-    report_kind: string,
-    time_type: string
-  ): string => {
+  const handleLikeComment = async (commentId: string) => {
+    if (!blog || !blogType) return;
+    try {
+      dispatch(likeComment({ blogType, blogId: blog.id, commentId }));
+    } catch (err) {
+      console.error("Error liking comment:", err);
+    }
+  };
+
+  const handleReplyToComment = async (commentId: string, text: string) => {
+    if (!blog || !blogType || !text.trim()) return;
+    try {
+      await dispatch(
+        addReplyToCommentThunk({
+          blogType,
+          blogId: blog.id,
+          commentId,
+          text,
+        })
+      ).unwrap();
+      dispatch(
+        setReplyingState({
+          blogType,
+          blogId: blog.id,
+          commentId,
+          isReplying: false,
+        })
+      );
+      dispatch(
+        setReplyText({
+          blogType,
+          blogId: blog.id,
+          commentId,
+          text: "",
+        })
+      );
+    } catch (err) {
+      console.error("Error posting reply:", err);
+      alert("Error posting reply. Please try again.");
+    }
+  };
+
+  const toggleReplying = (commentId: string, isReplying: boolean) => {
+    if (!blog || !blogType) return;
+    dispatch(
+      setReplyingState({
+        blogType,
+        blogId: blog.id,
+        commentId,
+        isReplying,
+      })
+    );
+    if (!isReplying) {
+      dispatch(
+        setReplyText({
+          blogType,
+          blogId: blog.id,
+          commentId,
+          text: "",
+        })
+      );
+    }
+  };
+
+  // Recursively render comments/replies
+  const CommentItem = ({ comment, depth = 0 }: { comment: any; depth?: number }) => {
+    const [localReplyText, setLocalReplyText] = useState("");
+    const isReplying = comment.is_replying || false;
+    const hasReplies = comment.replies && comment.replies.length > 0;
+    const isExpanded = expandedComments.has(comment.id);
+    
+    return (
+      <div
+        className={`BlogDetailPage-comment ${depth > 0 ? "BlogDetailPage-comment-reply" : ""}`}
+        style={{ 
+          marginLeft: depth > 0 ? `${Math.min(depth, 3) * 12}px` : '0',
+          maxWidth: depth > 3 ? `calc(100% - ${3 * 12}px)` : '100%'
+        }}
+      >
+        <div className="BlogDetailPage-comment-header">
+          <img
+            src={comment.user?.profile_pic || "/default-profile.png"}
+            alt={comment.user?.name || "User"}
+            className="BlogDetailPage-comment-user-image"
+            onClick={() => comment.user && handleUserClick(comment.user.id)}
+          />
+          <div className="BlogDetailPage-comment-user-info">
+            <strong
+              className="BlogDetailPage-comment-user-name"
+              onClick={() => comment.user && handleUserClick(comment.user.id)}
+            >
+              {comment.user?.name}
+            </strong>
+            <p className="BlogDetailPage-comment-date">{new Date(comment.created_at).toLocaleString()}</p>
+          </div>
+        </div>
+        <p className="BlogDetailPage-comment-text">{comment.text}</p>
+        <div className="BlogDetailPage-comment-actions">
+          <button
+            type="button"
+            className={`BlogDetailPage-comment-action ${comment.has_liked ? "BlogDetailPage-active" : ""}`}
+            onClick={() => handleLikeComment(comment.id)}
+          >
+            ❤️ ({comment.likes ? comment.likes.length : 0})
+          </button>
+          <button
+            type="button"
+            className="BlogDetailPage-comment-action"
+            onClick={() => toggleReplying(comment.id, !isReplying)}
+          >
+            💬 Reply
+          </button>
+          {hasReplies && (
+            <button
+              type="button"
+              className="BlogDetailPage-comment-action"
+              onClick={() => toggleExpandedComment(comment.id)}
+            >
+              {isExpanded ? '▲ Hide Replies' : `▼ View Replies (${comment.replies.length})`}
+            </button>
+          )}
+        </div>
+        {isReplying && (
+          <div className="BlogDetailPage-reply-form">
+            <textarea
+              className="BlogDetailPage-reply-input"
+              placeholder="Write a reply..."
+              value={localReplyText}
+              onChange={(e) => setLocalReplyText(e.target.value)}
+              autoFocus
+            />
+            <div className="BlogDetailPage-reply-actions">
+              <button
+                type="button"
+                className="BlogDetailPage-reply-cancel"
+                onClick={() => {
+                  toggleReplying(comment.id, false);
+                  setLocalReplyText("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="BlogDetailPage-reply-submit"
+                onClick={async () => {
+                  await handleReplyToComment(comment.id, localReplyText);
+                  setLocalReplyText("");
+                  // Auto-expand to show the new reply
+                  if (!isExpanded) {
+                    toggleExpandedComment(comment.id);
+                  }
+                }}
+                disabled={!localReplyText.trim()}
+              >
+                Post Reply
+              </button>
+            </div>
+          </div>
+        )}
+        {hasReplies && isExpanded && (
+          <div className="BlogDetailPage-comment-replies">
+            {comment.replies.map((reply: any) => (
+              <CommentItem key={reply.id} comment={reply} depth={depth + 1} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Calculate displayed comment count
+  const actualCommentCount =
+    blog?.footer.comments.filter((id: string) => !id.startsWith("temp-")).length || 0;
+
+  if (loading) return <div className="BlogDetailPage-loading">Loading blog...</div>;
+  if (error) return <div className="BlogDetailPage-error">Error loading blog: {error}</div>;
+  if (!blog) return <div className="BlogDetailPage-not-found">Blog not found</div>;
+
+  // Helper for report titles
+  const formatReportTitle = (report_kind: string, time_type: string): string => {
     const kind = report_kind === "activity_report" ? "Activity" : "Initiation";
-    const time =
-      time_type.charAt(0).toUpperCase() + time_type.slice(1);
+    const time = time_type.charAt(0).toUpperCase() + time_type.slice(1);
     return `${time} ${kind} Report`;
   };
 
+  // Helper for clicking on report
   const handleReportClick = (
     report_kind?: string,
     time_type?: string,
@@ -301,546 +309,255 @@ const BlogDetailPage: React.FC = () => {
     }
   };
 
-  // ------------------
-  // Render
-  // ------------------
-
-  if (loading) return <div>Loading blog...</div>;
-  if (error) return <div>Error loading blog: {error}</div>;
-  if (!blog) return <div>Blog not found</div>;
-
-  // Add safe access to nested properties
-  const header = blog.header || {} as BlogHeader;
-  const body = blog.body || {} as BlogBody;
-  const footer = blog.footer || {} as BlogFooter;
-
   return (
-    <div
-      className="blog-detail-page"
-      style={{
-        padding: "2rem",
-        maxWidth: "800px",
-        margin: "0 auto",
-        paddingTop: "50px",
-      }}
-    >
-      <button
-        onClick={() => navigate(-1)}
-        style={{
-          marginBottom: "1rem",
-          padding: "0.5rem 1rem",
-          background: "#f0f0f0",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-        }}
-      >
+    <div className="BlogDetailPage-container">
+      <button onClick={() => navigate(-1)} className="BlogDetailPage-back-button">
         ← Back
       </button>
-
-      {/* Blog Content */}
-      <div
-        style={{
-          marginBottom: "2rem",
-          border: "1px solid #eee",
-          borderRadius: "8px",
-          padding: "1.5rem",
-        }}
-      >
-        {/* Header */}
-        {header && header.user && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              marginBottom: "1rem",
-            }}
-          >
+      <div className="BlogDetailPage-content">
+        {/* Blog Header */}
+        {blog.header && blog.header.user && (
+          <div className="BlogDetailPage-header">
             <img
-              src={header.user.profile_pic || "/default-profile.png"}
-              alt={header.user.name}
-              style={{
-                width: "50px",
-                height: "50px",
-                borderRadius: "50%",
-                marginRight: "1rem",
-                objectFit: "cover",
-                cursor: "pointer",
-              }}
-              onClick={() => handleUserClick(header.user.id)}
+              src={blog.header.user.profile_pic || "/default-profile.png"}
+              alt={blog.header.user.name}
+              className="BlogDetailPage-user-image"
+              onClick={() => handleUserClick(blog.header.user.id)}
             />
-            <div style={{ flex: 1 }}>
+            <div className="BlogDetailPage-user-info">
               <h3
-                style={{ margin: 0, cursor: "pointer" }}
-                onClick={() => handleUserClick(header.user.id)}
-                className="user-clickable"
+                className="BlogDetailPage-user-name"
+                onClick={() => handleUserClick(blog.header.user.id)}
               >
-                {header.user.name}
+                {blog.header.user.name}
               </h3>
-              <p style={{ margin: 0, color: "#666" }}>
-                {header.user.relation}
+              <p className="BlogDetailPage-user-relation">
+                {blog.header.user.relation}
               </p>
-              <p style={{ margin: 0, color: "#666" }}>
-                {new Date(header.created_at).toLocaleString()} •{" "}
-                {header.type}
+              <p className="BlogDetailPage-meta">
+                {new Date(blog.header.created_at).toLocaleString()} •{" "}
+                {blog.header.type}
               </p>
-              {header.narrative && (
-                <p
-                  style={{
-                    margin: "0.5rem 0 0 0",
-                    fontStyle: "italic",
-                    color: "#666",
-                  }}
-                >
-                  {header.narrative}
+              {blog.header.narrative && (
+                <p className="BlogDetailPage-narrative">
+                  {blog.header.narrative}
                 </p>
               )}
             </div>
           </div>
         )}
-
-        {/* Body */}
-        <div style={{ marginBottom: "1rem" }}>
+        {/* Blog Body */}
+        <div className="BlogDetailPage-body">
           {/* Target User */}
-          {body.body_type_fields &&
-            body.body_type_fields.target_user && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  margin: "0.5rem 0",
-                  cursor: "pointer",
-                }}
-                onClick={() =>
-                  handleUserClick(
-                    body.body_type_fields.target_user!.id
-                  )
+          {blog.body.body_type_fields?.target_user && (
+            <div
+              className="BlogDetailPage-target-user"
+              onClick={() =>
+                handleUserClick(blog.body.body_type_fields.target_user!.id)
+              }
+            >
+              <img
+                src={
+                  blog.body.body_type_fields.target_user.profile_pic ||
+                  "/default-profile.png"
                 }
-                className="user-clickable"
-              >
-                <img
-                  src={
-                    body.body_type_fields.target_user.profile_pic ||
-                    "/default-profile.png"
-                  }
-                  alt={body.body_type_fields.target_user.name}
-                  style={{
-                    width: "30px",
-                    height: "30px",
-                    borderRadius: "50%",
-                    marginRight: "0.5rem",
-                    objectFit: "cover",
-                  }}
-                />
-                <div>
-                  <span style={{ fontWeight: "bold" }}>
-                    {body.body_type_fields.target_user.name}
-                  </span>
-                  <span
-                    style={{ color: "#666", marginLeft: "0.5rem" }}
-                  >
-                    ({body.body_type_fields.target_user.relation})
-                  </span>
-                </div>
+                alt={blog.body.body_type_fields.target_user.name}
+                className="BlogDetailPage-target-user-image"
+              />
+              <div className="BlogDetailPage-target-user-info">
+                <span className="BlogDetailPage-target-user-name">
+                  {blog.body.body_type_fields.target_user.name}
+                </span>
+                <span className="BlogDetailPage-target-user-relation">
+                  ({blog.body.body_type_fields.target_user.relation})
+                </span>
               </div>
-            )}
-
+            </div>
+          )}
           {/* Milestone */}
-          {body.body_type_fields &&
-            body.body_type_fields.milestone && (
-              <div
-                style={{
-                  margin: "1rem 0",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "8px",
-                  overflow: "hidden",
-                }}
-              >
-                <div style={{ padding: "1rem" }}>
-                  <h4 style={{ margin: "0 0 0.5rem 0" }}>
-                    {body.body_type_fields.milestone.title}
-                  </h4>
-                  {body.body_type_fields.milestone.text && (
-                    <p
-                      style={{
-                        margin: "0 0 1rem 0",
-                        color: "#666",
-                      }}
-                    >
-                      {body.body_type_fields.milestone.text}
-                    </p>
-                  )}
-                </div>
-                {body.body_type_fields.milestone.photo_url && (
-                  <div
-                    style={{
-                      position: "relative",
-                      width: "100%",
-                      height: "300px",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <img
-                      src={
-                        body.body_type_fields.milestone.photo_url
-                      }
-                      alt={body.body_type_fields.milestone.title}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src =
-                          "http://localhost:3000/initiation/1.jpg";
-                      }}
-                    />
-                  </div>
+          {blog.body.body_type_fields?.milestone && (
+            <div className="BlogDetailPage-milestone">
+              <div className="BlogDetailPage-milestone-content">
+                <h4 className="BlogDetailPage-milestone-title">
+                  {blog.body.body_type_fields.milestone.title}
+                </h4>
+                {blog.body.body_type_fields.milestone.text && (
+                  <p className="BlogDetailPage-milestone-text">
+                    {blog.body.body_type_fields.milestone.text}
+                  </p>
                 )}
               </div>
-            )}
-
+              {blog.body.body_type_fields.milestone.photo_url && (
+                <div className="BlogDetailPage-milestone-image-container">
+                  <img
+                    src={blog.body.body_type_fields.milestone.photo_url}
+                    alt={blog.body.body_type_fields.milestone.title}
+                    className="BlogDetailPage-milestone-image"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = "http://localhost:3000/initiation/1.jpg";
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
           {/* Report insight */}
-          {header.type === "report_insight" &&
-            body.body_type_fields &&
-            body.body_type_fields.report_kind && (
+          {blog.header.type === "report_insight" &&
+            blog.body.body_type_fields?.report_kind && (
               <div
-                className="report-insight-nav"
-                style={{
-                  margin: "1rem 0",
-                  padding: "1rem",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                }}
+                className="BlogDetailPage-report BlogDetailPage-report-insight"
                 tabIndex={0}
                 role="button"
                 onClick={() =>
                   handleReportClick(
-                    body.body_type_fields.report_kind,
-                    body.body_type_fields.time_type,
-                    body.body_type_fields.id,
-                    body.body_type_fields.level
+                    blog.body.body_type_fields.report_kind,
+                    blog.body.body_type_fields.time_type,
+                    blog.body.body_type_fields.id,
+                    blog.body.body_type_fields.level
                   )
                 }
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     handleReportClick(
-                      body.body_type_fields.report_kind,
-                      body.body_type_fields.time_type,
-                      body.body_type_fields.id,
-                      body.body_type_fields.level
+                      blog.body.body_type_fields.report_kind,
+                      blog.body.body_type_fields.time_type,
+                      blog.body.body_type_fields.id,
+                      blog.body.body_type_fields.level
                     );
                   }
                 }}
               >
-                <h4 style={{ margin: "0 0 0.5rem 0" }}>
+                <h4 className="BlogDetailPage-report-title">
                   {formatReportTitle(
-                    body.body_type_fields.report_kind,
-                    body.body_type_fields.time_type || ""
+                    blog.body.body_type_fields.report_kind,
+                    blog.body.body_type_fields.time_type || ""
                   )}
                 </h4>
-                {body.body_type_fields.date && (
-                  <p
-                    style={{
-                      margin: "0 0 0.5rem 0",
-                      color: "#666",
-                    }}
-                  >
-                    {body.body_type_fields.date}
+                {blog.body.body_type_fields.date && (
+                  <p className="BlogDetailPage-report-date">
+                    {blog.body.body_type_fields.date}
                   </p>
                 )}
-                {body.body_type_fields.location && (
-                  <p
-                    style={{
-                      margin: "0 0 0.5rem 0",
-                      color: "#666",
-                    }}
-                  >
+                {blog.body.body_type_fields.location && (
+                  <p className="BlogDetailPage-report-location">
                     <strong>📍</strong>{" "}
-                    {body.body_type_fields.location}
+                    {blog.body.body_type_fields.location}
                   </p>
                 )}
-                {typeof body.body_type_fields.new_users !==
+                {typeof blog.body.body_type_fields.new_users !==
                   "undefined" && (
-                  <p
-                    style={{
-                      margin: "0 0 0.5rem 0",
-                      color: "#666",
-                    }}
-                  >
+                  <p className="BlogDetailPage-report-users">
                     <strong>New Users:</strong>{" "}
-                    {body.body_type_fields.new_users}
+                    {blog.body.body_type_fields.new_users}
                   </p>
                 )}
               </div>
             )}
-
           {/* Other type-specific cases */}
-          {header.type === "consumption" && (
+          {blog.header.type === "consumption" && (
             <>
-              {body.body_type_fields &&
-                body.body_type_fields.title && (
-                  <p>
-                    <strong>Title:</strong>{" "}
-                    {body.body_type_fields.title}
-                  </p>
-                )}
-              {body.body_type_fields &&
-                body.body_type_fields.url && (
-                  <p style={{ marginTop: "0.5rem" }}>
-                    <strong>URL:</strong>{" "}
-                    <a
-                      href={body.body_type_fields.url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {body.body_type_fields.url}
-                    </a>
-                  </p>
-                )}
+              {blog.body.body_type_fields?.title && (
+                <p className="BlogDetailPage-consumption-title">
+                  <strong>Title:</strong> {blog.body.body_type_fields.title}
+                </p>
+              )}
+              {blog.body.body_type_fields?.url && (
+                <p className="BlogDetailPage-consumption-url">
+                  <strong>URL:</strong>{" "}
+                  <a
+                    href={blog.body.body_type_fields.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="BlogDetailPage-link"
+                  >
+                    {blog.body.body_type_fields.url}
+                  </a>
+                </p>
+              )}
             </>
           )}
-
-          {header.type === "answering_question" &&
-            body.body_type_fields &&
-            body.body_type_fields.question?.text && (
-              <p>{body.body_type_fields.question?.text}</p>
+          {blog.header.type === "answering_question" &&
+            blog.body.body_type_fields?.question?.text && (
+              <p className="BlogDetailPage-question">
+                {blog.body.body_type_fields.question.text}
+              </p>
             )}
-
-          {header.type === "failed_initiation" && (
+          {blog.header.type === "failed_initiation" && (
             <>
-              {body.body_type_fields &&
-                body.body_type_fields.location && (
-                  <p
-                    style={{
-                      margin: "0 0 0.5rem 0",
-                      color: "#666",
-                    }}
-                  >
-                    <strong>📍</strong>{" "}
-                    {body.body_type_fields.location}
-                  </p>
-                )}
-              {body.body_type_fields &&
-                body.body_type_fields.target_details && (
-                  <p>
-                    <strong>Other Details:</strong>{" "}
-                    {body.body_type_fields.target_details}
-                  </p>
-                )}
-              {body.body_type_fields &&
-                body.body_type_fields.failure_reason && (
-                  <p
-                    style={{
-                      paddingTop: "1rem",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    <strong>Failure Reason:</strong>{" "}
-                    {body.body_type_fields.failure_reason}
-                  </p>
-                )}
+              {blog.body.body_type_fields?.location && (
+                <p className="BlogDetailPage-failed-location">
+                  <strong>📍</strong>{" "}
+                  {blog.body.body_type_fields.location}
+                </p>
+              )}
+              {blog.body.body_type_fields?.target_details && (
+                <p className="BlogDetailPage-target-details">
+                  <strong>Other Details:</strong>{" "}
+                  {blog.body.body_type_fields.target_details}
+                </p>
+              )}
+              {blog.body.body_type_fields?.failure_reason && (
+                <p className="BlogDetailPage-failure-reason">
+                  <strong>Failure Reason:</strong>{" "}
+                  {blog.body.body_type_fields.failure_reason}
+                </p>
+              )}
             </>
           )}
-
-          {/* Body text */}
-          <div
-            style={{
-              marginTop: "1rem",
-              padding: "1rem",
-              backgroundColor: "#f5f5f5",
-              borderRadius: "4px",
-            }}
-          >
-            <p style={{ margin: 0 }}>
-              {body.body_text ?? "No content available"}
-            </p>
+          {/* Main Blog Body text */}
+          <div className="BlogDetailPage-body-text">
+            <p>{blog.body.body_text ?? "No content available"}</p>
           </div>
         </div>
-
         {/* Footer actions */}
-        <div style={{ display: "flex", alignItems: "center" }}>
+        <div className="BlogDetailPage-actions">
           <button
-            className={`reaction-btn btn-like ${
-              footer.has_liked ? "active" : ""
+            type="button"
+            className={`BlogDetailPage-action-btn BlogDetailPage-like-btn ${
+              blog.footer.has_liked ? "BlogDetailPage-active" : ""
             }`}
             onClick={handleLike}
-            style={{ backgroundColor: "transparent" }}
           >
-            ❤️ Like ({footer.likes ? footer.likes.length : 0})
+            ❤️ Like ({blog.footer.likes.length})
           </button>
-
           <button
-            className={`reaction-btn btn-share ${
-              footer.has_shared ? "active" : ""
+            type="button"
+            className={`BlogDetailPage-action-btn BlogDetailPage-share-btn ${
+              blog.footer.has_shared ? "BlogDetailPage-active" : ""
             }`}
             onClick={handleShare}
-            style={{ backgroundColor: "transparent" }}
           >
-            🔄 {footer.has_shared ? "Unshare" : "Share"} (
-            {footer.shares ? footer.shares.length : 0})
+            🔄 {blog.footer.has_shared ? "Unshare" : "Share"} ({blog.footer.shares.length})
           </button>
         </div>
       </div>
-
-      {/* Comments */}
-      <div id="comments-section" tabIndex={-1}>
-        <h3>
-          Comments ({footer.comments ? footer.comments.length : 0})
-        </h3>
-
-        {/* Comment Form */}
-        <form onSubmit={handleSubmitComment} className="comment-form">
+      {/* Comments Section */}
+      <div id="BlogDetailPage-comments-section" className="BlogDetailPage-comments" tabIndex={-1}>
+        <h3 className="BlogDetailPage-comments-title">Comments ({actualCommentCount})</h3>
+        {/* New Comment Form */}
+        <form onSubmit={handleSubmitComment} className="BlogDetailPage-comment-form">
           <textarea
-            className="comment-input"
+            className="BlogDetailPage-comment-input"
             placeholder="Write a comment..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
           />
           <button
             type="submit"
-            className="comment-submit-btn"
+            className="BlogDetailPage-comment-submit"
             disabled={commentLoading || !newComment.trim()}
           >
             {commentLoading ? "Posting..." : "Post Comment"}
           </button>
         </form>
-
         {/* Comment List */}
-        <div className="comment-list">
-          {comments.length === 0 ? (
-            <p>No comments yet.</p>
+        <div className="BlogDetailPage-comment-list">
+          {blog.comments.length === 0 ? (
+            <p className="BlogDetailPage-no-comments">No comments yet.</p>
           ) : (
-            comments.map((comment) => (
-              <div
-                key={comment.id}
-                style={{
-                  marginBottom: "1rem",
-                  padding: "1rem",
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "6px",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <img
-                    src={comment.user?.profile_pic || "/default-profile.png"}
-                    alt={comment.user?.name || "User"}
-                    style={{
-                      width: "35px",
-                      height: "35px",
-                      borderRadius: "50%",
-                      marginRight: "0.5rem",
-                      objectFit: "cover",
-                      cursor: "pointer",
-                    }}
-                    onClick={() =>
-                      comment.user &&
-                      handleUserClick(comment.user.id)
-                    }
-                  />
-                  <div>
-                    <strong
-                      style={{ cursor: "pointer" }}
-                      onClick={() =>
-                        comment.user &&
-                        handleUserClick(comment.user.id)
-                      }
-                    >
-                      {comment.user?.name}
-                    </strong>
-                    <p
-                      style={{
-                        margin: 0,
-                        color: "#666",
-                        fontSize: "0.85rem",
-                      }}
-                    >
-                      {new Date(comment.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                <p style={{ margin: "0.5rem 0 0 0" }}>
-                  {comment.text}
-                </p>
-                {/* Replies */}
-                {comment.replies && comment.replies.length > 0 && (
-                  <div
-                    style={{
-                      marginTop: "0.5rem",
-                      paddingLeft: "2rem",
-                    }}
-                  >
-                    {comment.replies.map((reply) => (
-                      <div
-                        key={reply.id}
-                        style={{
-                          marginBottom: "0.5rem",
-                          padding: "0.5rem",
-                          borderLeft: "2px solid #ddd",
-                        }}
-                      >
-                        <div
-                          style={{ display: "flex", alignItems: "center" }}
-                        >
-                          <img
-                            src={
-                              reply.user?.profile_pic ||
-                              "/default-profile.png"
-                            }
-                            alt={reply.user?.name || "User"}
-                            style={{
-                              width: "28px",
-                              height: "28px",
-                              borderRadius: "50%",
-                              marginRight: "0.5rem",
-                              objectFit: "cover",
-                              cursor: "pointer",
-                            }}
-                            onClick={() =>
-                              reply.user &&
-                              handleUserClick(reply.user.id)
-                            }
-                          />
-                          <div>
-                            <strong
-                              style={{
-                                cursor: "pointer",
-                                fontSize: "0.9rem",
-                              }}
-                              onClick={() =>
-                                reply.user &&
-                                handleUserClick(reply.user.id)
-                              }
-                            >
-                              {reply.user?.name}
-                            </strong>
-                            <p
-                              style={{
-                                margin: 0,
-                                color: "#666",
-                                fontSize: "0.75rem",
-                              }}
-                            >
-                              {new Date(reply.created_at).toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                        <p
-                          style={{
-                            margin: "0.25rem 0 0 0",
-                            fontSize: "0.9rem",
-                          }}
-                        >
-                          {reply.text}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            blog.comments.map((comment: any) => (
+              <CommentItem key={comment.id} comment={comment} />
             ))
           )}
         </div>

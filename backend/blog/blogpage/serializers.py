@@ -1,4 +1,3 @@
-# serializers.py
 from rest_framework import serializers
 from ..models import BaseBlogModel, Comment
 from users.models import UserTree, Milestone
@@ -7,6 +6,63 @@ from django.apps import apps
 import django.db.models as django_models
 import uuid
 
+class CommentUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    profile_pic = serializers.SerializerMethodField()
+
+    def get_profile_pic(self, obj):
+        request = self.context.get('request')
+        if getattr(obj, 'profilepic', None):
+            if request:
+                return request.build_absolute_uri(obj.profilepic.url)
+            else:
+                # Fallback for cases without request context
+                return f"http://127.0.0.1:8000{obj.profilepic.url}"
+        return None
+
+class CommentSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    user = CommentUserSerializer()
+    text = serializers.CharField()
+    likes = serializers.ListField(child=serializers.IntegerField())
+    dislikes = serializers.ListField(child=serializers.IntegerField())
+    created_at = serializers.DateTimeField()
+    replies = serializers.ListField(child=serializers.DictField(), required=False)
+
+    def to_representation(self, instance):
+        """
+        Convert Comment model instance -> dict for API response.
+        """
+        request = self.context.get('request')
+        
+        # Get user object
+        try:
+            user = UserTree.objects.get(id=instance.user_id)
+        except UserTree.DoesNotExist:
+            user = None
+        
+        # Use the CommentUserSerializer to ensure consistent profile pic formatting
+        user_serializer = CommentUserSerializer(
+            user, 
+            context={'request': request}
+        ) if user else None
+        
+        user_data = user_serializer.data if user_serializer else {
+            "id": str(instance.user_id),
+            "name": "Unknown User",
+            "profile_pic": None
+        }
+
+        return {
+            "id": str(instance.id),
+            "user": user_data,
+            "text": instance.text,
+            "likes": instance.likes or [],
+            "dislikes": instance.dislikes or [],
+            "created_at": instance.created_at.isoformat() if instance.created_at else None,
+            "replies": getattr(instance, 'replies', []),  # Use the replies added in the view
+        }
 
 class BlogUserSerializer(serializers.Serializer):
     id = serializers.IntegerField()
@@ -15,6 +71,8 @@ class BlogUserSerializer(serializers.Serializer):
 
     def get_profile_pic(self, obj):
         request = self.context.get('request')
+        if request is None:
+            return f"http://127.0.0.1:8000{obj.profilepic.url}"
         if getattr(obj, 'profilepic', None):
             return request.build_absolute_uri(obj.profilepic.url)
         return None
@@ -43,6 +101,7 @@ class BlogSerializer(serializers.Serializer):
     header = BlogHeaderSerializer(source='*')
     body = BlogBodySerializer(source='*')
     footer = BlogFooterSerializer(source='*')
+    comments = CommentSerializer(many=True, required=False)  # Add comments field
 
     def get_location_hierarchy(self, entity, level):
         """Build location hierarchy string based on geographical level"""
@@ -166,6 +225,7 @@ class BlogSerializer(serializers.Serializer):
         base_blog = instance['base']
         concrete_blog = instance['concrete']
         blog_type = instance['type']
+        comments = instance.get('comments', [])  # Get comments from instance
 
         user_data = BlogUserSerializer(instance['author'], context=self.context).data
         user_data['relation'] = instance['relation']
@@ -400,48 +460,6 @@ class BlogSerializer(serializers.Serializer):
                 'body_text': body_text,
                 'body_type_fields': body_type_fields
             },
-            'footer': footer_data
+            'footer': footer_data,
+            'comments': comments  # Include comments in the response
         }
-    # serializers.py (add this to the existing file)
-class CommentUserSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField()
-    profile_pic = serializers.SerializerMethodField()
-
-    def get_profile_pic(self, obj):
-        request = self.context.get('request')
-        if getattr(obj, 'profilepic', None):
-            return request.build_absolute_uri(obj.profilepic.url)
-        return None
-
-
-class CommentSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
-    likes_count = serializers.SerializerMethodField()
-    has_liked = serializers.SerializerMethodField()
-    replies = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Comment
-        fields = ['id', 'user', 'text', 'likes', 'likes_count', 'has_liked', 'created_at', 'replies']
-
-    def get_user(self, obj):
-        try:
-            user = UserTree.objects.get(id=obj.user_id)
-            return CommentUserSerializer(user, context=self.context).data
-        except UserTree.DoesNotExist:
-            return {'id': obj.user_id, 'name': 'Unknown User', 'profile_pic': None}
-
-    def get_likes_count(self, obj):
-        return len(obj.likes)
-
-    def get_has_liked(self, obj):
-        request = self.context.get('request')
-        if request and request.user:
-            return request.user.id in obj.likes
-        return False
-
-    def get_replies(self, obj):
-        # Get replies to this comment
-        replies = Comment.objects.filter(parent_type='comment', parent=obj.id).order_by('created_at')
-        return CommentSerializer(replies, many=True, context=self.context).data

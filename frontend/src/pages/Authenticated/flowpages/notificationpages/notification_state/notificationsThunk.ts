@@ -1,5 +1,3 @@
-// src/features/notifications/notificationsThunk.ts
-
 import { Dispatch } from '@reduxjs/toolkit';
 import { AppDispatch, RootState } from '../../../../../store';
 import {
@@ -10,15 +8,251 @@ import {
 } from './notificationsSlice';
 import { addMessage, updateMessage } from '../../../messages/ChatPage/chatSlice';
 import { updateConversation } from '../../../messages/chatlist/chatListSlice';
-import { fetchUserMilestones, addMilestone } from '../../../milestone/milestonesSlice';
+import { fetchUserMilestones } from '../../../milestone/milestonesSlice';
+import { updateBlog, addComment, addBlog } from '../../../blogrelated/blogpage/blogSlice';
 
-const RECONNECT_BASE_DELAY = 1000;
-let reconnectAttempts = 0;
+// === Helper functions for comment tree ===
 
-const getReconnectDelay = () => {
-  const delay = RECONNECT_BASE_DELAY * Math.pow(2, reconnectAttempts);
-  return Math.min(delay, 30000);
+const findCommentInTree = (comments: any[], commentId: string): any => {
+  for (const comment of comments) {
+    if (comment.id === commentId) return comment;
+    if (comment.replies && comment.replies.length > 0) {
+      const found = findCommentInTree(comment.replies, commentId);
+      if (found) return found;
+    }
+  }
+  return null;
 };
+
+const updateCommentInTree = (comments: any[], commentId: string, updates: any): any[] => {
+  return comments.map(comment => {
+    if (comment.id === commentId) {
+      return { ...comment, ...updates };
+    }
+    if (comment.replies && comment.replies.length > 0) {
+      return {
+        ...comment,
+        replies: updateCommentInTree(comment.replies, commentId, updates)
+      };
+    }
+    return comment;
+  });
+};
+
+const addReplyToCommentInTree = (comments: any[], commentId: string, reply: any): any[] => {
+  return comments.map(comment => {
+    if (comment.id === commentId) {
+      return {
+        ...comment,
+        replies: [...(comment.replies || []), reply]
+      };
+    }
+    if (comment.replies && comment.replies.length > 0) {
+      return {
+        ...comment,
+        replies: addReplyToCommentInTree(comment.replies, commentId, reply)
+      };
+    }
+    return comment;
+  });
+};
+
+const findBlogById = (state: RootState, blogId: string) => {
+  for (const blogType of Object.keys(state.blog.blogs)) {
+    const blog = state.blog.blogs[blogType].blogs.find(b => b.id === blogId);
+    if (blog) return { blogType, blog };
+  }
+  return { blogType: null, blog: null };
+};
+
+// === Comment Handlers ===
+
+const handleCommentUpdateMessage = (
+  data: any,
+  dispatch: Dispatch,
+  getState: () => RootState
+) => {
+  const { blog_id, action, comment, user_id } = data;
+  const blogType = 'circle';
+  const state = getState();
+  const blogsState = state.blog?.blogs?.[blogType];
+  if (!blogsState || !Array.isArray(blogsState.blogs)) return;
+  const blog = blogsState.blogs.find((b: any) => String(b.id) === String(blog_id));
+  if (!blog) return;
+  if (action === 'comment_added') {
+    dispatch(
+      addComment({
+        blogType,
+        blogId: String(blog_id),
+        comment: comment,
+      })
+    );
+  } else if (action === 'comment_deleted') {
+    const updatedComments = blog.comments.filter((c: any) => c.id !== comment.id);
+    dispatch(
+      updateBlog({
+        blogType,
+        id: String(blog_id),
+        updates: {
+          comments: updatedComments,
+          footer: {
+            ...blog.footer,
+            comments: blog.footer.comments.filter((id: string) => id !== comment.id),
+          },
+        },
+      })
+    );
+  }
+};
+
+const handleCommentLikeUpdateMessage = (
+  data: any,
+  dispatch: Dispatch,
+  getState: () => RootState
+) => {
+  const { blog_id, comment_id, action, likes_count, user_id } = data;
+  const currentUserId = parseInt(localStorage.getItem('user_id') || '0', 10);
+  if (user_id === currentUserId) return;
+  const { blogType, blog } = findBlogById(getState(), blog_id);
+  if (!blogType || !blog) return;
+  const updatedComments = updateCommentInTree(
+    blog.comments, 
+    comment_id, 
+    { 
+      likes: Array(likes_count).fill(0),
+      has_liked: action === 'added'
+    }
+  );
+  dispatch(
+    updateBlog({
+      blogType,
+      id: blog_id,
+      updates: {
+        comments: updatedComments
+      }
+    })
+  );
+};
+
+// === Blog Update Handlers ===
+
+const handleBlogUpdateMessage = (
+  data: any,
+  dispatch: Dispatch,
+  getState: () => RootState
+) => {
+  const { blog_id, update_type, action, user_id } = data;
+  
+
+  
+  const currentUserId = parseInt(localStorage.getItem('user_id') || '0', 10);
+  
+  if (user_id === currentUserId) return;
+  const blogType = 'circle';
+  const state = getState();
+  const blogsState = state.blog?.blogs?.[blogType];
+  if (!blogsState || !Array.isArray(blogsState.blogs)) return;
+  const blog = blogsState.blogs.find((b: any) => String(b.id) === String(blog_id));
+  if (!blog) return;
+  const prevFooter = blog.footer || {
+    likes: [] as number[],
+    shares: [] as number[],
+    relevant_count: [] as number[],
+    irrelevant_count: [] as number[],
+    comments: [] as string[],
+    has_liked: false,
+    has_shared: false,
+  };
+  const isLike = update_type === 'like';
+  const targetKey: 'likes' | 'shares' = isLike ? 'likes' : 'shares';
+  const actingUserId = typeof user_id === 'string' ? parseInt(user_id, 10) || user_id : user_id;
+  const updatedArray = Array.isArray(prevFooter[targetKey])
+    ? [...prevFooter[targetKey]]
+    : [];
+  if (action === 'added') {
+    if (!updatedArray.some((id) => String(id) === String(actingUserId))) {
+      updatedArray.push(actingUserId as any);
+    }
+  } else {
+    const idx = updatedArray.findIndex((id) => String(id) === String(actingUserId));
+    if (idx !== -1) {
+      updatedArray.splice(idx, 1);
+    }
+  }
+  const footerUpdates = {
+    ...prevFooter,
+    [targetKey]: updatedArray,
+  };
+  dispatch(
+    updateBlog({
+      blogType,
+      id: String(blog_id),
+      updates: {
+        footer: footerUpdates,
+      },
+    })
+  );
+};
+
+// === Reply Handler ===
+
+const handleReplyUpdateMessage = (
+  data: any,
+  dispatch: Dispatch,
+  getState: () => RootState
+) => {
+  const { blog_id, comment_id, reply, user_id } = data;
+  const currentUserId = parseInt(localStorage.getItem('user_id') || '0', 10);
+  if (user_id === currentUserId) return;
+  const { blogType, blog } = findBlogById(getState(), blog_id);
+  if (!blogType || !blog) return;
+  const updatedComments = addReplyToCommentInTree(
+    blog.comments,
+    comment_id,
+    reply
+  );
+  dispatch(
+    updateBlog({
+      blogType,
+      id: blog_id,
+      updates: {
+        comments: updatedComments,
+        footer: {
+          ...blog.footer,
+          comments: [...blog.footer.comments, reply.id]
+        }
+      }
+    })
+  );
+};
+
+// Update the handleBlogUpload function in your thunk
+const handleBlogUpload = (
+  data: any,
+  dispatch: Dispatch,
+  getState: () => RootState
+) => {
+  const { blog_id, action, blog, user_id } = data;
+  const blog_type = data.blog_type; // This should be the base type (e.g., 'journey')
+  console.log('Blog upload received:', blog_type);
+  const currentUserId = parseInt(localStorage.getItem('user_id') || '0', 10);
+
+  if (user_id === currentUserId) return;
+
+  if (action === 'blog_created' && blog && blog_type) {
+    console.log('New blog received via WebSocket:', blog, blog_type);
+    
+    // Add to the 'circle' blog type since that's where the feed is stored
+    dispatch(addBlog({ blogType: 'circle', blog }));
+    
+    // Also add to the specific blog type if it exists
+    const state = getState();
+    if (state.blog.blogs[blog_type]) {
+      dispatch(addBlog({ blogType: blog_type, blog }));
+    }
+  }
+};
+// === Chat System Handler ===
 
 const handleChatSystemMessage = (
   data: any,
@@ -38,7 +272,7 @@ const handleChatSystemMessage = (
       const isCurrentRoom = state.chat.currentRoomId === conversationId;
 
       // Deduplication: ignore if message ID already exists
-      if (room && room.messages.some(m => m.id === messageId)) {
+      if (room && room.messages.some((m) => m.id === messageId)) {
         console.log(`Duplicate new_message ignored for messageID: ${messageId}`);
         break;
       }
@@ -66,16 +300,17 @@ const handleChatSystemMessage = (
 
       // Update chat list conversation info
       const currentUnreadCount = state.chatList.entities[conversationId]?.unread_count || 0;
-      dispatch(updateConversation({
-        id: conversationId,
-        changes: {
-          last_message: data.content,
-          last_message_timestamp: data.timestamp,
-          unread_count: isCurrentRoom ? currentUnreadCount : currentUnreadCount + 1,
-        },
-        moveToTop: true,
-      }));
-
+      dispatch(
+        updateConversation({
+          id: conversationId,
+          changes: {
+            last_message: data.content,
+            last_message_timestamp: data.timestamp,
+            unread_count: isCurrentRoom ? currentUnreadCount : currentUnreadCount + 1,
+          },
+          moveToTop: true,
+        })
+      );
       break;
     }
 
@@ -84,28 +319,42 @@ const handleChatSystemMessage = (
     case 'message_read':
     case 'read_update':
     case 'message_read_update':
-      dispatch(updateMessage({
-        conversationId,
-        messageId,
-        changes: { status },
-      }));
+      dispatch(
+        updateMessage({
+          conversationId,
+          messageId,
+          changes: { status },
+        })
+      );
       break;
 
     case 'message_sent':
-      dispatch(updateMessage({
-        conversationId,
-        messageId: data.temp_id,
-        changes: {
-          id: data.message_id,
-          status: data.status || 'sent',
-          timestamp: data.timestamp,
-        },
-      }));
+      dispatch(
+        updateMessage({
+          conversationId,
+          messageId: data.temp_id,
+          changes: {
+            id: data.message_id,
+            status: data.status || 'sent',
+            timestamp: data.timestamp,
+          },
+        })
+      );
       break;
 
     default:
       console.warn('Unhandled chat subtype:', subtype);
   }
+};
+
+// === WebSocket Connection Thunk ===
+
+const RECONNECT_BASE_DELAY = 1000;
+let reconnectAttempts = 0;
+
+const getReconnectDelay = () => {
+  const delay = RECONNECT_BASE_DELAY * Math.pow(2, reconnectAttempts);
+  return Math.min(delay, 30000);
 };
 
 export const connectWebSocket =
@@ -126,6 +375,7 @@ export const connectWebSocket =
 
     try {
       const authToken = localStorage.getItem('access_token');
+      console.log('WebSocket connecting...' + authToken);
       const socket = new WebSocket(
         `ws://localhost:8000/ws/notifications/${userId}/?token=${authToken}`
       );
@@ -145,38 +395,65 @@ export const connectWebSocket =
           }
         }
 
-        socket.send(JSON.stringify({
-          category: 'chat_system',
-          action: 'user_online',
-        }));
+        socket.send(
+          JSON.stringify({
+            category: 'chat_system',
+            action: 'user_online',
+          })
+        );
       };
 
       socket.onmessage = (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data);
           console.log('WebSocket message received:', data);
+          if (data.type === "blog_created") {
+            const blog_type = data.blog_type
+            console.log('Blog upload received:', data);
+            handleBlogUpload(data,  dispatch, getState);
+            return;
+          }
 
+          // === Blog Update Handling ===
+          if (data.type === 'blog_update') {
+            handleBlogUpdateMessage(data, dispatch, getState);
+            return;
+          }
+          // === Blog Comment Handling ===
+          if (data.type === 'comment_update') {
+            handleCommentUpdateMessage(data, dispatch, getState);
+            return;
+          }
+          // === Blog Comment Like Handling ===
+          if (data.type === 'comment_like_update') {
+            handleCommentLikeUpdateMessage(data, dispatch, getState);
+            return;
+          }
+          // === Reply Update Handling ===
+          if (data.type === 'reply_update') {
+            handleReplyUpdateMessage(data, dispatch, getState);
+            return;
+          }
           // === Milestone Notification Handling ===
           if (data?.notification?.notification_type === 'Milestone_Notification') {
             console.log('Milestone Notification received:', data.notification);
-            // Create UI notification
             const milestoneNotification = {
               notification_type: 'Milestone_Notification' as const,
               notification_message: data.notification.notification_message,
               notification_data: data.notification.notification_data,
               notification_number: data.notification.notification_number,
               notification_freshness: data.notification.notification_freshness,
-              created_at: data.notification.created_at
+              created_at: data.notification.created_at,
             };
             console.log('Dispatching Milestone Notification:', milestoneNotification);
 
             dispatch(addNotification(milestoneNotification));
 
-            // === NEW: Send deletion command to server for this milestone notification ===
+            // Send deletion command to server for this milestone notification
             const deletionMessage = JSON.stringify({
               action: 'delete_notification',
               notification_type: 'Milestone_Notification',
-              notification_number: data.notification.notification_number
+              notification_number: data.notification.notification_number,
             });
 
             if (socket.readyState === WebSocket.OPEN) {
@@ -186,8 +463,7 @@ export const connectWebSocket =
 
             return;
           }
-
-          // === Existing handlers ===
+          // === Chat System and Other Notification Messages ===
           if (data?.type === 'notification_message' && data?.category === 'chat_system') {
             handleChatSystemMessage(data, dispatch, getState);
           } else if (data?.notification) {
@@ -195,10 +471,12 @@ export const connectWebSocket =
           } else if (data?.delete_notification) {
             const { notification_type, notification_number } = data.delete_notification;
             if (notification_type && notification_number) {
-              dispatch(removeNotificationByDetails({
-                notification_type,
-                notification_number,
-              }));
+              dispatch(
+                removeNotificationByDetails({
+                  notification_type,
+                  notification_number,
+                })
+              );
             }
           }
         } catch (error) {
@@ -231,6 +509,7 @@ export const connectWebSocket =
     }
   };
 
+// === Disconnect WebSocket Thunk ===
 export const disconnectWebSocket =
   () => (dispatch: AppDispatch, getState: () => RootState) => {
     const { notifications } = getState();
@@ -241,6 +520,7 @@ export const disconnectWebSocket =
     }
   };
 
+// === Send Message Over WebSocket Thunk ===
 export const sendWebSocketMessage =
   (notificationType: string, messagetype: string, data: Record<string, any>) =>
   (dispatch: AppDispatch, getState: () => RootState) => {
