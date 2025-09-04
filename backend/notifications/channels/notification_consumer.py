@@ -5,6 +5,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 from django.utils import timezone
 from django.db.models import Q
+from django.http import HttpRequest
 
 # Import your notification/chat handlers
 from notifications.channels_handlers.initiation_notification_handler import handle_initiation_notification
@@ -13,12 +14,17 @@ from notifications.channels_handlers.connection_status_handler import handle_con
 from notifications.channels_handlers.speaker_invitation_handler import handle_speaker_invitation
 from notifications.channels_handlers.chat_system_handler import handle_chat_system
 from notifications.channels_handlers.milestone_handler import handle_milestone_notification
-from users.models import Circle  # Add this import
+
+from users.models import Circle
+from blog.models import BlogLoad, BaseBlogModel
+from blog.posting_blogs.blog_utils import BlogDataBuilder
+from blog.blogpage.serializers import BlogSerializer
 
 logger = logging.getLogger(__name__)
 
+
 class NotificationConsumer(AsyncWebsocketConsumer):
-    """WebSocket consumer for handling real-time notifications, chat events, and blog updates."""
+    """WebSocket consumer for handling real-time notifications, chat events, blog updates, and milestones."""
 
     async def connect(self):
         """Handles WebSocket connection."""
@@ -32,6 +38,12 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
         # Mark user as online
         await self.mark_user_online(True)
+
+        # Send pending blogs
+        await self.send_pending_new_blogs()
+        
+        # Send modified blogs
+        await self.send_pending_modified_blogs()
 
         # Fetch undelivered messages
         await self.fetch_undelivered_messages()
@@ -91,7 +103,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def fetch_undelivered_messages(self):
         """Fetch undelivered messages for the user."""
         try:
-            # The frontend chat system handler is expected to process this request.
             await self.send(json.dumps({
                 "category": "chat_system",
                 "action": "fetch_undelivered"
@@ -121,7 +132,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             "notification_type": "Milestone_Notification",
             "notification_message": f"Achievement unlocked: {milestone.title}",
             "notification_data": {
-                "milestone_id": str(milestone.id),  # Ensure UUID is string milestone.id,
+                "milestone_id": str(milestone.id),
                 "user_id": milestone.user_id,
                 "title": milestone.title,
                 "text": milestone.text,
@@ -131,11 +142,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 "photo_url": milestone.photo_url,
                 "type": milestone.type
             },
-            "notification_number":str(milestone.id) ,
+            "notification_number": str(milestone.id),
             "notification_freshness": True,
             "created_at": milestone.created_at.isoformat()
         }
-        
+
         await self.send(json.dumps({
             "notification": notification
         }))
@@ -171,6 +182,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 await handle_connection_status(self, data)
             elif data.get("notificationType") == "Group_Speaker_Invitation":
                 await handle_speaker_invitation(self, data)
+
             elif data.get("notificationType") == "Milestone_Notification":
                 pass
             elif data.get("action") == "delete_notification":
@@ -195,15 +207,13 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def handle_blog_update(self, data):
         """Handle blog update messages"""
         action = data.get("action")
-        
+
         if action == "subscribe_to_blog":
             blog_id = data.get("blog_id")
-            # Subscribe to updates for this specific blog
             await self.channel_layer.group_add(f"blog_{blog_id}", self.channel_name)
-            
+
         elif action == "unsubscribe_from_blog":
             blog_id = data.get("blog_id")
-            # Unsubscribe from updates for this blog
             await self.channel_layer.group_discard(f"blog_{blog_id}", self.channel_name)
 
     async def handle_message_status_update(self, data):
@@ -237,19 +247,23 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
         logger.info(f"Sending notification to user {self.user_id}: {event}")
         await self.send(text_data=json.dumps(event))
-        
+
     async def blog_update(self, event):
         """Sends blog updates to the WebSocket client"""
         await self.send(text_data=json.dumps(event))
+
     async def comment_update(self, event):
         """Sends comment updates to the WebSocket client"""
         await self.send(text_data=json.dumps(event))
+
     async def comment_like_update(self, event):
         """Sends comment like updates to the WebSocket client"""
         await self.send(text_data=json.dumps(event))
+
     async def reply_update(self, event):
         """Sends reply updates to the WebSocket client"""
         await self.send(text_data=json.dumps(event))
+
     async def blog_created(self, event):
         """Sends blog creation updates to the WebSocket client"""
         print("Sending blog creation update to WebSocket client")
@@ -261,3 +275,155 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             "blog": event["blog"],
             "user_id": event["user_id"]
         }))
+
+    async def blog_modified(self, event):
+        """Sends blog modification updates to the WebSocket client"""
+        print("Sending blog modification update to WebSocket client")
+        await self.send(text_data=json.dumps({
+            "type": "blog_modified",
+            "blog_id": event["blog_id"],
+            "action": event["action"],
+            "blog": event["blog"],
+            "user_id": event["user_id"]
+        }))
+
+    # -----------------------------
+    # ✅ Added Pending Blog Senders
+    # -----------------------------
+    
+    async def send_pending_new_blogs(self):
+        """Check for new blogs in BlogLoad and send them to the user"""
+        try:
+            blog_load = await sync_to_async(
+                BlogLoad.objects.filter(userid=self.user_id).first
+            )()
+
+            if blog_load and blog_load.new_blogs:
+                logger.info(f"Found {len(blog_load.new_blogs)} new blogs for user {self.user_id}")
+
+                request = HttpRequest()
+                request.method = 'GET'
+                request.user = self.scope.get('user', None)
+
+                # Add required META keys to avoid SERVER_NAME error
+                request.META['SERVER_NAME'] = 'localhost'
+                request.META['SERVER_PORT'] = '8000'
+                request.META['HTTP_HOST'] = 'localhost:8000'
+
+                from users.models import Petitioner
+                user_obj = await sync_to_async(Petitioner.objects.get)(id=self.user_id)
+
+                # Make a copy of new_blogs to iterate safely while modifying original list
+                new_blogs_copy = list(blog_load.new_blogs)
+
+                for blog_id in new_blogs_copy:
+                    try:
+                        base_blog = await sync_to_async(BaseBlogModel.objects.get)(id=blog_id)
+                        builder = BlogDataBuilder(user_obj, request)
+                        blog_data = await sync_to_async(builder.get_blog_data)(base_blog)
+
+                        if blog_data:
+                            serializer = BlogSerializer(blog_data, context={'request': request})
+                            serialized_blog = serializer.data
+                            serialized_blog = self.recursive_convert_objects_to_str(serialized_blog)
+
+                            await self.send(text_data=json.dumps({
+                                "type": "blog_created",
+                                "blog_id": str(blog_id),
+                                "action": "blog_created",
+                                "blog_type": base_blog.type.split('_')[0],
+                                "blog": serialized_blog,
+                                "user_id": str(base_blog.userid)
+                            }))
+
+                            logger.info(f"Sent pending blog {blog_id} to user {self.user_id}")
+
+                            # Remove the blog_id from new_blogs after successfully sending
+                            blog_load.new_blogs.remove(blog_id)
+                            await sync_to_async(blog_load.save)()
+
+                    except BaseBlogModel.DoesNotExist:
+                        logger.warning(f"Blog {blog_id} not found, skipping")
+                        # Remove invalid blog_id to avoid retrying endlessly
+                        blog_load.new_blogs.remove(blog_id)
+                        await sync_to_async(blog_load.save)()
+                        continue
+
+        except Exception as e:
+            logger.error(f"Error sending pending new blogs: {str(e)}")
+            
+    async def send_pending_modified_blogs(self):
+        """Check for modified blogs in BlogLoad and send them to the user"""
+        try:
+            blog_load = await sync_to_async(
+                BlogLoad.objects.filter(userid=self.user_id).first
+            )()
+
+            if blog_load and blog_load.modified_blogs:
+                logger.info(f"Found {len(blog_load.modified_blogs)} modified blogs for user {self.user_id}")
+
+                request = HttpRequest()
+                request.method = 'GET'
+                request.user = self.scope.get('user', None)
+
+                # Add required META keys to avoid SERVER_NAME error
+                request.META['SERVER_NAME'] = 'localhost'
+                request.META['SERVER_PORT'] = '8000'
+                request.META['HTTP_HOST'] = 'localhost:8000'
+
+                from users.models import Petitioner
+                user_obj = await sync_to_async(Petitioner.objects.get)(id=self.user_id)
+
+                # Make a copy of modified_blogs to iterate safely while modifying original list
+                modified_blogs_copy = list(blog_load.modified_blogs)
+
+                for blog_id in modified_blogs_copy:
+                    try:
+                        base_blog = await sync_to_async(BaseBlogModel.objects.get)(id=blog_id)
+                        builder = BlogDataBuilder(user_obj, request)
+                        blog_data = await sync_to_async(builder.get_blog_data)(base_blog)
+
+                        if blog_data:
+                            serializer = BlogSerializer(blog_data, context={'request': request})
+                            serialized_blog = serializer.data
+                            serialized_blog = self.recursive_convert_objects_to_str(serialized_blog)
+
+                            await self.send(text_data=json.dumps({
+                                "type": "blog_modified",
+                                "blog_id": str(blog_id),
+                                "action": "blog_modified",
+                                "blog": serialized_blog,
+                                "user_id": str(base_blog.userid)
+                            }))
+
+                            logger.info(f"Sent modified blog {blog_id} to user {self.user_id}")
+
+                            # Remove the blog_id from modified_blogs after successfully sending
+                            blog_load.modified_blogs.remove(blog_id)
+                            await sync_to_async(blog_load.save)()
+
+                    except BaseBlogModel.DoesNotExist:
+                        logger.warning(f"Blog {blog_id} not found, skipping")
+                        # Remove invalid blog_id to avoid retrying endlessly
+                        blog_load.modified_blogs.remove(blog_id)
+                        await sync_to_async(blog_load.save)()
+                        continue
+
+        except Exception as e:
+            logger.error(f"Error sending pending modified blogs: {str(e)}")
+
+    @staticmethod
+    def recursive_convert_objects_to_str(data):
+        """Recursively convert UUID and datetime objects to strings"""
+        import uuid
+        import datetime
+        if isinstance(data, dict):
+            return {k: NotificationConsumer.recursive_convert_objects_to_str(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [NotificationConsumer.recursive_convert_objects_to_str(i) for i in data]
+        elif isinstance(data, uuid.UUID):
+            return str(data)
+        elif isinstance(data, datetime.datetime):
+            return data.isoformat()
+        else:
+            return data

@@ -47,6 +47,8 @@ import QuestionsPage from "./pages/Authenticated/questionspage/QuestionsPage";
 import BlogListPage from "./pages/Authenticated/blogrelated/blogpage/BlogListPage";
 import ContributionsList from "./pages/Authenticated/ContributionsList/ContributionsList";
 
+import ProfilePage from "./pages/Authenticated/Profile/ProfilePage";
+
 // 🔥 New imports for new routes
 // import ProfilePage from "./pages/Authenticated/profile/ProfilePage";
 import BlogDetailPage from "./pages/Authenticated/blogrelated/BlogDetailPage/BlogDetailPage";
@@ -151,7 +153,7 @@ const AppRoutes: React.FC = () => {
             <Route path="questions" element={<QuestionsPage />} />
 
             {/* Profiles */}
-            {/* <Route path="profile/:userId" element={<ProfilePage />} /> ✅ New */}
+            <Route path="profile/:userId" element={<ProfilePage />} /> ✅ New
           </Route>
         </Route>
       </Routes>

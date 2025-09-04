@@ -54,6 +54,7 @@ const blogSlice = createSlice({
       state.blogs[action.payload.blogType].blogs = [];
       state.status = "failed";
     },
+    // blogSlice.ts - Update the updateBlog reducer
     updateBlog: (
       state,
       action: PayloadAction<{
@@ -69,18 +70,22 @@ const blogSlice = createSlice({
         );
         if (index !== -1) {
           const existing = state.blogs[blogType].blogs[index];
-          state.blogs[blogType].blogs[index] = {
+          
+          // Handle nested updates properly
+          const updatedBlog = {
             ...existing,
             ...updates,
-            footer: {
-              ...existing.footer,
-              ...updates.footer,
-            },
-            comments:
-              updates.comments !== undefined
-                ? updates.comments
-                : existing.comments,
+            // Preserve nested structures if not provided in updates
+            header: updates.header ? { ...existing.header, ...updates.header } : existing.header,
+            body: updates.body ? { ...existing.body, ...updates.body } : existing.body,
+            footer: updates.footer ? { ...existing.footer, ...updates.footer } : existing.footer,
+            comments: updates.comments !== undefined ? updates.comments : existing.comments,
           };
+          
+          state.blogs[blogType].blogs[index] = updatedBlog;
+        } else {
+          // If blog doesn't exist in this type, add it
+          state.blogs[blogType].blogs.push(updates as Blog);
         }
       }
     },

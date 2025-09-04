@@ -35,10 +35,11 @@ const Navigationbar: React.FC<NavigationbarProps> = ({ toggleNav }) => {
         <Link to={'/heartbeat/'} onClick={handleNavClick}>Home</Link>
         
         <Link to={`/timeline/1`} onClick={handleNavClick}>Timeline</Link>
-        <Link to={`/profile/`} onClick={handleNavClick}>Profile</Link>
+        
         
         {userId && (
           <>
+            <Link to={`/profile/${userId} `} onClick={handleNavClick}>Profile</Link>
             <Link to={`/children/${userId}`} onClick={handleNavClick}>Children's Page</Link>
             <Link to={`/connections/${userId}`} onClick={handleNavClick}>Friends</Link>
           </>

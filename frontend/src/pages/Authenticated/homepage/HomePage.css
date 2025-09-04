@@ -1,0 +1,119 @@
+/* HomePage.css - Mobile First Approach */
+
+.home-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background-color: #f5f5f5;
+  padding: 20px;
+}
+
+.home-buttons-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 400px;
+  margin-top: 40px;
+}
+
+.home-button-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 25px 20px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  width: 100%;
+  min-height: 140px;
+  gap: 10px;
+}
+
+.home-button-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.home-button-card:active {
+  transform: translateY(0);
+}
+
+.button-icon {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.button-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* Tablet Styles */
+@media (min-width: 768px) {
+  .home-container {
+    padding: 40px;
+    justify-content: center;
+  }
+  
+  .home-buttons-column {
+    max-width: 500px;
+    margin-top: 0;
+    gap: 30px;
+  }
+  
+  .home-button-card {
+    padding: 35px 30px;
+    min-height: 160px;
+  }
+  
+  .button-icon {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .button-text {
+    font-size: 1.2rem;
+  }
+}
+
+/* Desktop Styles */
+@media (min-width: 1024px) {
+  .home-buttons-column {
+    max-width: 550px;
+    gap: 35px;
+  }
+  
+  .home-button-card {
+    padding: 40px 35px;
+    min-height: 180px;
+  }
+  
+  .button-icon {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .button-text {
+    font-size: 1.3rem;
+  }
+}

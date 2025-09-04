@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { fetchBlogs, likeBlog, shareBlog } from "./blogThunks";
@@ -48,9 +48,6 @@ export default function BlogListPage() {
 
   const loading = (blogState as any).loading;
   const error = (blogState as any).error;
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const blogsPerPage = 5;
 
   useEffect(() => {
     dispatch(fetchBlogs(blogType));
@@ -103,10 +100,6 @@ export default function BlogListPage() {
     return `${time} ${kind} Report`;
   };
 
-  const indexOfLastBlog = currentPage * blogsPerPage;
-  const indexOfFirstBlog = indexOfLastBlog - blogsPerPage;
-  const currentBlogs = blogs.slice(indexOfFirstBlog, indexOfLastBlog);
-
   if (loading) return <div className="blog-list-page-loading">Loading blogs...</div>;
   if (error) return <div className="blog-list-page-error">Error loading blogs: {error}</div>;
 
@@ -116,46 +109,30 @@ export default function BlogListPage() {
       {blogs.length === 0 ? (
         <p className="blog-list-page-empty">No blogs found.</p>
       ) : (
-        <>
-          <ul className="blog-list-page-list">
-            {currentBlogs.map((blog: Blog) => (
-              <BlogCard
-                key={blog.id}
-                blog={blog}
-                onBlogClick={handleBlogClick}
-                onUserClick={handleUserClick}
-                onLikeClick={handleLike}
-                onShareClick={handleShare}
-                onCommentClick={handleCommentClick}
-                onReportClick={handleReportClick}
-                formatReportTitle={formatReportTitle}
-              />
-            ))}
-          </ul>
-
-          <div className="blog-list-page-pagination">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            >
-              Previous
-            </button>
-            <span>
-              Page {currentPage} of {Math.max(1, Math.ceil(blogs.length / blogsPerPage))}
-            </span>
-            <button
-              disabled={indexOfLastBlog >= blogs.length}
-              onClick={() =>
-                setCurrentPage((prev) =>
-                  Math.min(Math.ceil(blogs.length / blogsPerPage) || 1, prev + 1)
-                )
-              }
-            >
-              Next
-            </button>
-          </div>
-        </>
+        <ul className="blog-list-page-list">
+          {blogs.map((blog: Blog) => (
+            <BlogCard
+              key={blog.id}
+              blog={blog}
+              onBlogClick={handleBlogClick}
+              onUserClick={handleUserClick}
+              onLikeClick={handleLike}
+              onShareClick={handleShare}
+              onCommentClick={handleCommentClick}
+              onReportClick={handleReportClick}
+              formatReportTitle={formatReportTitle}
+            />
+          ))}
+        </ul>
       )}
+
+       {/* Fixed button in bottom right corner */}
+      <button 
+        onClick={() => navigate('/blog-creator')} 
+        className="blog-creator-fixed-btn"
+      >
+        Create Blog
+      </button>
     </div>
   );
 }

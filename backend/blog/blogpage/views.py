@@ -6,7 +6,7 @@ from django.db import connection
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
-from users.models import Circle, UserTree
+from users.models import Circle, UserTree, Petitioner
 from users.login.authentication import CookieJWTAuthentication
 from ..models import BaseBlogModel, Comment
 from .serializers import BlogSerializer, CommentSerializer
@@ -301,18 +301,29 @@ class LikeBlogView(APIView):
         
         # Send update to each user's personal channel and the blog-specific channel
         for uid in user_ids:
-            # Send to user's personal notification channel
-            async_to_sync(channel_layer.group_send)(
-                f"notifications_{uid}",
-                {
-                    "type": "blog_update",
-                    "blog_id": str(blog_id),
-                    "update_type": update_type,
-                    "action": action,
-                    "count": count,
-                    "user_id": user_id
-                }
-            )
+            # Check if user is online
+            try:
+                user_obj = Petitioner.objects.get(id=uid)
+                if user_obj.is_online:
+                    # Send to user's personal notification channel
+                    async_to_sync(channel_layer.group_send)(
+                        f"notifications_{uid}",
+                        {
+                            "type": "blog_update",
+                            "blog_id": str(blog_id),
+                            "update_type": update_type,
+                            "action": action,
+                            "count": count,
+                            "user_id": user_id
+                        }
+                    )
+                else:
+                    # Update BlogLoad for offline users
+                    from .utils import update_blog_load_for_offline_user
+                    update_blog_load_for_offline_user(uid, blog_id)
+            except Petitioner.DoesNotExist:
+                print(f"User with ID {uid} does not exist")
+                continue
         
         # Also send to the blog-specific channel
         async_to_sync(channel_layer.group_send)(
@@ -326,7 +337,6 @@ class LikeBlogView(APIView):
                 "user_id": user_id
             }
         )
-
 
 class ShareBlogView(APIView):
     authentication_classes = [CookieJWTAuthentication]
@@ -366,7 +376,6 @@ class ShareBlogView(APIView):
     
     def send_blog_update(self, blog_id, update_type, action, count, user_id):
         """Send WebSocket update for blog changes"""
-        # Same implementation as in LikeBlogView
         channel_layer = get_channel_layer()
         
         blog = BaseBlogModel.objects.get(id=blog_id)
@@ -378,17 +387,28 @@ class ShareBlogView(APIView):
         user_ids = list(circle_user_ids) + [author_id]
         
         for uid in user_ids:
-            async_to_sync(channel_layer.group_send)(
-                f"notifications_{uid}",
-                {
-                    "type": "blog_update",
-                    "blog_id": str(blog_id),
-                    "update_type": update_type,
-                    "action": action,
-                    "count": count,
-                    "user_id": user_id
-                }
-            )
+            # Check if user is online
+            try:
+                user_obj = Petitioner.objects.get(id=uid)
+                if user_obj.is_online:
+                    async_to_sync(channel_layer.group_send)(
+                        f"notifications_{uid}",
+                        {
+                            "type": "blog_update",
+                            "blog_id": str(blog_id),
+                            "update_type": update_type,
+                            "action": action,
+                            "count": count,
+                            "user_id": user_id
+                        }
+                    )
+                else:
+                    # Update BlogLoad for offline users
+                    from .utils import update_blog_load_for_offline_user
+                    update_blog_load_for_offline_user(uid, blog_id)
+            except Petitioner.DoesNotExist:
+                print(f"User with ID {uid} does not exist")
+                continue
         
         async_to_sync(channel_layer.group_send)(
             f"blog_{blog_id}",
@@ -401,7 +421,6 @@ class ShareBlogView(APIView):
                 "user_id": user_id
             }
         )
-
 class CommentView(APIView):
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -411,6 +430,7 @@ class CommentView(APIView):
         comments = Comment.objects.filter(parent_type='blog', parent=blog_id).order_by('created_at')
         serializer = CommentSerializer(comments, many=True, context={'request': request})
         return Response(serializer.data)
+    
     def post(self, request, blog_id):
         # Create a new comment
         user = request.user
@@ -458,16 +478,27 @@ class CommentView(APIView):
         
         # Send update to each user's personal channel
         for uid in user_ids:
-            async_to_sync(channel_layer.group_send)(
-                f"notifications_{uid}",
-                {
-                    "type": "comment_update",
-                    "blog_id": str(blog_id),
-                    "action": action,
-                    "comment": comment_data,
-                    "user_id": user_id
-                }
-            )
+            # Check if user is online
+            try:
+                user_obj = Petitioner.objects.get(id=uid)
+                if user_obj.is_online:
+                    async_to_sync(channel_layer.group_send)(
+                        f"notifications_{uid}",
+                        {
+                            "type": "comment_update",
+                            "blog_id": str(blog_id),
+                            "action": action,
+                            "comment": comment_data,
+                            "user_id": user_id
+                        }
+                    )
+                else:
+                    # Update BlogLoad for offline users
+                    from .utils import update_blog_load_for_offline_user
+                    update_blog_load_for_offline_user(uid, blog_id)
+            except Petitioner.DoesNotExist:
+                print(f"User with ID {uid} does not exist")
+                continue
         
         # Also send to the blog-specific channel
         async_to_sync(channel_layer.group_send)(
@@ -480,8 +511,6 @@ class CommentView(APIView):
                 "user_id": user_id
             }
         )
-
-
 class CommentDetailView(APIView):
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -502,8 +531,16 @@ class CommentDetailView(APIView):
             
         comment.save()
         
+        # Get the blog ID for this comment
+        blog_id = comment.get_root_blog_id()
+        if not blog_id:
+            return Response(
+                {'error': 'Could not find root blog for comment'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
         # Send WebSocket update for comment like
-        self.send_comment_like_update(comment.parent, comment_id, action, len(comment.likes), user.id)
+        self.send_comment_like_update(blog_id, comment_id, action, len(comment.likes), user.id)
         
         return Response({
             'status': 'success',
@@ -549,17 +586,28 @@ class CommentDetailView(APIView):
         
         # Send update to each user's personal channel
         for uid in user_ids:
-            async_to_sync(channel_layer.group_send)(
-                f"notifications_{uid}",
-                {
-                    "type": "comment_like_update",
-                    "blog_id": str(blog_id),
-                    "comment_id": str(comment_id),
-                    "action": action,
-                    "likes_count": likes_count,
-                    "user_id": user_id
-                }
-            )
+            # Check if user is online
+            try:
+                user_obj = Petitioner.objects.get(id=uid)
+                if user_obj.is_online:
+                    async_to_sync(channel_layer.group_send)(
+                        f"notifications_{uid}",
+                        {
+                            "type": "comment_like_update",
+                            "blog_id": str(blog_id),
+                            "comment_id": str(comment_id),
+                            "action": action,
+                            "likes_count": likes_count,
+                            "user_id": user_id
+                        }
+                    )
+                else:
+                    # Update BlogLoad for offline users
+                    from .utils import update_blog_load_for_offline_user
+                    update_blog_load_for_offline_user(uid, blog_id)
+            except Petitioner.DoesNotExist:
+                print(f"User with ID {uid} does not exist")
+                continue
         
         # Also send to the blog-specific channel
         async_to_sync(channel_layer.group_send)(
@@ -573,8 +621,61 @@ class CommentDetailView(APIView):
                 "user_id": user_id
             }
         )
-# views.py - Add these new endpoints
-
+    
+    def send_comment_update(self, blog_id, action, comment, user_id):
+        """Send WebSocket update for comment changes"""
+        # Similar implementation to CommentView's send_comment_update
+        channel_layer = get_channel_layer()
+        
+        # Get all users who can see this blog (author + their circle)
+        blog = BaseBlogModel.objects.get(id=blog_id)
+        author_id = blog.userid
+        
+        circles = Circle.objects.filter(userid=author_id)
+        circle_user_ids = {circle.otherperson for circle in circles if circle.otherperson}
+        
+        # Include author in the list
+        user_ids = list(circle_user_ids) + [author_id]
+        
+        # Serialize comment for WebSocket
+        comment_serializer = CommentSerializer(comment, context={'request': None})
+        comment_data = comment_serializer.data
+        
+        # Send update to each user's personal channel
+        for uid in user_ids:
+            # Check if user is online
+            try:
+                user_obj = Petitioner.objects.get(id=uid)
+                if user_obj.is_online:
+                    async_to_sync(channel_layer.group_send)(
+                        f"notifications_{uid}",
+                        {
+                            "type": "comment_update",
+                            "blog_id": str(blog_id),
+                            "action": action,
+                            "comment": comment_data,
+                            "user_id": user_id
+                        }
+                    )
+                else:
+                    # Update BlogLoad for offline users
+                    from .utils import update_blog_load_for_offline_user
+                    update_blog_load_for_offline_user(uid, blog_id)
+            except Petitioner.DoesNotExist:
+                print(f"User with ID {uid} does not exist")
+                continue
+        
+        # Also send to the blog-specific channel
+        async_to_sync(channel_layer.group_send)(
+            f"blog_{blog_id}",
+            {
+                "type": "comment_update",
+                "blog_id": str(blog_id),
+                "action": action,
+                "comment": comment_data,
+                "user_id": user_id
+            }
+        )
 class CommentLikeView(APIView):
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -635,17 +736,28 @@ class CommentLikeView(APIView):
         
         # Send update to each user's personal channel
         for uid in user_ids:
-            async_to_sync(channel_layer.group_send)(
-                f"notifications_{uid}",
-                {
-                    "type": "comment_like_update",
-                    "blog_id": str(blog_id),
-                    "comment_id": str(comment_id),
-                    "action": action,
-                    "likes_count": count,
-                    "user_id": user_id
-                }
-            )
+            # Check if user is online
+            try:
+                user_obj = Petitioner.objects.get(id=uid)
+                if user_obj.is_online:
+                    async_to_sync(channel_layer.group_send)(
+                        f"notifications_{uid}",
+                        {
+                            "type": "comment_like_update",
+                            "blog_id": str(blog_id),
+                            "comment_id": str(comment_id),
+                            "action": action,
+                            "likes_count": count,
+                            "user_id": user_id
+                        }
+                    )
+                else:
+                    # Update BlogLoad for offline users
+                    from .utils import update_blog_load_for_offline_user
+                    update_blog_load_for_offline_user(uid, blog_id)
+            except Petitioner.DoesNotExist:
+                print(f"User with ID {uid} does not exist")
+                continue
         
         # Also send to the blog-specific channel
         async_to_sync(channel_layer.group_send)(
@@ -659,7 +771,6 @@ class CommentLikeView(APIView):
                 "user_id": user_id
             }
         )
-
 class ReplyView(APIView):
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -684,16 +795,27 @@ class ReplyView(APIView):
         
         # Send update to each user's personal channel
         for uid in user_ids:
-            async_to_sync(channel_layer.group_send)(
-                f"notifications_{uid}",
-                {
-                    "type": "reply_update",
-                    "blog_id": str(blog_id),
-                    "comment_id": str(comment_id),
-                    "reply": reply_data,
-                    "user_id": user_id
-                }
-            )
+            # Check if user is online
+            try:
+                user_obj = Petitioner.objects.get(id=uid)
+                if user_obj.is_online:
+                    async_to_sync(channel_layer.group_send)(
+                        f"notifications_{uid}",
+                        {
+                            "type": "reply_update",
+                            "blog_id": str(blog_id),
+                            "comment_id": str(comment_id),
+                            "reply": reply_data,
+                            "user_id": user_id
+                        }
+                    )
+                else:
+                    # Update BlogLoad for offline users
+                    from .utils import update_blog_load_for_offline_user
+                    update_blog_load_for_offline_user(uid, blog_id)
+            except Petitioner.DoesNotExist:
+                print(f"User with ID {uid} does not exist")
+                continue
         
         # Also send to the blog-specific channel
         async_to_sync(channel_layer.group_send)(
@@ -742,7 +864,6 @@ class ReplyView(APIView):
         
         serializer = CommentSerializer(reply, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
 
 
         

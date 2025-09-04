@@ -252,6 +252,47 @@ const handleBlogUpload = (
     }
   }
 };
+
+const handleBlogModified = (
+  data: any,
+  dispatch: Dispatch,
+  getState: () => RootState
+) => {
+  const { blog_id, blog, user_id } = data;
+  const blog_type = data.blog_type;
+  console.log('Blog modification received:', blog_type, blog_id);
+  const currentUserId = parseInt(localStorage.getItem('user_id') || '0', 10);
+
+  if (user_id === currentUserId) {
+    console.log('Ignoring own blog modification');
+    return;
+  }
+
+  if (blog && blog_type) {
+    console.log('Processing modified blog:', blog_id, 'of type:', blog_type);
+    
+    // Update the blog in all relevant blog types
+    const state = getState();
+    
+    // Update in 'circle' blog type
+    if (state.blog.blogs['circle']) {
+      dispatch(updateBlog({ blogType: 'circle', id: blog_id, updates: blog }));
+      console.log('Updated blog in circle feed:', blog_id);
+    } else {
+      console.log('Circle blog type not found in state');
+    }
+    
+    // Update in the specific blog type if it exists
+    if (state.blog.blogs[blog_type]) {
+      dispatch(updateBlog({ blogType: blog_type, id: blog_id, updates: blog }));
+      console.log('Updated blog in specific type:', blog_type, blog_id);
+    } else {
+      console.log('Blog type not found in state:', blog_type);
+    }
+  } else {
+    console.error('Invalid blog data received:', { blog_id, blog, blog_type });
+  }
+};
 // === Chat System Handler ===
 
 const handleChatSystemMessage = (
@@ -419,6 +460,11 @@ export const connectWebSocket =
             handleBlogUpdateMessage(data, dispatch, getState);
             return;
           }
+          if(data.type === 'blog_modified') {
+            handleBlogModified (data, dispatch, getState);
+            return;
+          }
+
           // === Blog Comment Handling ===
           if (data.type === 'comment_update') {
             handleCommentUpdateMessage(data, dispatch, getState);

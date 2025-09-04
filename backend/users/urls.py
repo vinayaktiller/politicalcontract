@@ -8,6 +8,7 @@ from .timeline.views import TimelineHeadView, TimelineTailView
 from .milestones.views import UserMilestonesAPIView
 from .login.TestCookieView import TestCookieView
 from users.login.CookieTokenRefreshView import CookieTokenRefreshView
+from .profile.views import UserProfileAPIView
 
 urlpatterns = [
     path('auth/google/', LoginWithGoogle.as_view(), name='login_with_google'),
@@ -21,5 +22,6 @@ urlpatterns = [
     path('milestones/', UserMilestonesAPIView.as_view(), name='user_milestones'),
     path('test-cookie/', TestCookieView.as_view(), name='test_cookie_authentication'),
     path('token/refresh-cookie/', CookieTokenRefreshView.as_view(), name='cookie_token_refresh'),
+    path('profile/<int:user_id>/', UserProfileAPIView.as_view(), name='user_profile'),
     
 ]

@@ -1,0 +1,85 @@
+/* Book-like profile page */
+
+.profile-container {
+  max-width: 850px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  color: #2c2c2c;
+  line-height: 1.8;
+  background: transparent;
+}
+
+.profile-loading,
+.profile-error,
+.profile-not-found {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  font-style: italic;
+}
+
+.profile-error {
+  color: #a33;
+}
+
+/* Header photo */
+.author-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.author-photo {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.author-photo-placeholder {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background-color: #8c7b6b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 3rem;
+  font-weight: bold;
+  border: 4px solid #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Author name */
+.author-name {
+  text-align: center;
+  font-size: 2.4rem;
+  font-weight: bold;
+  margin-bottom: 2rem;
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  color: #1c1c1c;
+}
+
+/* Flowing text like a book */
+.author-text {
+  font-size: 1.1rem;
+  text-align: justify;
+}
+
+.author-text p {
+  margin-bottom: 1.2rem;
+}
+
+.author-text h2 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #2c2c2c;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.2rem;
+}

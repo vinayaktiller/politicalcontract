@@ -1,11 +1,11 @@
-# urls.py
 from django.urls import path
 from .Journeyblog.views import JourneyBlogAPIView
 from .posting_blogs.views import BlogCreateAPIView
 from .circleconcontacts.views import CircleContactsView
 from .blogpage.views import (
     CircleBlogsView, LikeBlogView, ShareBlogView, 
-    BlogDetailView, CommentView, CommentDetailView, ReplyView, CommentLikeView
+    BlogDetailView, CommentView, CommentDetailView, 
+    ReplyView, CommentLikeView,
 )
 
 urlpatterns = [
@@ -14,6 +14,7 @@ urlpatterns = [
     path('create-blog/', BlogCreateAPIView.as_view(), name='create-blog'),
     path('circle-contacts/', CircleContactsView.as_view(), name='circle-contacts'),
     path('circle-blogs/', CircleBlogsView.as_view(), name='circle-blogs'),
+    # path('sync-blog-load/', SyncBlogLoadView.as_view(), name='sync-blog-load'),
     path('blogs/<uuid:blog_id>/like/', LikeBlogView.as_view(), name='like-blog'),
     path('blogs/<uuid:blog_id>/share/', ShareBlogView.as_view(), name='share-blog'),
     path('blogs/<uuid:blog_id>/', BlogDetailView.as_view(), name='blog-detail'),

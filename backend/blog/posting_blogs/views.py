@@ -4,10 +4,11 @@ from rest_framework import status
 from .serializers import BlogCreateSerializer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from users.models import Circle
+from users.models import Circle, Petitioner  # Added Petitioner import
 from .blog_utils import BlogDataBuilder
 from ..models import BaseBlogModel
 from ..blogpage.serializers import BlogSerializer
+from ..models import BlogLoad  # Added BlogLoad import
 
 
 class BlogCreateAPIView(APIView):
@@ -69,18 +70,42 @@ class BlogCreateAPIView(APIView):
         print(f"Sending to user IDs: {user_ids}, {base_blog.type, blog_base_type}")
 
         for uid in user_ids:
-            async_to_sync(channel_layer.group_send)(
-                f"notifications_{uid}",
-                {
-                    "type": "blog_created",
-                    "blog_id": str(blog_id),
-                    "action": "blog_created",
-                    'blog_type': blog_base_type,  # Send the base type
+            try:
+                # Check if user is online
+                user_obj = Petitioner.objects.get(id=uid)
+                if user_obj.is_online:
+                    # Send WebSocket to online users
+                    async_to_sync(channel_layer.group_send)(
+                        f"notifications_{uid}",
+                        {
+                            "type": "blog_created",
+                            "blog_id": str(blog_id),
+                            "action": "blog_created",
+                            'blog_type': blog_base_type,
+                            "blog": serialized_blog,
+                            "user_id": user.id
+                        }
+                    )
+                else:
+                    # Add to new_blogs for offline users
+                    blog_load, created = BlogLoad.objects.get_or_create(
+                        userid=uid,
+                        defaults={
+                            'new_blogs': [blog_id],
+                            'modified_blogs': [],
+                            'loaded_blogs': []
+                        }
+                    )
+                    if not created:
+                        # Add blog to new_blogs if not already present
+                        if blog_id not in blog_load.new_blogs:
+                            blog_load.new_blogs.append(blog_id)
+                            blog_load.save()
+            except Petitioner.DoesNotExist:
+                print(f"User with ID {uid} does not exist")
+                continue
 
-                    "blog": serialized_blog,
-                    "user_id": user.id
-                }
-            )
+        # Always send to blog-specific channel
         async_to_sync(channel_layer.group_send)(
             f"blog_{blog_id}",
             {
