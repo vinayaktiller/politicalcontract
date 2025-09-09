@@ -1,7 +1,9 @@
+// WaitingPage.tsx
 import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login } from "../../../login/login_logoutSlice";
+import PhoneNumberForm from "../phonenumber/PhoneNumberForm";
 import "../Waitingpage/Waitingpage.css";
 
 interface StatusMessage {
@@ -12,12 +14,24 @@ interface StatusMessage {
 type WebSocketRef = React.MutableRefObject<WebSocket | null>;
 
 const WaitingPage: React.FC = () => {
-  const user_email = localStorage.getItem("user_email");
+  const user_email = localStorage.getItem("user_email") || '';
+  const location = useLocation();
   const [status, setStatus] = useState<string>("");
   const [notificationId, setNotificationId] = useState<number | null>(null);
+  const [noInitiator, setNoInitiator] = useState<boolean>(false);
+  const [showPhoneForm, setShowPhoneForm] = useState<boolean>(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const ws: WebSocketRef = useRef(null);
+
+  // Check if user registered without an initiator
+  useEffect(() => {
+    if (location.state && (location.state as any).noInitiator) {
+      setNoInitiator(true);
+      setStatus("no_initiator");
+      setShowPhoneForm(true);
+    }
+  }, [location]);
 
   const statusMessages: Record<string, StatusMessage> = {
     initiator_offline: { icon: "⚠️", message: "Your initiator is offline. Ask them to come online." },
@@ -26,8 +40,20 @@ const WaitingPage: React.FC = () => {
     reacted_pending: { icon: "⏳", message: "Your initiator has seen your request but hasn't responded." },
     verified: { icon: "🎉", message: "Your request has been verified! Proceed to profile setup." },
     rejected: { icon: "🚫", message: "Your request was rejected. Try another initiator." },
+    no_initiator: { icon: "⏳", message: "Waiting for initiator assignment. Our team will review your application shortly." },
+    admin_review: { icon: "📋", message: "Your application is under review by our team." },
+    initiator_assigned: { icon: "✅", message: "An initiator has been assigned to you. Please wait for their verification." },
     default: { icon: "📩", message: "Your request has been submitted!" },
   };
+  
+   useEffect(() => {
+        if ((location.state && (location.state as any).noInitiator) || 
+            localStorage.getItem("user_type") === "no_initiator") {
+            setNoInitiator(true);
+            setStatus("no_initiator");
+            setShowPhoneForm(true);
+        }
+    }, [location]);
 
   useEffect(() => {
     if (user_email) {
@@ -44,8 +70,15 @@ const WaitingPage: React.FC = () => {
           if (data.notification_id) {
             setNotificationId(data.notification_id);
             console.log("🔹 Notification ID received:", data.notification_id);
-            console.log("🔹 notificationId:", notificationId);
             localStorage.setItem("notification_id", data.notification_id.toString());
+          }
+
+          // Handle no-initiator specific statuses
+          if (data.type === "admin_review") {
+            setStatus("admin_review");
+          } else if (data.type === "initiator_assigned") {
+            setStatus("initiator_assigned");
+            setNoInitiator(false); // No longer in no-initiator state
           }
 
           // Store generated_user_id when verification is successful
@@ -56,8 +89,6 @@ const WaitingPage: React.FC = () => {
             console.log("🔹 Stored generated_user_id in local storage:", data.generated_user_id);
             dispatch(login({ user_email })); // Dispatch login action with user_email
             navigate("/heartbeat");
-
-            // window.location.reload();
           }
         } catch (error) {
           console.error("❌ WebSocket message parsing error:", error);
@@ -69,7 +100,7 @@ const WaitingPage: React.FC = () => {
 
       return () => ws.current?.close();
     }
-  }, [user_email]);
+  }, [user_email, noInitiator]);
 
   const handleOkClick = () => {
     if (ws.current?.readyState === WebSocket.OPEN) {
@@ -82,7 +113,6 @@ const WaitingPage: React.FC = () => {
     if (user_email) {
       dispatch(login({ user_email }));
     }
-    
   };
 
   const handleAcceptRejection = () => {
@@ -95,6 +125,11 @@ const WaitingPage: React.FC = () => {
     navigate("/login");
   };
 
+  const handlePhoneNumberUpdated = () => {
+    // Optional: You can add any logic to run after phone number is updated
+    console.log("Phone number updated successfully");
+  };
+
   const { icon, message } = statusMessages[status] || statusMessages.default;
 
   return (
@@ -102,6 +137,22 @@ const WaitingPage: React.FC = () => {
       <div className="waiting-page-message-box">
         <span className="waiting-page-status-icon">{icon}</span>
         <p className="waiting-page-text">{message}</p>
+        
+        {noInitiator && status === "no_initiator" && (
+          <div className="no-initiator-info">
+            <p>We'll notify you once an initiator has been assigned to you.</p>
+          </div>
+        )}
+        
+        {showPhoneForm && noInitiator && (
+          <div className="phone-form-section">
+            <PhoneNumberForm 
+              userEmail={user_email} 
+              onPhoneNumberUpdated={handlePhoneNumberUpdated}
+            />
+          </div>
+        )}
+        
         {status === "verified" ? (
           <button className="waiting-page-button" onClick={handleOkClick}>OK</button>
         ) : status === "rejected" ? (

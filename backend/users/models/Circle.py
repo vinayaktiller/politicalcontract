@@ -5,6 +5,7 @@ class Circle(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # Using UUID instead of BigAutoField
     userid = models.BigIntegerField(null=True, blank=True) 
     
+   
     ONLINE_RELATION_CHOICES = [
         ('initiator', 'Initiator'),
         ('initiate', 'Initiate'),
@@ -17,6 +18,9 @@ class Circle(models.Model):
         ('shared_audience', 'Shared Audience'),
         ('connections', 'Connections'),
         ('multiplespeakers', 'Multiple Speakers'),
+        ('online_initiator', 'Online Initiator'), 
+        ('online_initiate', 'Online Initiate'),    
+        ('online_manager', 'Online Manager'),    
     ]
     
     OFFLINE_RELATION_CHOICES = [

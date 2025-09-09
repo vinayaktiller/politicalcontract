@@ -1,0 +1,171 @@
+/* AdminPendingUsers.css */
+.apu-container {
+  padding: 16px;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.apu-title {
+  margin-bottom: 20px !important;
+  font-weight: 600 !important;
+  color: #2c3e50;
+}
+
+.apu-filter-control {
+  margin-bottom: 20px !important;
+  min-width: 200px;
+}
+
+.apu-alert {
+  margin-bottom: 20px !important;
+}
+
+.apu-table-container {
+  overflow-x: auto;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.apu-table {
+  min-width: 1000px;
+}
+
+.apu-table-head {
+  background-color: #f5f7fa;
+}
+
+.apu-table-head-cell {
+  font-weight: 600 !important;
+  background-color: #f5f7fa;
+  color: #2c3e50;
+  padding: 16px 12px !important;
+}
+
+.apu-table-cell {
+  padding: 12px !important;
+  vertical-align: top !important;
+}
+
+.apu-avatar {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.apu-chip {
+  font-weight: 500 !important;
+}
+
+.apu-notes-cell {
+  max-width: 200px;
+}
+
+.apu-notes-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  /* -webkit-line-clamp: 2; */
+  -webkit-box-orient: vertical;
+}
+
+.apu-actions-cell {
+  min-width: 150px;
+}
+
+.apu-button-group {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.apu-button-group button {
+  margin: 2px 0;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+}
+
+.apu-pagination {
+  overflow-x: auto;
+}
+
+.apu-dialog {
+  border-radius: 12px !important;
+}
+
+.apu-dialog-title {
+  background-color: #f5f7fa;
+  padding: 16px 24px !important;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.apu-dialog-content {
+  padding: 20px 24px !important;
+}
+
+.apu-dialog-actions {
+  padding: 16px 24px !important;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .apu-container {
+    padding: 8px;
+  }
+  
+  .apu-title {
+    font-size: 1.5rem !important;
+    text-align: center;
+  }
+  
+  .apu-filter-control {
+    width: 100%;
+  }
+  
+  .apu-table-head-cell,
+  .apu-table-cell {
+    padding: 8px 6px !important;
+    font-size: 0.75rem;
+  }
+  
+  .apu-table-cell:first-child,
+  .apu-table-head-cell:first-child {
+    padding-left: 8px !important;
+    position: sticky;
+    left: 0;
+    background-color: white;
+    z-index: 2;
+  }
+  
+  .apu-avatar {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  
+  .apu-notes-cell {
+    max-width: 120px;
+  }
+}
+
+/* Tablet Styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .apu-container {
+    padding: 12px;
+  }
+  
+  .apu-table-head-cell,
+  .apu-table-cell {
+    padding: 12px 8px !important;
+    font-size: 0.8rem;
+  }
+  
+  .apu-notes-cell {
+    max-width: 150px;
+  }
+}
+
+/* Laptop/Desktop Styles */
+@media (min-width: 1025px) {
+  .apu-table-container {
+    max-width: 100%;
+  }
+}

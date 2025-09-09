@@ -10,6 +10,7 @@ from .login.TestCookieView import TestCookieView
 from users.login.CookieTokenRefreshView import CookieTokenRefreshView
 from .profile.views import UserProfileAPIView
 
+
 urlpatterns = [
     path('auth/google/', LoginWithGoogle.as_view(), name='login_with_google'),
     path('logout/', LogoutView.as_view(), name='logout'),

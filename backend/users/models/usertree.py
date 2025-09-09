@@ -41,8 +41,6 @@ class UserTree(models.Model):
         50: ("Weaver", "With 50 connexions, your threads are tightly woven into the fabric of the movement. You belong to a community already aligned.")
     }
 
-
-
     # Fields
     id = models.BigIntegerField(primary_key=True)
     normal_id = models.BigIntegerField(unique=True, blank=True, null=True)
@@ -71,6 +69,7 @@ class UserTree(models.Model):
         ('group', 'Group Event'),
         ('public', 'Public Event'),
         ('private', 'Private Event'),
+        ('online', 'Online Initiation'),  # Added online initiation type
     ]
     event_choice = models.CharField(max_length=20, choices=EVENT_CHOICES, default='no_event')
     event_id = models.BigIntegerField(null=True, blank=True)
@@ -85,7 +84,6 @@ class UserTree(models.Model):
             else:
                 self.height = 0
             self.depth = 0  # New nodes start as leaves
-        
 
         super().save(*args, **kwargs)
 
@@ -137,8 +135,7 @@ class UserTree(models.Model):
             self.create_milestone(title, text, 'influence', self.influence)
 
     def create_milestone(self, title, text, milestone_type=None, level=None):
-        from .petitioners import Petitioner  # Import Petitioner model
-        """Create milestone record with photo ID determined by gender and milestone order."""
+        from .petitioners import Petitioner
         from .milestone import Milestone
 
         try:
@@ -159,7 +156,6 @@ class UserTree(models.Model):
             levels = sorted(self.INFLUENCE_MILESTONES.keys())
             milestone_index = levels.index(level)
             gender_offset = 0 if gender == 'M' else 1
-            # Start influence milestones at 1 independently
             photo_id = milestone_index * 2 + gender_offset + 1
 
         if not Milestone.objects.filter(user_id=self.id, title=title).exists():
@@ -171,11 +167,23 @@ class UserTree(models.Model):
                 photo_id=photo_id,
                 created_at=timezone.now()
             )
+
     def create_initiator_circle_relation(self):
         from .Circle import Circle  # Local import to avoid circular dependency
         from event.models.groups import Group  # Local import for group handling
 
-        if self.event_choice == 'private' and self.event_id:
+        if self.event_choice == 'online':  # Handle online initiation
+            Circle.objects.create(
+                userid=self.id,
+                onlinerelation='online_initiate',
+                otherperson=self.parentid.id
+            )
+            Circle.objects.create(
+                userid=self.parentid.id,
+                onlinerelation='online_initiator',
+                otherperson=self.id
+            )
+        elif self.event_choice == 'private' and self.event_id:
             # User-to-parent relationships
             Circle.objects.create(
                 userid=self.id,

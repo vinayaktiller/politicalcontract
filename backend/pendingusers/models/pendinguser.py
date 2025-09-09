@@ -18,13 +18,14 @@ IMAGE_EXTENSIONS = [
 ]
 
 GENDER_CHOICES = [('Male', 'Male'), ('Female', 'Female'), ('Other', 'Other')]
+
 EVENT_CHOICES = [
     ('no_event', 'No Event'),
     ('group', 'Group Event'),
     ('public', 'Public Event'),
     ('private', 'Private Event'),
+    ('online', 'Online Initiation'),  
 ]
-
 class PendingUser(models.Model):
     gmail = models.EmailField(unique=True)
     first_name = models.CharField(max_length=50)

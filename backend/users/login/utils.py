@@ -15,7 +15,8 @@ def UserCheck(email):
     Determines the user's type based on their email.
 
     Categories:
-    - 'pendinguser': If user exists in both Petitioner and PendingUser, or only PendingUser.
+    - 'pendinguser': If user exists in both Petitioner and PendingUser, or only PendingUser with initiator.
+    - 'no_initiator': If user exists in PendingUser but has no initiator.
     - 'olduser': If user exists only in Petitioner.
     - 'newuser': If user does not exist in either.
 
@@ -25,22 +26,30 @@ def UserCheck(email):
     petitioner = Petitioner.objects.filter(gmail=email).first()
     pending_user = PendingUser.objects.filter(gmail=email).first()
 
-    if pending_user:
-        # If the email exists in PendingUser, classify as 'pendinguser' 
-        user_type = 'pendinguser'
-        logger.info(f"UserCheck: {email} classified as {user_type}")
-        user_check_attempts.labels(user_type=user_type).inc()
-        return user_type, pending_user
-
-    elif petitioner:
+    if petitioner:
         # If only in Petitioner, classify as 'olduser'
         user_type = 'olduser'
         petitioner.is_online = True
         petitioner.save()
-        logger.info(f"User {email} updated {petitioner.is_online}")
+        logger.info(f"User {email} updated is_online = {petitioner.is_online}")
         logger.info(f"UserCheck: {email} classified as {user_type}")
         user_check_attempts.labels(user_type=user_type).inc()
         return user_type, petitioner
+
+    elif pending_user:
+        # Check if initiator is null
+        if pending_user.initiator_id is None:
+            user_type = 'no_initiator'
+            logger.info(f"UserCheck: {email} classified as {user_type} (no initiator)")
+            user_check_attempts.labels(user_type=user_type).inc()
+            return user_type, pending_user
+        else:
+            user_type = 'pendinguser'
+            logger.info(f"UserCheck: {email} classified as {user_type}")
+            user_check_attempts.labels(user_type=user_type).inc()
+            return user_type, pending_user
+    
+    
 
     else:
         # Not found in either
@@ -48,7 +57,6 @@ def UserCheck(email):
         logger.info(f"UserCheck: {email} classified as {user_type}")
         user_check_attempts.labels(user_type=user_type).inc()
         return user_type, None
-
 
 
 def get_tokens_for_user(user):

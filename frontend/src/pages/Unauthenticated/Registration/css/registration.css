@@ -355,3 +355,45 @@
     width: 60%;
   }
 }
+/* No Initiator specific styles */
+.no-initiator-info {
+  background-color: #f8f9fa;
+  border-left: 4px solid #ffc107;
+  padding: 15px;
+  margin: 15px 0;
+  border-radius: 4px;
+}
+
+.no-initiator-info h3 {
+  color: #856404;
+  margin-top: 0;
+}
+
+.info-text {
+  font-style: italic;
+  color: #6c757d;
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+/* Adjustments for the toggle buttons */
+.toggle-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.toggle-btn {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.toggle-btn.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
