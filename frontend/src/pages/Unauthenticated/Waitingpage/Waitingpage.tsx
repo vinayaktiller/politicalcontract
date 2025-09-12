@@ -24,12 +24,15 @@ const WaitingPage: React.FC = () => {
   const dispatch = useDispatch();
   const ws: WebSocketRef = useRef(null);
 
-  // Check if user registered without an initiator
+  // Track if verification is done in no-initiator path
+  const [initiatorOkDone, setInitiatorOkDone] = useState(false);
+
   useEffect(() => {
     if (location.state && (location.state as any).noInitiator) {
       setNoInitiator(true);
       setStatus("no_initiator");
       setShowPhoneForm(true);
+      localStorage.setItem("user_type", "no_initiator");
     }
   }, [location]);
 
@@ -45,15 +48,15 @@ const WaitingPage: React.FC = () => {
     initiator_assigned: { icon: "✅", message: "An initiator has been assigned to you. Please wait for their verification." },
     default: { icon: "📩", message: "Your request has been submitted!" },
   };
-  
-   useEffect(() => {
-        if ((location.state && (location.state as any).noInitiator) || 
-            localStorage.getItem("user_type") === "no_initiator") {
-            setNoInitiator(true);
-            setStatus("no_initiator");
-            setShowPhoneForm(true);
-        }
-    }, [location]);
+
+  useEffect(() => {
+    if ((location.state && (location.state as any).noInitiator) || 
+        localStorage.getItem("user_type") === "no_initiator") {
+      setNoInitiator(true);
+      setStatus("no_initiator");
+      setShowPhoneForm(true);
+    }
+  }, [location]);
 
   useEffect(() => {
     if (user_email) {
@@ -66,7 +69,26 @@ const WaitingPage: React.FC = () => {
           const data = JSON.parse(event.data);
           console.log("📩 Message received:", data);
 
-          if (data.status) setStatus(data.status);
+          // Handle different message types
+          if (data.type === "no_initiator_status") {
+            setStatus(data.status);
+          } else if (data.type === "admin_verification") {
+                setStatus(data.status);
+                if (data.status === "verified") {
+                    // Store user data and await OK click for navigation
+                    localStorage.setItem("user_id", data.generated_user_id);
+                    localStorage.setItem("name", data.name || "");
+                    localStorage.setItem("profile_pic", data.profile_pic || "");
+                    console.log("🔹 Stored generated_user_id in local storage:", data.generated_user_id);
+                    dispatch(login({ user_email }));
+                    // Do NOT navigate yet—wait for user OK click (handled below)
+                    setInitiatorOkDone(true);
+                }
+            }
+           else if (data.status) {
+            setStatus(data.status);
+          }
+          
           if (data.notification_id) {
             setNotificationId(data.notification_id);
             console.log("🔹 Notification ID received:", data.notification_id);
@@ -78,7 +100,7 @@ const WaitingPage: React.FC = () => {
             setStatus("admin_review");
           } else if (data.type === "initiator_assigned") {
             setStatus("initiator_assigned");
-            setNoInitiator(false); // No longer in no-initiator state
+            setNoInitiator(false);
           }
 
           // Store generated_user_id when verification is successful
@@ -87,8 +109,14 @@ const WaitingPage: React.FC = () => {
             localStorage.setItem("name", data.name);
             localStorage.setItem("profile_pic", data.profile_pic || "");
             console.log("🔹 Stored generated_user_id in local storage:", data.generated_user_id);
-            dispatch(login({ user_email })); // Dispatch login action with user_email
-            navigate("/heartbeat");
+            dispatch(login({ user_email }));
+            // For normal (non-noInitiator) flow, perform direct navigation
+            if (!noInitiator) {
+              navigate("/heartbeat");
+            } else {
+              // For noInitiator case, wait for user OK click
+              setInitiatorOkDone(true);
+            }
           }
         } catch (error) {
           console.error("❌ WebSocket message parsing error:", error);
@@ -100,8 +128,9 @@ const WaitingPage: React.FC = () => {
 
       return () => ws.current?.close();
     }
-  }, [user_email, noInitiator]);
+  }, [user_email, noInitiator, navigate, dispatch]);
 
+  // Normal OK click (used after verified in initiator scenario)
   const handleOkClick = () => {
     if (ws.current?.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ type: "accept_verification", user_email, notificationId }));
@@ -109,10 +138,25 @@ const WaitingPage: React.FC = () => {
     } else {
       console.warn("⚠️ WebSocket is not open");
     }
-    
+
     if (user_email) {
       dispatch(login({ user_email }));
     }
+    navigate("/heartbeat");
+  };
+
+  // Special OK click for "no initiator" scenario after verification
+  const handleNoInitiatorOkClick = () => {
+    // Mark user_type old_user
+    localStorage.setItem("user_type", "old_user");
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({ type: "accept_verification", user_email, notificationId }));
+      console.log("📤 Sent accept_verification message (no_initiator)");
+    } else {
+      console.warn("⚠️ WebSocket is not open");
+    }
+    dispatch(login({ user_email }));
+    navigate("/heartbeat");
   };
 
   const handleAcceptRejection = () => {
@@ -137,13 +181,13 @@ const WaitingPage: React.FC = () => {
       <div className="waiting-page-message-box">
         <span className="waiting-page-status-icon">{icon}</span>
         <p className="waiting-page-text">{message}</p>
-        
+
         {noInitiator && status === "no_initiator" && (
           <div className="no-initiator-info">
             <p>We'll notify you once an initiator has been assigned to you.</p>
           </div>
         )}
-        
+
         {showPhoneForm && noInitiator && (
           <div className="phone-form-section">
             <PhoneNumberForm 
@@ -152,10 +196,18 @@ const WaitingPage: React.FC = () => {
             />
           </div>
         )}
-        
-        {status === "verified" ? (
+
+        {/* OK Button for verified status in normal initiator workflow */}
+        {status === "verified" && !noInitiator ? (
           <button className="waiting-page-button" onClick={handleOkClick}>OK</button>
-        ) : status === "rejected" ? (
+        ) : null}
+
+        {/* OK Button for verified status in noInitiator workflow: user must click before proceeding */}
+        {status === "verified" && noInitiator && initiatorOkDone ? (
+          <button className="waiting-page-button" onClick={handleNoInitiatorOkClick}>OK</button>
+        ) : null}
+
+        {status === "rejected" ? (
           <button className="waiting-page-button" onClick={handleAcceptRejection}>Accept Rejection</button>
         ) : null}
       </div>

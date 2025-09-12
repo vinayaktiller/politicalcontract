@@ -105,6 +105,11 @@ def verify_and_transfer_user(user):
         # Increment verified pending user metric
         pendinguser_verified.inc()
 
+        if user.initiator_id in (0, None):
+            pendinguser = PendingUser.objects.filter(gmail=user.gmail).first()
+            pendinguser.delete()
+        
+
         # DO NOT delete notifications or PendingUser instance!
 
         return petitioner

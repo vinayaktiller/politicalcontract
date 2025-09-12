@@ -35,9 +35,9 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
     isLoading: groupLoading,
   } = useGroupValidation();
 
-  const [tempInitiatorID, setTempInitiatorID] = useState<string | number>('');
+  const [tempInitiatorID, setTempInitiatorID] = useState<string>('');
   const [hasEvent, setHasEvent] = useState<boolean>(false);
-  const [tempEventId, setTempEventId] = useState<string | number>('');
+  const [tempEventId, setTempEventId] = useState<string>('');
   const [eventError, setEventError] = useState<string | null>(null);
   const [showSameIdPopup, setShowSameIdPopup] = useState(false);
   const [showGroupConfirm, setShowGroupConfirm] = useState(false);
@@ -46,6 +46,7 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
   const [isSpeakerValidated, setIsSpeakerValidated] = useState(false);
   const [isGroupValidated, setIsGroupValidated] = useState(false);
   const [isInitiatorValidated, setIsInitiatorValidated] = useState(false);
+
   const navigate = useNavigate();
 
   const clearFields = () => {
@@ -66,7 +67,7 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
   };
 
   const checkSameIds = () => {
-    if (tempInitiatorID && tempEventId) {
+    if (tempInitiatorID !== '' && tempEventId !== '') {
       if (Number(tempInitiatorID) === Number(tempEventId)) {
         setShowSameIdPopup(true);
         return true;
@@ -77,6 +78,12 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
 
   const handleValidation = async () => {
     if (checkSameIds()) return;
+
+    if (tempInitiatorID === '') {
+      setIsInitiatorValidated(false);
+      setEventError('Please enter an Initiator ID');
+      return;
+    }
 
     const isValid = await validateInitiatorID(Number(tempInitiatorID));
     if (isValid) {
@@ -93,7 +100,7 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
   const handleSpeakerValidation = async () => {
     if (checkSameIds()) return;
 
-    if (!tempEventId) {
+    if (tempEventId === '') {
       setEventError('Speaker ID is required.');
       return;
     }
@@ -114,7 +121,7 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
   const handleGroupValidation = async () => {
     if (checkSameIds()) return;
 
-    if (!tempEventId) {
+    if (tempEventId === '') {
       setEventError('Group ID is required.');
       return;
     }
@@ -129,7 +136,7 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
   const handleEventValidation = () => {
     if (checkSameIds()) return;
 
-    if (!tempEventId) {
+    if (tempEventId === '') {
       setEventError('Event ID or Speaker ID is required.');
     } else {
       setEventError(null);
@@ -178,7 +185,7 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
         const submissionData = {
           ...formData,
           gmail: userEmail,
-          event_id: tempEventId ? Number(tempEventId) : null,
+          event_id: tempEventId !== '' ? Number(tempEventId) : null,
           has_no_initiator: true,
           initiator_id: null,
         };
@@ -191,7 +198,6 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
           }
         });
 
-        // Add the has_no_initiator flag explicitly
         formDataToSend.append('has_no_initiator', 'true');
 
         await registrationService.submitRegistration(
@@ -210,8 +216,8 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
     // Existing validation for users with initiators
     if (
       formData.event_type === 'private' &&
-      formData.initiator_id &&
-      formData.event_id &&
+      formData.initiator_id !== undefined &&
+      formData.event_id !== undefined &&
       formData.initiator_id === formData.event_id
     ) {
       setShowSameIdPopup(true);
@@ -248,8 +254,8 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
       const submissionData = {
         ...formData,
         gmail: userEmail,
-        event_id: tempEventId ? Number(tempEventId) : null,
-        has_no_initiator: false, // Explicitly set to false
+        event_id: tempEventId !== '' ? Number(tempEventId) : null,
+        has_no_initiator: false,
       };
 
       Object.entries(submissionData).forEach(([key, value]) => {
@@ -260,7 +266,6 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
         }
       });
 
-      // Add the has_no_initiator flag explicitly
       formDataToSend.append('has_no_initiator', 'false');
 
       await registrationService.submitRegistration(

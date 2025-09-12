@@ -5,7 +5,8 @@ from django.conf.urls.static import static
 from django.conf import settings
 from .Successful_experience.views import verify_user_response
 from .no_initiator.phone_number_views import PhoneNumberAPIView
-from .dashboard_for_no_intitators.views import PendingUserNoInitiatorListView, ClaimPendingUser, UnclaimPendingUser, VerifyPendingUser, UpdatePendingUserNotes, MarkAsSpam
+from .dashboard_for_no_intitators.views import PendingUserNoInitiatorListView, ClaimPendingUser, UnclaimPendingUser,  UpdatePendingUserNotes, MarkAsSpam
+from .dashboard_for_no_intitators.VerifyPendingUser.views import VerifyPendingUser
 
 urlpatterns = [
     path('pending-user/create/', PendingUserCreateView.as_view(), name='pending_user_create'),

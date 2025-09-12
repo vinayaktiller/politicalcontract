@@ -1,5 +1,5 @@
 // LoginPage.tsx
-import React from "react";
+import React, { useEffect } from "react";
 import GoogleButton from "react-google-button";
 import { useNavigate } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -20,6 +20,16 @@ const BASE_URL = "http://127.0.0.1:8000";
 const LoginPage: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Auto-redirect users with pending user/no initiator type in localStorage
+  useEffect(() => {
+    const userType = localStorage.getItem("user_type");
+    if (userType === "pendinguser") {
+      navigate("/waiting");
+    } else if (userType === "no_initiator") {
+      navigate("/waiting", { state: { noInitiator: true } });
+    }
+  }, [navigate]);
 
   // Trigger login notification - returns a Promise
   const triggerLoginNotification = async (userId: string) => {

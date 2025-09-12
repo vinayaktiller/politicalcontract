@@ -9,7 +9,6 @@ from users.makingconnections.services.send_notfication_to_connection import send
 from users.makingconnections.services.send_status_to_applicant import send_status_to_applicant
 from event.Speaker_Invitation_Notifications.send_speaker_invitation import send_speaker_invitation
 
-
 logger = logging.getLogger(__name__)
 
 def handle_user_notifications_on_login(user):

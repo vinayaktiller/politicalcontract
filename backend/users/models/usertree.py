@@ -150,12 +150,12 @@ class UserTree(models.Model):
         if milestone_type == 'initiation' and level is not None:
             levels = sorted(self.INITIATION_MILESTONES.keys())
             milestone_index = levels.index(level)
-            gender_offset = 0 if gender == 'M' else 1
+            gender_offset = 0 if gender == 'M' or 'Male' else 1
             photo_id = milestone_index * 2 + gender_offset + 1
         elif milestone_type == 'influence' and level is not None:
             levels = sorted(self.INFLUENCE_MILESTONES.keys())
             milestone_index = levels.index(level)
-            gender_offset = 0 if gender == 'M' else 1
+            gender_offset = 0 if gender == 'M' or 'Male' else 1
             photo_id = milestone_index * 2 + gender_offset + 1
 
         if not Milestone.objects.filter(user_id=self.id, title=title).exists():

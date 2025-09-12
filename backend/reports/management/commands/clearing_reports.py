@@ -37,6 +37,7 @@ class Command(BaseCommand):
 
             # Cumulative report
             ('report', 'cumulative_report'),
+            
 
             # =========================
             # NEW 'activity_reports' TABLES

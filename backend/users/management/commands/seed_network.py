@@ -145,7 +145,7 @@ class Command(BaseCommand):
     
     def ensure_root_user(self):
         """Ensure root user exists with fixed ID"""
-        root_id = 11021801300001
+        root_id = 11081701500001
         try:
             return Petitioner.objects.get(id=root_id)
         except Petitioner.DoesNotExist:

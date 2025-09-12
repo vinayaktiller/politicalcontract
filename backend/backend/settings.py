@@ -414,10 +414,12 @@ CELERY_BROKER_URL = 'redis://redis:6379/0'
 CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
 CELERY_TIMEZONE = 'Asia/Kolkata'
 CELERY_BEAT_SCHEDULE = {
-    'simulate-user-growth': {
-        'task': 'users.tasks.add_live_users',
-        'schedule':300.0,
-    },
+    # 'simulate-user-growth': {
+    #     'task': 'users.tasks.add_live_users',
+    #     'schedule':300.0,
+    # },
+
+    
     'generate-daily-report': {
         'task': 'reports.tasks.generate_daily_report',
         'schedule': crontab(minute=20, hour=0),  # Midnight every day
@@ -432,6 +434,20 @@ CELERY_BEAT_SCHEDULE = {
             'expires': 120,  # Expire after 2 minutes if not run
         }
     },
+     'generate-monthly-report': {
+        'task': 'reports.tasks.generate_monthly_report',
+        'schedule': crontab(minute=0, hour=2, day_of_month=1),  # 2:00 AM on the 1st of each month
+        'options': {
+            'expires': 60 * 60 * 4,  # Expire after 4 hours
+        }
+    },
+    'generate-overall-report': {
+        'task': 'reports.tasks.generate_overall_report',
+        'schedule': crontab(minute=30, hour=1),  # 1:30 AM every day
+        'options': {
+            'expires': 60 * 60 * 3,  # Expire after 3 hours
+        }
+    },
     # 'populate-milestones-sequence': {
     #     'task': 'users.tasks.populate_milestones_sequence',
     #     'schedule': crontab(minute='*/10'),  # Every 180 seconds (3 minutes)
@@ -440,4 +456,27 @@ CELERY_BEAT_SCHEDULE = {
     #     }
     # },
 
+       'generate-daily-activity-report': {
+        'task': 'activity_reports.tasks.generate_daily_activity_report',
+        'schedule': crontab(minute=30, hour=1),  # 1:30 AM every day
+        'options': {
+            'expires': 60 * 60 * 3,
+        }
+    },
+    'generate-weekly-activity-report': {
+        'task': 'activity_reports.tasks.generate_weekly_activity_report',
+        'schedule': crontab(minute=0, hour=2, day_of_week=1),  # 2:00 AM every Monday
+        'options': {
+            'expires': 60 * 60 * 4,
+        }
+    },
+    'generate-monthly-activity-report': {
+        'task': 'activity_reports.tasks.generate_monthly_activity_report',
+        'schedule': crontab(minute=0, hour=3, day_of_month=1),  # 3:00 AM on the 1st of each month
+        'options': {
+            'expires': 60 * 60 * 6,
+        }
+    },
+
 }
+

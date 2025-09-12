@@ -26,17 +26,7 @@ def UserCheck(email):
     petitioner = Petitioner.objects.filter(gmail=email).first()
     pending_user = PendingUser.objects.filter(gmail=email).first()
 
-    if petitioner:
-        # If only in Petitioner, classify as 'olduser'
-        user_type = 'olduser'
-        petitioner.is_online = True
-        petitioner.save()
-        logger.info(f"User {email} updated is_online = {petitioner.is_online}")
-        logger.info(f"UserCheck: {email} classified as {user_type}")
-        user_check_attempts.labels(user_type=user_type).inc()
-        return user_type, petitioner
-
-    elif pending_user:
+    if pending_user:
         # Check if initiator is null
         if pending_user.initiator_id is None:
             user_type = 'no_initiator'
@@ -48,6 +38,17 @@ def UserCheck(email):
             logger.info(f"UserCheck: {email} classified as {user_type}")
             user_check_attempts.labels(user_type=user_type).inc()
             return user_type, pending_user
+
+    elif petitioner:
+        # If only in Petitioner, classify as 'olduser'
+        user_type = 'olduser'
+        petitioner.is_online = True
+        petitioner.save()
+        logger.info(f"User {email} updated is_online = {petitioner.is_online}")
+        logger.info(f"UserCheck: {email} classified as {user_type}")
+        user_check_attempts.labels(user_type=user_type).inc()
+        return user_type, petitioner
+    
     
     
 

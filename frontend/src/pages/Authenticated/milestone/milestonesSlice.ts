@@ -103,7 +103,6 @@
 // export default milestonesSlice.reducer;
 
 
-
 // src/features/milestones/milestoneSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '../../../api';
@@ -169,13 +168,29 @@ const milestonesSlice = createSlice({
       }
     },
     addMilestone: (state, action: PayloadAction<Milestone>) => {
+      // Ensure milestones is an array before using .some()
+      if (!Array.isArray(state.milestones)) {
+        state.milestones = [];
+      }
+
       const newMilestone = action.payload;
+
+      // Defensive check: Confirm newMilestone has required id and title fields
+      if (!newMilestone || typeof newMilestone.title !== 'string') {
+        // Invalid milestone payload, do nothing or log error
+        console.warn('Invalid milestone payload passed to addMilestone', newMilestone);
+        return;
+      }
+
+      // Check if a milestone with the same title already exists
       const exists = state.milestones.some(m => m.title === newMilestone.title);
+
+      // Add new milestone if it does not exist already
       if (!exists) {
         state.milestones.unshift(newMilestone);
         state.lastUpdated = new Date().toISOString();
       }
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
