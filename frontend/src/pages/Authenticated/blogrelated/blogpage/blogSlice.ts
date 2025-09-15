@@ -54,7 +54,6 @@ const blogSlice = createSlice({
       state.blogs[action.payload.blogType].blogs = [];
       state.status = "failed";
     },
-    // blogSlice.ts - Update the updateBlog reducer
     updateBlog: (
       state,
       action: PayloadAction<{
@@ -89,7 +88,6 @@ const blogSlice = createSlice({
         }
       }
     },
-    // In your blogSlice.ts, ensure addBlog handles the new blog correctly
     addBlog: (
           state,
           action: PayloadAction<{ blogType: string; blog: Blog }>
@@ -132,7 +130,16 @@ const blogSlice = createSlice({
           (blog) => blog.id === blogId
         );
         if (index !== -1) {
-          state.blogs[blogType].blogs[index].comments.push(comment);
+          // Check if comment already exists to avoid duplicates
+          const existingCommentIndex = state.blogs[blogType].blogs[index].comments.findIndex(
+            c => c.id === comment.id
+          );
+          if (existingCommentIndex === -1) {
+            state.blogs[blogType].blogs[index].comments.push(comment);
+          } else {
+            // If comment already exists, update it
+            state.blogs[blogType].blogs[index].comments[existingCommentIndex] = comment;
+          }
           state.blogs[blogType].blogs[index].footer.comments = 
             state.blogs[blogType].blogs[index].comments.map(c => c.id);
         }
@@ -281,20 +288,25 @@ const blogSlice = createSlice({
         }
       }
     },
-    incrementCommentCount: (
+    // Remove the incrementCommentCount action as we're no longer using it
+    removeTempComment: (
       state,
       action: PayloadAction<{
         blogType: string;
         blogId: string;
+        tempCommentId: string;
       }>
     ) => {
-      const { blogType, blogId } = action.payload;
+      const { blogType, blogId, tempCommentId } = action.payload;
       if (state.blogs[blogType]) {
         const index = state.blogs[blogType].blogs.findIndex(
           (blog) => blog.id === blogId
         );
         if (index !== -1) {
-          state.blogs[blogType].blogs[index].footer.comments.push(`temp-${Date.now()}`);
+          state.blogs[blogType].blogs[index].comments = 
+            state.blogs[blogType].blogs[index].comments.filter(
+              comment => comment.id !== tempCommentId
+            );
         }
       }
     },
@@ -309,7 +321,7 @@ export const {
   addBlog,
   addComment,
   updateComment,
-  incrementCommentCount,
+  removeTempComment, // Export the new action
   addReplyToComment,
   setReplyingState,
   setReplyText,

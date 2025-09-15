@@ -13,23 +13,20 @@ from .serializers import BlogSerializer, CommentSerializer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
-
 class CircleBlogsView(generics.GenericAPIView):
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
-
         # Get all circle contacts for current user
         circles_qs = Circle.objects.filter(userid=user.id)
         circle_user_ids = {circle.otherperson for circle in circles_qs if circle.otherperson}
-
         # Include self in the list of users to get blogs from
         user_ids = list(circle_user_ids) + [user.id]
-
         # Get base blogs from circle contacts and self
         base_blogs = BaseBlogModel.objects.filter(userid__in=user_ids).order_by('-created_at')
+        print(f"[BLOGS] Initial fetched count from DB: {base_blogs.count()} for user {user.id}")
 
         # Prefetch UserTree objects for all authors (skip None userids)
         userids = {b.userid for b in base_blogs if b.userid is not None}
@@ -44,8 +41,6 @@ class CircleBlogsView(generics.GenericAPIView):
         all_comment_ids = set()
         for blog in base_blogs:
             all_comment_ids.update(blog.comments)
-            
-            # Get all descendant comments using recursive query
             if blog.comments:
                 with connection.cursor() as cursor:
                     cursor.execute("""
@@ -63,7 +58,6 @@ class CircleBlogsView(generics.GenericAPIView):
                     rows = cursor.fetchall()
                     for row in rows:
                         all_comment_ids.add(row[0])
-
         # Prefetch all comments and their replies in a single query
         all_comments = Comment.objects.filter(id__in=all_comment_ids).order_by('created_at')
 
@@ -79,88 +73,81 @@ class CircleBlogsView(generics.GenericAPIView):
         comment_users = UserTree.objects.filter(id__in=comment_user_ids)
         comment_user_map = {u.id: u for u in comment_users}
 
-        # Build blog data list
+
+        valid_content_types = {'micro', 'short_essay', 'article'}
+
         blog_data = []
+        concrete_skip_count = 0
+        author_skip_count = 0
+
         for base_blog in base_blogs:
             blog_type_raw = base_blog.type
             if not blog_type_raw:
                 continue
+            content_type = None
+            blog_type = blog_type_raw
+            for ct in valid_content_types:
+                if blog_type_raw.endswith('_' + ct):
+                    blog_type = blog_type_raw[:-len(ct)-1]  # Remove the suffix
+                    content_type = ct
+                    break
+            print(f"[BLOGS] blog_type: {blog_type}, content_type: {content_type}")
 
-            # Split using rsplit so we split at the RIGHTMOST underscore.
-            # Example: "report_insight_micro" -> ("report_insight", "micro")
-            if '_' in blog_type_raw:
-                blog_type, content_type = blog_type_raw.rsplit('_', 1)
-            else:
-                blog_type = blog_type_raw
-                content_type = None
-
-            # Get the concrete blog instance
             concrete_blog = self.get_concrete_blog(base_blog.id, blog_type, content_type)
             if not concrete_blog:
+                concrete_skip_count += 1
                 continue
-
-            # Get author and relation
             author = user_map.get(base_blog.userid)
             if not author:
-                # If author not found in prefetch, skip (or optionally load on demand)
+                author_skip_count += 1
                 continue
-
             if base_blog.userid == user.id:
                 relation = 'Your blog'
             else:
                 circle = circle_map.get(base_blog.userid)
                 relation = circle.onlinerelation.replace('_', ' ').title() if circle and circle.onlinerelation else "Connection"
-
-            # Check if current user has liked this blog
             has_liked = user.id in base_blog.likes
             has_shared = user.id in base_blog.shares
-            
-            # Build comment hierarchy for this blog using the serializer
             blog_comments = self.build_comment_hierarchy_with_serializer(
                 base_blog.id, comments_by_parent, comment_user_map, request
             )
-
             blog_data.append({
                 'base': base_blog,
                 'concrete': concrete_blog,
-                'type': blog_type,           # e.g. 'report_insight'
-                'content_type': content_type, # e.g. 'micro'
+                'type': blog_type,
+                'content_type': content_type,
                 'author': author,
                 'relation': relation,
                 'has_liked': has_liked,
                 'has_shared': has_shared,
-                'comments': blog_comments  # Add comments to blog data
+                'comments': blog_comments
             })
 
-        # Serialize the data
+        print(f"[BLOGS] Number of blogs after skipping by concrete model: {base_blogs.count() - concrete_skip_count}")
+        print(f"[BLOGS] Skipped due to missing concrete model: {concrete_skip_count}")
+        print(f"[BLOGS] Skipped due to missing author: {author_skip_count}")
+        print(f"[BLOGS] Number of blogs sent to serializer: {len(blog_data)}")
+
         serializer = BlogSerializer(blog_data, many=True, context={'request': request})
         return Response(serializer.data)
 
     def build_comment_hierarchy_with_serializer(self, blog_id, comments_by_parent, user_map, request):
-        """Build a hierarchical structure of comments for a blog using the serializer"""
         def build_tree(parent_id):
             comments = []
             if parent_id in comments_by_parent:
                 for comment in comments_by_parent[parent_id]:
                     user = user_map.get(comment.user_id)
-                    
-                    # Use the serializer to ensure consistent formatting
                     comment_serializer = CommentSerializer(
-                        comment, 
+                        comment,
                         context={'request': request}
                     )
-                    
                     comment_data = comment_serializer.data
-                    # Recursively build replies
                     comment_data['replies'] = build_tree(comment.id)
                     comments.append(comment_data)
             return comments
-        
-        # Build tree starting from blog as parent
         return build_tree(blog_id)
 
     def get_concrete_blog(self, blog_id, blog_type, content_type):
-        # Import models locally to avoid circular imports
         if blog_type == 'journey':
             from ..models import (
                 MicroJourneyBlog, ShortEssayJourneyBlog, ArticleJourneyBlog

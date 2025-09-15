@@ -95,7 +95,6 @@ class BlogDataBuilder:
         except model_map[content_type].DoesNotExist:
             return None
 
-
     def build_comment_hierarchy(self, blog_id, comments_by_parent, user_map):
         """Build comment hierarchy using serializer"""
         def build_tree(parent_id):
@@ -178,16 +177,21 @@ class BlogDataBuilder:
             base_blog.id, comments_by_parent, comment_user_map
         )
 
-        # Get concrete blog
+        # Get concrete blog - fix for short_essay content type
         blog_type_raw = base_blog.type
         if not blog_type_raw:
             return None
 
-        if '_' in blog_type_raw:
-            blog_type, content_type = blog_type_raw.rsplit('_', 1)
-        else:
-            blog_type = blog_type_raw
-            content_type = None
+        # Split the type correctly (e.g., "journey_short_essay" -> "journey", "short_essay")
+        valid_content_types = {'micro', 'short_essay', 'article'}
+        content_type = None
+        blog_type = blog_type_raw
+        
+        for ct in valid_content_types:
+            if blog_type_raw.endswith('_' + ct):
+                blog_type = blog_type_raw[:-len(ct)-1]  # Remove the suffix
+                content_type = ct
+                break
 
         concrete_blog = self.get_concrete_blog(base_blog.id, blog_type, content_type)
         if not concrete_blog:

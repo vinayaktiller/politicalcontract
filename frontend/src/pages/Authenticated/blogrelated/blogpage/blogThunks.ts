@@ -14,9 +14,10 @@ import {
   setError,
   updateBlog,
   addComment,
-  incrementCommentCount,
+  // incrementCommentCount,
   updateComment,
-  addReplyToComment, // slice action
+  addReplyToComment,
+  removeTempComment, // Add this import
 } from "./blogSlice";
 import { RootState } from "../../../../store";
 
@@ -64,6 +65,7 @@ export const fetchBlogs = createAsyncThunk<
     // console.log("fetchBlogs raw response:", response.data);
 
     const blogsArray = extractBlogsArray(response.data);
+    console.log('fetchBlogs normalized blogsArray:', blogsArray);
 
     dispatch(setBlogs({ blogType, blogs: blogsArray }));
     dispatch(setLoading({ blogType, loading: false }));
@@ -227,7 +229,7 @@ export const shareBlog = createAsyncThunk<
 
 /**
  * addCommentToBlog
- * - optimistic: increment comment count first, then submit
+ * - No optimistic update to prevent duplicates
  */
 export const addCommentToBlog = createAsyncThunk<
   Comment | void,
@@ -237,9 +239,6 @@ export const addCommentToBlog = createAsyncThunk<
   "blogs/addComment",
   async ({ blogType, blogId, text }, { dispatch, getState }) => {
     try {
-      // optimistic increment (temporary id pushed in slice)
-      dispatch(incrementCommentCount({ blogType, blogId }));
-
       const response = await api.post<CommentActionResponse>(
         `/api/blog/blogs/${blogId}/comments/`,
         { text: text.trim() }
@@ -252,26 +251,6 @@ export const addCommentToBlog = createAsyncThunk<
       }
     } catch (err: any) {
       console.error("Error posting comment:", err);
-
-      // rollback optimistic comment ids in footer.comments (remove temp ids)
-      const state = getState() as RootState;
-      const currentBlog = state.blog.blogs[blogType]?.blogs.find((b) => b.id === blogId);
-
-      if (currentBlog) {
-        dispatch(
-          updateBlog({
-            blogType,
-            id: blogId,
-            updates: {
-              footer: {
-                ...currentBlog.footer,
-                comments: currentBlog.footer.comments.filter((id) => !id.startsWith("temp-")),
-              },
-            },
-          })
-        );
-      }
-
       throw err;
     }
   }

@@ -31,11 +31,11 @@ class BaseFailedInitiationExperience(models.Model):
         abstract = True
 class MicroFailedInitiationExperience(BaseFailedInitiationExperience, MicroContent):
     class Meta:
-        db_table = 'blog"."failed_initiation_experience_micro'  # Changed
+        db_table = 'blog"."failed_initiation_micro'  # Changed
 class ShortEssayFailedInitiationExperience(BaseFailedInitiationExperience, ShortEssayContent):
     class Meta:
-        db_table = 'blog"."failed_initiation_experience_short_essay'  # Changed
+        db_table = 'blog"."failed_initiation_short_essay'  # Changed
 class ArticleFailedInitiationExperience(BaseFailedInitiationExperience, ArticleContent):
     class Meta:
-        db_table = 'blog"."failed_initiation_experience_article'  # Changed
+        db_table = 'blog"."failed_initiation_article'  # Changed
         
