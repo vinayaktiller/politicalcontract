@@ -22,7 +22,8 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({ data }) => {
     if (data.photo_url) {
       setImageUrl(data.photo_url);
     } else if (data.type) {
-      setImageUrl(`http://localhost:3000/${data.type}/${data.photo_id}.jpg`);
+      // setImageUrl(`http://localhost:3000/${data.type}/${data.photo_id}.jpg`);
+      setImageUrl(`https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${data.type}/${data.photo_id}.jpg`);
     } else {
       setImageUrl("http://localhost:3000/initiation/1.jpg");
     }

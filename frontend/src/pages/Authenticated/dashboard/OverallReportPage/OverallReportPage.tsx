@@ -296,7 +296,7 @@ const OverallReportPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div>  
   );
 };
 

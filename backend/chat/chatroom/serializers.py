@@ -1,6 +1,12 @@
 from rest_framework import serializers
 from chat.models import Message, Conversation
 from users.models import UserTree  # Ensure UserTree is imported as used
+from users.profilepic_manager.utils import get_profilepic_url
+
+def get_profilepic_url(obj, request):
+    if obj and hasattr(obj, 'profilepic') and obj.profilepic and hasattr(obj.profilepic, 'url') and request:
+        return request.build_absolute_uri(obj.profilepic.url)
+    return None
 
 class MessageSerializer(serializers.ModelSerializer):
     status = serializers.CharField()  # Always capture the backend value (not get_status_display)
@@ -34,10 +40,9 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_sender_profile(self, obj):
         user_tree_map = self.context.get('user_tree_map', {})
         user_tree = user_tree_map.get(obj.sender_id)
+        request = self.context.get('request')
         if user_tree:
-            request = self.context.get('request')
-            if user_tree.profilepic and request:
-                return request.build_absolute_uri(user_tree.profilepic.url)
+            return get_profilepic_url(user_tree, request)
         return None
 
     def get_is_own(self, obj):
@@ -45,6 +50,7 @@ class MessageSerializer(serializers.ModelSerializer):
         if not request or not hasattr(request, 'user'):
             return False
         return obj.sender == request.user
+
 
 class ConversationDetailSerializer(serializers.ModelSerializer):
     other_user = serializers.SerializerMethodField()
@@ -76,9 +82,7 @@ class ConversationDetailSerializer(serializers.ModelSerializer):
 
     def get_user_profile_data(self, user_tree):
         request = self.context.get('request')
-        profile_pic = None
-        if user_tree.profilepic and request:
-            profile_pic = request.build_absolute_uri(user_tree.profilepic.url)
+        profile_pic = get_profilepic_url(user_tree, request)
         return {
             'id': user_tree.id,
             'name': user_tree.name,

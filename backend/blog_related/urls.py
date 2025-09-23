@@ -7,7 +7,7 @@ from .owncontributions.views import (ContributionListView,
     ContributionDetailView,
     ContributionDeleteView
 )
-
+from .Answers.views import QuestionAnswersView
 
 urlpatterns = [
     path('contributions/create/', ContributionCreateView.as_view(), name='contribution-create'),
@@ -18,4 +18,5 @@ urlpatterns = [
     path('get-contribution/', views.get_or_create_contribution_by_link, name='get-or-create-contribution-by-link'),
     path('questions/', QuestionListAPI.as_view(), name='question-list'),
     path('contributions/conflict/', ContributionConflictView.as_view(), name='contribution-conflict'),
+    path('question_answers/<int:question_id>/', QuestionAnswersView.as_view(), name='question_answers'),
 ]

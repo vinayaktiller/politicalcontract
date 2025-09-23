@@ -10,7 +10,6 @@ from reports.models import (
 from users.models.petitioners import Petitioner
 from collections import defaultdict
 
-
 class Command(BaseCommand):
     help = 'Generates weekly reports for all geographic levels'
 
@@ -55,6 +54,7 @@ class Command(BaseCommand):
                 state_reports = self.create_state_weekly_reports(
                     week_number, year, current_week_start, week_end, district_reports
                 )
+                # Ensure country report is ALWAYS created, even with zero total_users
                 country_reports = self.create_country_weekly_reports(
                     week_number, year, current_week_start, week_end, state_reports
                 )
@@ -143,6 +143,7 @@ class Command(BaseCommand):
             )
             reports_created[village_id] = report
 
+        # Delete zero-user reports
         VillageWeeklyReport.objects.filter(
             week_last_date=week_end,
             new_users=0
@@ -174,6 +175,7 @@ class Command(BaseCommand):
                 total_users += count
 
             if total_users == 0:
+                # Remove if zero
                 SubdistrictWeeklyReport.objects.filter(
                     week_last_date=week_end,
                     subdistrict=subdistrict
@@ -220,6 +222,7 @@ class Command(BaseCommand):
                 total_users += count
 
             if total_users == 0:
+                # Remove if zero
                 DistrictWeeklyReport.objects.filter(
                     week_last_date=week_end,
                     district=district
@@ -266,6 +269,7 @@ class Command(BaseCommand):
                 total_users += count
 
             if total_users == 0:
+                # Remove if zero
                 StateWeeklyReport.objects.filter(
                     week_last_date=week_end,
                     state=state
@@ -311,13 +315,7 @@ class Command(BaseCommand):
                 }
                 total_users += count
 
-            if total_users == 0:
-                CountryWeeklyReport.objects.filter(
-                    week_last_date=week_end,
-                    country=country
-                ).delete()
-                continue
-
+            # *** Always create/update the country weekly report, even if total_users == 0 ***
             report, created = CountryWeeklyReport.objects.update_or_create(
                 week_last_date=week_end,
                 country=country,
@@ -334,28 +332,29 @@ class Command(BaseCommand):
         return reports_created
 
     def update_parent_ids(self, village_reports, subdistrict_reports,
-                          district_reports, state_reports, country_reports):
+                         district_reports, state_reports, country_reports):
+        # Set parent_id for village weekly reports
         villages = Village.objects.filter(id__in=village_reports.keys()).select_related('subdistrict')
         for v in villages:
             if v.subdistrict_id in subdistrict_reports:
                 vr = village_reports[v.id]
                 vr.parent_id = subdistrict_reports[v.subdistrict_id].id
                 vr.save()
-
+        # Set parent_id for subdistrict weekly reports
         subs = Subdistrict.objects.filter(id__in=subdistrict_reports.keys()).select_related('district')
         for s in subs:
             if s.district_id in district_reports:
                 sr = subdistrict_reports[s.id]
                 sr.parent_id = district_reports[s.district_id].id
                 sr.save()
-
+        # Set parent_id for district weekly reports
         dists = District.objects.filter(id__in=district_reports.keys()).select_related('state')
         for d in dists:
             if d.state_id in state_reports:
                 dr = district_reports[d.id]
                 dr.parent_id = state_reports[d.state_id].id
                 dr.save()
-
+        # Set parent_id for state weekly reports
         states = State.objects.filter(id__in=state_reports.keys()).select_related('country')
         for s in states:
             if s.country_id in country_reports:

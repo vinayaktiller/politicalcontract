@@ -5,6 +5,7 @@ import { useDispatch } from "react-redux";
 import { login } from "../../../login/login_logoutSlice";
 import PhoneNumberForm from "../phonenumber/PhoneNumberForm";
 import "../Waitingpage/Waitingpage.css";
+import { getWsUrl } from "../config";
 
 interface StatusMessage {
   icon: string;
@@ -60,8 +61,8 @@ const WaitingPage: React.FC = () => {
 
   useEffect(() => {
     if (user_email) {
-      ws.current = new WebSocket(`ws://localhost:8000/ws/waitingpage/${user_email}/`);
-
+      const wsUrl = getWsUrl(`/ws/waitingpage/${user_email}/`);
+      ws.current = new WebSocket(wsUrl);
       ws.current.onopen = () => console.log(`✅ WebSocket connected: ${ws.current?.url}`);
 
       ws.current.onmessage = (event: MessageEvent) => {

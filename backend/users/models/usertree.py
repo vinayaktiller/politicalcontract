@@ -150,13 +150,14 @@ class UserTree(models.Model):
         if milestone_type == 'initiation' and level is not None:
             levels = sorted(self.INITIATION_MILESTONES.keys())
             milestone_index = levels.index(level)
-            gender_offset = 0 if gender == 'M' or 'Male' else 1
+            gender_offset = 0 if gender in ['M', 'Male'] else 1
             photo_id = milestone_index * 2 + gender_offset + 1
         elif milestone_type == 'influence' and level is not None:
             levels = sorted(self.INFLUENCE_MILESTONES.keys())
             milestone_index = levels.index(level)
-            gender_offset = 0 if gender == 'M' or 'Male' else 1
+            gender_offset = 0 if gender in ['M', 'Male'] else 1
             photo_id = milestone_index * 2 + gender_offset + 1
+
 
         if not Milestone.objects.filter(user_id=self.id, title=title).exists():
             Milestone.objects.create(
@@ -175,12 +176,12 @@ class UserTree(models.Model):
         if self.event_choice == 'online':  # Handle online initiation
             Circle.objects.create(
                 userid=self.id,
-                onlinerelation='online_initiate',
+                onlinerelation='online_initiator',
                 otherperson=self.parentid.id
             )
             Circle.objects.create(
                 userid=self.parentid.id,
-                onlinerelation='online_initiator',
+                onlinerelation='online_initiate',
                 otherperson=self.id
             )
         elif self.event_choice == 'private' and self.event_id:

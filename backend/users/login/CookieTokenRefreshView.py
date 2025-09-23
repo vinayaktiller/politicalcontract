@@ -31,17 +31,28 @@ class CookieTokenRefreshView(APIView):
             # Create response
             response = Response({"message": "Token refreshed successfully"})
             
-            # Set the new access token in cookie
+            # # Set the new access token in cookie
+            # response.set_cookie(
+            #     key='access_token',
+            #     value=access_token,
+            #     httponly=True,
+            #     secure=not settings.DEBUG,
+            #     samesite='Lax',
+            #     max_age=60 * 60,  # 1 hour
+            #     path='/'
+            # )
+            
+            #seting form deployed backend to frontend
             response.set_cookie(
                 key='access_token',
                 value=access_token,
                 httponly=True,
-                secure=not settings.DEBUG,
-                samesite='Lax',
-                max_age=60 * 60,  # 1 hour
-                path='/'
+                secure=True,  # Must be True for HTTPS 
+                domain='.centralus-01.azurewebsites.net',  # Use your backend domain root
+                samesite='None',  # Allows cross-site requests, requires secure=True
+                max_age=60,  # Adjust as per your token expiry plan
+                path='/',
             )
-            
             logger.info("Token refreshed successfully")
             return response
             

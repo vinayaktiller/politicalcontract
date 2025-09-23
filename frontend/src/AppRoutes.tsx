@@ -49,6 +49,7 @@ import ContributionsList from "./pages/Authenticated/ContributionsList/Contribut
 
 import ProfilePage from "./pages/Authenticated/Profile/ProfilePage";
 import AdminPendingUsers from "./pages/Authenticated/AdminPendingUsers/AdminPendingUsers";
+import AnswersPage from "./pages/Authenticated/questionspage/AnswersPage/AnswersPage";
 
 // 🔥 New imports for new routes
 // import ProfilePage from "./pages/Authenticated/profile/ProfilePage";
@@ -157,6 +158,7 @@ const AppRoutes: React.FC = () => {
             <Route path="profile/:userId" element={<ProfilePage />} /> ✅ New
 
             <Route path="/admin/pending-users" element={<AdminPendingUsers />} />
+            <Route path="answers/:questionId" element={<AnswersPage />} />
           </Route>
         </Route>
       </Routes>

@@ -8,7 +8,6 @@ from reports.models import (
 )
 from users.models import Petitioner
 
-
 class Command(BaseCommand):
     help = 'Generates daily reports for all geographic levels'
 
@@ -117,7 +116,7 @@ class Command(BaseCommand):
             ).values('id', 'first_name', 'last_name')
 
             user_data = {
-                str(user['id']): {  # ensure ID is string
+                str(user['id']): {
                     "id": str(user['id']),
                     "name": f"{user['first_name']} {user['last_name']}"
                 } for user in users
@@ -298,23 +297,18 @@ class Command(BaseCommand):
                 if report:
                     total_new_users += report.new_users
 
-            if total_new_users > 0:
-                report, created = CountryDailyReport.objects.update_or_create(
-                    date=report_date,
-                    country=country,
-                    defaults={
-                        'new_users': total_new_users,
-                        'state_data': state_data
-                    }
-                )
+            # Always create (or update) the country report, even if total_new_users == 0
+            report, created = CountryDailyReport.objects.update_or_create(
+                date=report_date,
+                country=country,
+                defaults={
+                    'new_users': total_new_users,
+                    'state_data': state_data
+                }
+            )
 
-                for state in states:
-                    if state.id in state_reports:
-                        state_report = state_reports[state.id]
-                        state_report.parent_id = report.id
-                        state_report.save()
-            else:
-                CountryDailyReport.objects.filter(
-                    date=report_date,
-                    country=country
-                ).delete()
+            for state in states:
+                if state.id in state_reports:
+                    state_report = state_reports[state.id]
+                    state_report.parent_id = report.id
+                    state_report.save()

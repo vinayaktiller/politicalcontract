@@ -10,12 +10,11 @@ import api from "../../../api";
 import "./login.css";
 import axios from "axios";
 import handleLogout from "../../../login/logout";
+import { config, getApiUrl, getWsUrl } from "../config";
 
 interface CodeResponse {
   code: string;
 }
-
-const BASE_URL = "http://127.0.0.1:8000";
 
 const LoginPage: React.FC = () => {
   const dispatch = useDispatch();
@@ -25,9 +24,9 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     const userType = localStorage.getItem("user_type");
     if (userType === "pendinguser") {
-      navigate("/waiting");
+      // navigate("/waiting");
     } else if (userType === "no_initiator") {
-      navigate("/waiting", { state: { noInitiator: true } });
+      // navigate("/waiting", { state: { noInitiator: true } });
     }
   }, [navigate]);
 
@@ -36,7 +35,7 @@ const LoginPage: React.FC = () => {
     console.log("Triggering login notification for user ID:", userId);
     try {
       const response = await axios.post(
-        `${BASE_URL}/api/users/push-notification/login/`,
+        getApiUrl(config.endpoints.pushNotification),
         { user_id: userId },
         {
           withCredentials: true,
@@ -62,7 +61,7 @@ const LoginPage: React.FC = () => {
   // Handle Google OAuth success, logic for each user type
   const handleSuccess = async (codeResponse: CodeResponse) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/users/auth/google/`, {
+      const response = await fetch(getApiUrl(config.endpoints.googleAuth), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -91,7 +90,7 @@ const LoginPage: React.FC = () => {
           dispatch(connectWebSocket(user_id) as any);
         }
         await triggerLoginNotification(user_id);
-        navigate("/heartbeat");
+        // navigate("/heartbeat");
       } else if (user_type === "pendinguser") {
         localStorage.setItem("user_type", user_type);
         navigate("/waiting");
@@ -117,7 +116,7 @@ const LoginPage: React.FC = () => {
 
   const testCookieAuth = async () => {
     try {
-      const response = await api.get("/api/users/test-cookie/");
+      const response = await api.get(getApiUrl(config.endpoints.testCookie));
       console.log("Cookie test response:", response.data);
     } catch (error) {
       console.error("Cookie test failed:", error);

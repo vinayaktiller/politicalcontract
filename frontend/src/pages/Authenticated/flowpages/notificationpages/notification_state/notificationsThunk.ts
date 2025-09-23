@@ -413,12 +413,14 @@ export const connectWebSocket =
         return;
       }
     }
+      // `ws://localhost:8000/ws/notifications/${userId}/?token=${authToken}`
 
     try {
       const authToken = localStorage.getItem('access_token');
       console.log('WebSocket connecting...' + authToken);
       const socket = new WebSocket(
-        `ws://localhost:8000/ws/notifications/${userId}/?token=${authToken}`
+        // `ws://localhost:8000/ws/notifications/${userId}/?token=${authToken}`
+         `wss://pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net/ws/notifications/${userId}/?token=${authToken}`
       );
 
       socket.onopen = () => {

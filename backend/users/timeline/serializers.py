@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from ..models.usertree import UserTree
 from ..models import Circle
+from ..profilepic_manager.utils import get_profilepic_url
 
 class ProfileSerializer(serializers.ModelSerializer):
     profilepic = serializers.SerializerMethodField()
@@ -15,9 +16,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     
     def get_profilepic(self, obj):
         request = self.context.get('request')
-        if obj.profilepic and hasattr(obj.profilepic, 'url') and request is not None:
-            return request.build_absolute_uri(obj.profilepic.url)
-        return None
+        return get_profilepic_url(obj, request)
 
 
 class ExtendedProfileSerializer(ProfileSerializer):

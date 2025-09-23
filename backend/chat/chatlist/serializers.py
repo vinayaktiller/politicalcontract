@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from chat.models import Conversation
 from users.models import UserTree
+from users.profilepic_manager.utils import get_profilepic_url
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -9,9 +10,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def get_profile_pic(self, obj):
         request = self.context.get('request')
-        if obj.profilepic and request:
-            return request.build_absolute_uri(obj.profilepic.url)
-        return None
+        return get_profilepic_url(obj, request)
+
 
     def get_name(self, obj):
         # Safely handle name attribute

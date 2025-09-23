@@ -17,24 +17,24 @@ services:
       - ./backend/.env
     environment:
       - DJANGO_SETTINGS_MODULE=backend.settings
-      - DATABASE_HOST=host.docker.internal
+      - DATABASE_HOST=pfs-pgs-01.postgres.database.azure.com
       - APP_ENV=local
     ports:
       - "127.0.0.1:8000:8000"
-    networks:
-      - app-network
-    depends_on:
-      - redis
+  #   networks:
+  #     - app-network
+  #   depends_on:
+  #     - redis
 
-  redis:
-    image: redis:7
-    container_name: redis_cache
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - app-network
+  # redis:
+  #   image: redis:7
+  #   container_name: redis_cache
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - app-network
 
   frontend:
     build:
@@ -53,8 +53,8 @@ services:
       - "127.0.0.1:3000:3000"
     stdin_open: true
     tty: true
-    depends_on:
-      - backend
+    # depends_on:
+    #   - backend
     networks:
       - app-network
 
@@ -91,7 +91,7 @@ services:
       - DATABASE_HOST=host.docker.internal
     depends_on:
       - backend
-      - redis
+      # - redis
     networks:
       - app-network
 
@@ -112,7 +112,7 @@ services:
       - DATABASE_HOST=host.docker.internal
     depends_on:
       - backend
-      - redis
+      # - redis
     networks:
       - app-network
 
@@ -121,8 +121,8 @@ networks:
     driver: bridge
 
 volumes:
-  redis_data:
-    driver: local
+  # redis_data:
+  #   driver: local
   static_volume:
     driver: local
   media_volume:

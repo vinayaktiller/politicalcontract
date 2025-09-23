@@ -211,7 +211,8 @@ const MilestonePage: React.FC = () => {
       ) : viewMode === 'detail' ? (
         <div className="milestone-grid">
           {sortedMilestones.map(milestone => {
-            const imgUrl = `http://localhost:3000/${milestone.type}/${milestone.photo_id}.jpg`;
+            // const imgUrl = `http://localhost:3000/${milestone.type}/${milestone.photo_id}.jpg`;
+            const imgUrl = `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${milestone.type}/${milestone.photo_id}.jpg`;
             const badgeClass = `milestone-badge milestone-badge-${milestone.type}`;
             const isHighlighted = highlightedId === milestone.id;
             
@@ -271,8 +272,8 @@ const MilestonePage: React.FC = () => {
       ) : (
         <div className="gallery-grid">
           {filteredMilestones.map(milestone => {
-            const imgUrl = `http://localhost:3000/${milestone.type}/${milestone.photo_id}.jpg`;
-
+            // const imgUrl = `http://localhost:3000/${milestone.type}/${milestone.photo_id}.jpg`;
+            const imgUrl = `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${milestone.type}/${milestone.photo_id}.jpg`;
             return (
               <div key={milestone.id} className="gallery-item">
                 <div className="gallery-image-container">

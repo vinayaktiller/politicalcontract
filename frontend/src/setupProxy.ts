@@ -5,7 +5,7 @@ module.exports = function(app: Express) {
   app.use(
     '/api',
     createProxyMiddleware({
-      target: 'http://127.0.0.1:8000',
+      target: 'https://pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net',
       changeOrigin: true,
       cookieDomainRewrite: 'localhost',
       onProxyReq: (proxyReq, req, res) => {

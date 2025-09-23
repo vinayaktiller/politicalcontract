@@ -3,10 +3,22 @@ import axios from "axios";
 import handleLogout from "./login/logout";
 
 // =============================
+// Choose base URLs based on environment
+// =============================
+
+// Uncomment the below lines for your LOCAL DEVELOPMENT setup,
+// and comment out the REMOTE (Azure) URLs. Use env vars if desired.
+
+const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL || 
+  // "http://localhost:8000"; // ← Uncomment for local dev
+  "https://pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net"; // ← Comment out for local dev
+
+// =============================
 // Base axios instance for normal API requests
 // =============================
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
   withCredentials: true,
 });
@@ -16,7 +28,7 @@ const api = axios.create({
 // (no interceptors to avoid recursion)
 // =============================
 const refreshApi = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  baseURL: API_BASE_URL,
   headers: { "Content-Type": "application/json" },
   withCredentials: true,
 });
@@ -98,3 +110,4 @@ api.interceptors.response.use(
 );
 
 export default api;
+

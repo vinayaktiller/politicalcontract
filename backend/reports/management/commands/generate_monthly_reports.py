@@ -11,7 +11,6 @@ from reports.models import (
 from users.models.petitioners import Petitioner
 from collections import defaultdict
 
-
 class Command(BaseCommand):
     help = 'Generates monthly reports for all geographic levels (UUID-safe)'
 
@@ -54,6 +53,7 @@ class Command(BaseCommand):
                 state_reports = self.create_state_monthly_reports(
                     month_end, month, year, district_reports
                 )
+                # Always create country report, even if total_users == 0
                 country_reports = self.create_country_monthly_reports(
                     month_end, month, year, state_reports
                 )
@@ -106,6 +106,7 @@ class Command(BaseCommand):
         return start_date, end_date
 
     def get_month_start(self, dt):
+        """Get the first day of the month containing the given date"""
         return date(dt.year, dt.month, 1)
 
     def create_village_monthly_reports(self, month_start, month_end, month, year):
@@ -309,13 +310,7 @@ class Command(BaseCommand):
                 }
                 total_users += count
             
-            if total_users == 0:
-                CountryMonthlyReport.objects.filter(
-                    last_date=month_end,
-                    country=country
-                ).delete()
-                continue
-            
+            # Always create/update the country monthly report, even if total_users == 0
             report, _ = CountryMonthlyReport.objects.update_or_create(
                 last_date=month_end,
                 country=country,
@@ -331,7 +326,8 @@ class Command(BaseCommand):
         return reports_created
 
     def update_parent_ids(self, village_reports, subdistrict_reports, 
-                          district_reports, state_reports, country_reports):
+                         district_reports, state_reports, country_reports):
+        # Set parent_id for village monthly reports
         villages = Village.objects.filter(id__in=village_reports.keys()).select_related('subdistrict')
         for village_id, report in village_reports.items():
             village = next((v for v in villages if v.id == village_id), None)
@@ -339,6 +335,7 @@ class Command(BaseCommand):
                 report.parent_id = subdistrict_reports[village.subdistrict_id].id
                 report.save()
 
+        # Set parent_id for subdistrict monthly reports
         subs = Subdistrict.objects.filter(id__in=subdistrict_reports.keys()).select_related('district')
         for subdistrict_id, report in subdistrict_reports.items():
             subdistrict = next((s for s in subs if s.id == subdistrict_id), None)
@@ -346,6 +343,7 @@ class Command(BaseCommand):
                 report.parent_id = district_reports[subdistrict.district_id].id
                 report.save()
 
+        # Set parent_id for district monthly reports
         dists = District.objects.filter(id__in=district_reports.keys()).select_related('state')
         for district_id, report in district_reports.items():
             district = next((d for d in dists if d.id == district_id), None)
@@ -353,6 +351,7 @@ class Command(BaseCommand):
                 report.parent_id = state_reports[district.state_id].id
                 report.save()
 
+        # Set parent_id for state monthly reports
         states = State.objects.filter(id__in=state_reports.keys()).select_related('country')
         for state_id, report in state_reports.items():
             state = next((s for s in states if s.id == state_id), None)

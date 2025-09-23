@@ -20,8 +20,8 @@ else
   DB_HOST="host.docker.internal"
   DB_PORT=5432
 
-  REDIS_HOST="redis"
-  REDIS_PORT=6379
+  REDIS_HOST="pfs-rds.canadacentral.redis.azure.net"
+  REDIS_PORT=10000
 fi
 
 # Wait for Redis to be ready

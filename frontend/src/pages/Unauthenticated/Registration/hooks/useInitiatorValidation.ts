@@ -25,7 +25,7 @@ export function useInitiatorValidation() {
     }
 
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/pendingusers/pending-user/validate-initiator/`, {
+      const response = await fetch(`https://pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net/api/pendingusers/pending-user/validate-initiator/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initiator_id: id, email }),

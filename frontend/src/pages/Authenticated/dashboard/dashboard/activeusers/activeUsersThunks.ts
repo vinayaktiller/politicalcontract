@@ -42,8 +42,8 @@ export const connectWebSocket = () =>
         socket.close(4001, 'Reconnecting');
         socket = null;
       }
-
-      const newSocket = new WebSocket(`ws://${window.location.hostname}:8000/ws/activity/today/`);
+      // const newSocket = new WebSocket(`ws://${window.location.hostname}:8000/ws/activity/today/`);
+      const newSocket = new WebSocket(`wss://pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net/ws/activity/today/`);
       socket = newSocket;
 
       newSocket.onopen = () => {

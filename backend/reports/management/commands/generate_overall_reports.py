@@ -6,7 +6,6 @@ from reports.models import OverallReport
 from users.models import Petitioner
 from collections import defaultdict
 
-
 class Command(BaseCommand):
     help = 'Generates cumulative overall reports for all geographic levels (UUID-safe)'
 
@@ -28,7 +27,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **kwargs):
-        # Preload geographic names - keep UUID keys
         self.village_names = {v.id: v.name for v in Village.objects.all()}
         self.subdistrict_names = {s.id: s.name for s in Subdistrict.objects.all()}
         self.district_names = {d.id: d.name for d in District.objects.all()}
@@ -47,10 +45,9 @@ class Command(BaseCommand):
 
         while current_date <= end_date:
             self.stdout.write(f"Processing {current_date}...")
-            self.process_date(current_date)
+            self.process_date_including_zero_users(current_date)
             current_date += timedelta(days=1)
             processed_days += 1
-
             if processed_days % 10 == 0:
                 self.stdout.write(f"Processed {processed_days} days...")
 
@@ -70,11 +67,13 @@ class Command(BaseCommand):
 
         start_date = (
             date.fromisoformat(kwargs['start_date'])
-            if kwargs.get('start_date') else default_start
+            if kwargs.get('start_date')
+            else default_start
         )
         end_date = (
             date.fromisoformat(kwargs['end_date'])
-            if kwargs.get('end_date') else default_end
+            if kwargs.get('end_date')
+            else default_end
         )
 
         if start_date > end_date:
@@ -87,7 +86,7 @@ class Command(BaseCommand):
     def clean_existing_reports(self):
         OverallReport.objects.all().delete()
 
-    def process_date(self, current_date):
+    def process_date_including_zero_users(self, current_date):
         new_users = Petitioner.objects.filter(
             date_joined__date=current_date
         ).exclude(
@@ -103,14 +102,16 @@ class Command(BaseCommand):
             'village__subdistrict__district__state__country'
         )
 
-        village_data = defaultdict(lambda: {'count': 0, 'users': {}})
-        subdistrict_data = defaultdict(int)
-        district_data = defaultdict(int)
-        state_data = defaultdict(int)
-        country_data = defaultdict(int)
+        # Initialize all geo entities with zero counts
+        village_data = {vid: {'count': 0, 'users': {}} for vid in self.village_names.keys()}
+        subdistrict_data = {sid: 0 for sid in self.subdistrict_names.keys()}
+        district_data = {did: 0 for did in self.district_names.keys()}
+        state_data = {sid: 0 for sid in self.state_names.keys()}
+        country_data = {cid: 0 for cid in self.country_names.keys()}
 
         geo_hierarchy = {}
 
+        # Populate counts from new users
         for user in new_users:
             village = user.village
             subdistrict = village.subdistrict
@@ -310,10 +311,9 @@ class Command(BaseCommand):
         for parent_level, child_level, child_model, parent_fk in level_map:
             self.stdout.write(f"Processing {parent_level} level...")
             children_by_parent = defaultdict(list)
-            # Keep UUID as UUID object for lookups
             for child in child_model.objects.all().values('id', 'name', parent_fk):
                 children_by_parent[child[parent_fk]].append({
-                    'id': child['id'],  # UUID object
+                    'id': child['id'],
                     'name': child['name']
                 })
             child_reports = {

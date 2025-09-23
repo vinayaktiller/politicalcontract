@@ -25,7 +25,7 @@ export function useGroupValidation() {
     setError('');
     
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/event/validate/`, {
+      const response = await fetch(`https://pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net/api/event/validate/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ group_id: id, email }),

@@ -3,6 +3,7 @@
 from rest_framework import serializers
 from users.models import Petitioner, Milestone, Circle, UserTree
 from event.models import Group
+from ..profilepic_manager.utils import get_profilepic_url
 
 class CountrySerializer(serializers.Serializer):
     id = serializers.IntegerField()
@@ -67,6 +68,4 @@ class ProfileSerializer(serializers.ModelSerializer):
     
     def get_profilepic(self, obj):
         request = self.context.get('request')
-        if obj.profilepic and hasattr(obj.profilepic, 'url') and request:
-            return request.build_absolute_uri(obj.profilepic.url)
-        return None
+        return get_profilepic_url(obj, request)

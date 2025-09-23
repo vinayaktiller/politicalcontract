@@ -60,27 +60,73 @@ class LoginWithGoogle(APIView):
             if settings.DEBUG:
                 cookie_domain = None  # Adjust if needed for your dev local domain
 
-            # Set tokens as HttpOnly, Secure cookies
+            # # Set tokens as HttpOnly, Secure cookies
+            # response.set_cookie(
+            #     key='access_token',
+            #     value=tokens['access'],
+            #     httponly=True,
+            #     secure=not settings.DEBUG,  # Use secure cookies only in production
+            #     domain=cookie_domain,
+            #     samesite="Lax",
+            #     max_age=60,  # 1 minute
+            #     path="/"
+            # )
+            # response.set_cookie(
+            #     key='refresh_token',
+            #     value=tokens['refresh'],
+            #     httponly=True,
+            #     secure=not settings.DEBUG,
+            #     domain=cookie_domain,
+            #     samesite="Lax",
+            #     max_age=60 * 60 * 24 * 7,  # 1 week
+            #     path="/"
+            # )
+
+            # teken cookies settings for Azure deployment and local frontend
+            # response.set_cookie(
+            #     key='access_token',
+            #     value=tokens['access'],
+            #     httponly=True,
+            #     secure=True,  # Always secure in Azure
+            #     samesite="None",  # Allow cross-site cookies
+            #     max_age=60,
+            #     path="/",
+            # )
+
+            # response.set_cookie(
+            #     key='refresh_token',
+            #     value=tokens['refresh'],
+            #     httponly=True,
+            #     secure=True,
+            #     samesite="None",
+            #     max_age=60 * 60 * 24 * 7,
+            #     path="/",
+            # )
+
+            # Original cookie settings for reference
             response.set_cookie(
                 key='access_token',
                 value=tokens['access'],
                 httponly=True,
-                secure=not settings.DEBUG,  # Use secure cookies only in production
-                domain=cookie_domain,
-                samesite="Lax",
-                max_age=60,  # 1 minute
-                path="/"
+                secure=True,  # Must be True for HTTPS 
+                domain='.centralus-01.azurewebsites.net',  # Use your backend domain root
+                samesite='None',  # Allows cross-site requests, requires secure=True
+                max_age=60,  # Adjust as per your token expiry plan
+                path='/',
             )
+
             response.set_cookie(
                 key='refresh_token',
                 value=tokens['refresh'],
                 httponly=True,
-                secure=not settings.DEBUG,
-                domain=cookie_domain,
-                samesite="Lax",
-                max_age=60 * 60 * 24 * 7,  # 1 week
-                path="/"
+                secure=True,
+                domain='.centralus-01.azurewebsites.net',
+                samesite='None',
+                max_age=60 * 60 * 24 * 7,
+                path='/',
             )
+
+
             return response
 
         # Special flag for no_initiator users

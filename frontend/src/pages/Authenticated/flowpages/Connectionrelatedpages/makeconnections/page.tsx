@@ -27,7 +27,7 @@ const ConnexionVerification: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await fetch('http://127.0.0.1:8000/api/users/connections/create/', { 
+      const response = await fetch('https://pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net/api/users/connections/create/', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

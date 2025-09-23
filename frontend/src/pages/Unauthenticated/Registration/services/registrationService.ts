@@ -1,3 +1,5 @@
+import { config, getApiUrl } from '../../config';
+
 export const registrationService = {
   
   getCookie: (name: string): string | null => {
@@ -12,42 +14,42 @@ export const registrationService = {
         }
       }
     }
-    console.log(`Extracted cookie ${name}:`, cookieValue); // ✅ Log extracted CSRF token
+    console.log(`Extracted cookie ${name}:`, cookieValue);
     return cookieValue;
   },
 
   submitRegistration: async (formData: Record<string, any>): Promise<any> => {
-    console.log("🚀 submitRegistration started..."); // ✅ Log function execution
+    console.log("🚀 submitRegistration started...");
 
     const formDataToSend = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       formDataToSend.append(key, value);
     });
 
-    console.log("📦 Form data prepared:", Object.fromEntries(formDataToSend.entries())); // ✅ Log FormData content
+    console.log("📦 Form data prepared:", Object.fromEntries(formDataToSend.entries()));
     const csrfToken = registrationService.getCookie('csrftoken') ?? '';
-    console.log("🔑 CSRF Token:", csrfToken); // ✅ Log CSRF token extraction
+    console.log("🔑 CSRF Token:", csrfToken);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/pendingusers/pending-user/create/', {
+      const response = await fetch(getApiUrl(config.endpoints.createPendingUser), {
         method: 'POST',
         headers: { 'X-CSRFToken': csrfToken },
         body: formDataToSend,
       });
 
-      console.log("📡 Server response received, status:", response.status); // ✅ Log response status
+      console.log("📡 Server response received, status:", response.status);
 
       if (response.ok) {
         const result = await response.json();
-        console.log("✅ Registration successful, response data:", result); // ✅ Log success response
+        console.log("✅ Registration successful, response data:", result);
         return result;
       } else {
         const errorData = await response.text();
-        console.error("❌ Error creating user, response:", errorData); // ✅ Log error response
+        console.error("❌ Error creating user, response:", errorData);
         throw new Error(`Server error: ${errorData}`);
       }
     } catch (error) {
-      console.error("🔥 Error submitting form:", error); // ✅ Log caught errors
+      console.error("🔥 Error submitting form:", error);
       throw error;
     }
   },

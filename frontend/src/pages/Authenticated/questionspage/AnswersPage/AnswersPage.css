@@ -1,0 +1,88 @@
+/* AnswersPage.css */
+.answers-page {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.answers-container {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.answers-header {
+  margin-bottom: 20px;
+}
+
+.answers-back-btn {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+.answers-title {
+  font-size: 24px;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.question-card {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.question-rank {
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: 5px;
+}
+
+.question-text {
+  font-size: 18px;
+  margin: 0;
+  color: #333;
+}
+
+.answers-loading,
+.answers-error,
+.no-answers {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.answers-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.write-answer-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 15px;
+}
+
+.write-answer-btn:hover {
+  background-color: #0056b3;
+}

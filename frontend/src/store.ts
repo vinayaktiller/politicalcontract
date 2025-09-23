@@ -18,6 +18,7 @@ import celebrationSlice from './pages/Authenticated/milestone/celebration/celebr
 import circleContactsSlice from './pages/Authenticated/blogrelated/BlogCreator/CircleContacts/circleContactsSlice';
 import questionsSlice from './pages/Authenticated/questionspage/questionsSlice';
 import blogSlice from './pages/Authenticated/blogrelated/blogpage/blogSlice';
+import answersSlice from './pages/Authenticated/questionspage/AnswersPage/answersSlice';
 
 // Middleware
 import { chatPersistenceMiddleware } from './pages/Authenticated/messages/ChatPage/Chatpagetypes';
@@ -56,6 +57,7 @@ const rootReducer = combineReducers({
   circleContacts: circleContactsSlice, // Fixed reducer name
   questions: questionsSlice, // Fixed reducer name
   blog: blogSlice,
+  answers: answersSlice, // Fixed reducer name
   
 });
 
