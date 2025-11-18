@@ -6,10 +6,7 @@ import {
   ChatRoomState, 
   ChatState, 
   Message, 
-  ConversationDetail,
-  selectRoomInitialized,
-  loadChatState,
-  chatPersistenceMiddleware 
+  ConversationDetail 
 } from './Chatpagetypes';
 
 const initialRoomState: ChatRoomState = {
@@ -23,7 +20,7 @@ const initialRoomState: ChatRoomState = {
   initialized: false,
 };
 
-const initialState: ChatState = loadChatState() || {
+const initialState: ChatState = {
   rooms: {},
   currentRoomId: null,
 };
@@ -75,7 +72,7 @@ export const initializeRoom = createAsyncThunk(
   'chat/initializeRoom',
   async (conversationId: string, { dispatch, getState }) => {
     const state = getState() as RootState;
-    const roomInitialized = selectRoomInitialized(state, conversationId);
+    const roomInitialized = state.chat.rooms[conversationId]?.initialized;
     
     if (!roomInitialized) {
       await dispatch(fetchConversation(conversationId));
@@ -236,6 +233,7 @@ const chatSlice = createSlice({
         room.messages.push(message);
       }
     },
+    resetChat: () => initialState,
   },
   extraReducers: (builder) => {
     builder
@@ -351,7 +349,19 @@ export const {
   markMessagesOptimistic,
   addOptimisticMessage,
   resetUnreadCount,
+  resetChat,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;
-export { chatPersistenceMiddleware };
+
+// Selectors
+export const selectCurrentRoom = (state: RootState) => {
+  const currentRoomId = state.chat.currentRoomId;
+  return currentRoomId ? state.chat.rooms[currentRoomId] : null;
+};
+
+export const selectRoomByConversationId = (conversationId: string) => (state: RootState) =>
+  state.chat.rooms[conversationId];
+
+export const selectRoomInitialized = (conversationId: string) => (state: RootState) =>
+  state.chat.rooms[conversationId]?.initialized || false;

@@ -67,20 +67,7 @@ interface PendingUsersResponse {
   count: number;
 }
 
-const AdminPendingUsers: React.FC = () => {
-  const [users, setUsers] = useState<PendingUser[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState<number>(0);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(20);
-  const [totalCount, setTotalCount] = useState<number>(0);
-  const [verificationStatus, setVerificationStatus] = useState<string>('');
-  const [noteDialogOpen, setNoteDialogOpen] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<PendingUser | null>(null);
-  const [notes, setNotes] = useState<string>('');
-  const [currentAdminId, setCurrentAdminId] = useState<number | null>(null);
-
-  // --- New Interfaces for Verify Response ---
+// --- Interfaces for Verify Response ---
 interface Petitioner {
   id: number;
   gmail: string;
@@ -109,6 +96,26 @@ interface VerifyResponse {
   petitioner: Petitioner;
   user_tree: UserTree;
 }
+
+interface RejectResponse {
+  message: string;
+  rejected_user_id: number;
+}
+
+const AdminPendingUsers: React.FC = () => {
+  const [users, setUsers] = useState<PendingUser[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(0);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(20);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [verificationStatus, setVerificationStatus] = useState<string>('');
+  const [noteDialogOpen, setNoteDialogOpen] = useState<boolean>(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<PendingUser | null>(null);
+  const [notes, setNotes] = useState<string>('');
+  const [rejectionReason, setRejectionReason] = useState<string>('');
+  const [currentAdminId, setCurrentAdminId] = useState<number | null>(null);
 
   useEffect(() => {
     // Get admin ID from localStorage
@@ -167,15 +174,39 @@ interface VerifyResponse {
       setError(null);
 
       alert(`User verified and transferred successfully!
-        Petitioner ID: ${transferredUser.petitioner.id}
-        Name: ${transferredUser.petitioner.first_name} ${transferredUser.petitioner.last_name}
-        Email: ${transferredUser.petitioner.gmail}
-        User Tree ID: ${transferredUser.user_tree.id}
+       
       `);
+      //  Petitioner ID: ${transferredUser.petitioner.id}
+      //   Name: ${transferredUser.petitioner.first_name} ${transferredUser.petitioner.last_name}
+      //   Email: ${transferredUser.petitioner.gmail}
+      //   User Tree ID: ${transferredUser.user_tree.id}
 
       fetchPendingUsers();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to verify user');
+    }
+  };
+
+  const handleRejectUser = async (userId: number) => {
+    if (!rejectionReason.trim()) {
+      setError('Please provide a rejection reason');
+      return;
+    }
+
+    try {
+      const response = await api.post<RejectResponse>(
+        `api/pendingusers/admin/pending-users/${userId}/reject/`,
+        { rejection_reason: rejectionReason }
+      );
+
+      setError(null);
+      setRejectDialogOpen(false);
+      setRejectionReason('');
+
+      alert(`User rejected successfully! Rejected user ID: ${response.data.rejected_user_id}`);
+      fetchPendingUsers();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to reject user');
     }
   };
 
@@ -192,6 +223,12 @@ interface VerifyResponse {
     setCurrentUser(user);
     setNotes(user.no_initiator_data?.notes || '');
     setNoteDialogOpen(true);
+  };
+
+  const handleOpenRejectDialog = (user: PendingUser) => {
+    setCurrentUser(user);
+    setRejectionReason('');
+    setRejectDialogOpen(true);
   };
 
   const handleSaveNotes = async () => {
@@ -241,6 +278,16 @@ interface VerifyResponse {
     const isClaimedByMe = user.no_initiator_data.claimed_by === currentAdminId;
 
     return !isClaimed || isClaimedByMe;
+  };
+
+  const canReject = (user: PendingUser) => {
+    if (!user.no_initiator_data || !currentAdminId) return false;
+
+    const isClaimed = user.no_initiator_data.verification_status === 'claimed';
+    const isClaimedByMe = user.no_initiator_data.claimed_by === currentAdminId;
+
+    // Only allow reject if user is claimed by current admin
+    return isClaimed && isClaimedByMe;
   };
 
   if (loading && users.length === 0) {
@@ -362,7 +409,10 @@ interface VerifyResponse {
                   {user.no_initiator_data ? (
                     <ButtonGroup orientation="vertical" className="apu-button-group">
                       {user.no_initiator_data.verification_status === 'unclaimed' && (
-                        <Button onClick={() => handleClaimUser(user.id)}>Claim</Button>
+                        <>
+                          <Button onClick={() => handleClaimUser(user.id)}>Claim</Button>
+                          {/* Reject button removed for unclaimed users */}
+                        </>
                       )}
                       {user.no_initiator_data.verification_status === 'claimed' && (
                         <>
@@ -370,11 +420,20 @@ interface VerifyResponse {
                             <>
                               <Button onClick={() => handleVerifyUser(user.id)}>Verify</Button>
                               <Button onClick={() => handleUnclaimUser(user.id)}>Unclaim</Button>
+                              <Button 
+                                onClick={() => handleOpenRejectDialog(user)}
+                                color="error"
+                              >
+                                Reject
+                              </Button>
                             </>
                           ) : (
-                            <Button disabled>
-                              Claimed by {user.no_initiator_data.claimed_by_name}
-                            </Button>
+                            <>
+                              <Button disabled>
+                                Claimed by {user.no_initiator_data.claimed_by_name}
+                              </Button>
+                              {/* Reject button removed for users claimed by other admins */}
+                            </>
                           )}
                         </>
                       )}
@@ -401,6 +460,8 @@ interface VerifyResponse {
         onRowsPerPageChange={handleChangeRowsPerPage}
         className="apu-pagination"
       />
+
+      {/* Notes Dialog */}
       <Dialog
         open={noteDialogOpen}
         onClose={() => setNoteDialogOpen(false)}
@@ -425,6 +486,45 @@ interface VerifyResponse {
         <DialogActions className="apu-dialog-actions">
           <Button onClick={() => setNoteDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleSaveNotes}>Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <Dialog
+        open={rejectDialogOpen}
+        onClose={() => setRejectDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+        className="apu-dialog"
+      >
+        <DialogTitle className="apu-dialog-title">Reject User</DialogTitle>
+        <DialogContent className="apu-dialog-content">
+          <Typography variant="body1" gutterBottom>
+            Are you sure you want to reject this user? This action cannot be undone.
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Rejection Reason"
+            fullWidth
+            variant="outlined"
+            multiline
+            rows={4}
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            placeholder="Please provide the reason for rejection..."
+          />
+        </DialogContent>
+        <DialogActions className="apu-dialog-actions">
+          <Button onClick={() => setRejectDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={() => currentUser && handleRejectUser(currentUser.id)}
+            color="error"
+            variant="contained"
+            disabled={!rejectionReason.trim()}
+          >
+            Reject User
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

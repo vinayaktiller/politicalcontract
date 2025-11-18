@@ -11,6 +11,12 @@ const blogSlice = createSlice({
   name: "blogs",
   initialState,
   reducers: {
+    // Add this new action to clear all blog data
+    clearBlogs: (state) => {
+      state.blogs = {};
+      state.status = "idle";
+      state.error = null;
+    },
     setLoading: (
       state,
       action: PayloadAction<{ blogType: string; loading: boolean }>
@@ -89,33 +95,116 @@ const blogSlice = createSlice({
       }
     },
     addBlog: (
-          state,
-          action: PayloadAction<{ blogType: string; blog: Blog }>
-        ) => {
-          const { blogType, blog } = action.payload;
-          if (!state.blogs[blogType]) {
-            state.blogs[blogType] = {
-              blogs: [],
-              loading: false,
-              error: null,
-            };
-          }
-          
-          // Check if blog already exists to avoid duplicates
-          const existingIndex = state.blogs[blogType].blogs.findIndex(
-            b => b.id === blog.id
-          );
-          
-          if (existingIndex === -1) {
-            // Add new blog at the beginning of the list
-            state.blogs[blogType].blogs.unshift(blog);
-          } else {
-            // Update existing blog
-            state.blogs[blogType].blogs[existingIndex] = blog;
-          }
-          
-          console.log('Added blog to store:', blogType, blog.id);
-        },
+      state,
+      action: PayloadAction<{ blogType: string; blog: Blog }>
+    ) => {
+      const { blogType, blog } = action.payload;
+      if (!state.blogs[blogType]) {
+        state.blogs[blogType] = {
+          blogs: [],
+          loading: false,
+          error: null,
+        };
+      }
+      
+      // Check if blog already exists to avoid duplicates
+      const existingIndex = state.blogs[blogType].blogs.findIndex(
+        b => b.id === blog.id
+      );
+      
+      if (existingIndex === -1) {
+        // Add new blog at the beginning of the list
+        state.blogs[blogType].blogs.unshift(blog);
+      } else {
+        // Update existing blog
+        state.blogs[blogType].blogs[existingIndex] = blog;
+      }
+      
+      console.log('Added blog to store:', blogType, blog.id);
+    },
+    // ✅ NEW: Add shared blog handler
+    addSharedBlog: (
+      state,
+      action: PayloadAction<{ 
+        blogType: string; 
+        blog: Blog;
+        sharedByUserId: string;
+        originalAuthorId: string;
+      }>
+    ) => {
+      const { blogType, blog, sharedByUserId, originalAuthorId } = action.payload;
+      if (!state.blogs[blogType]) {
+        state.blogs[blogType] = {
+          blogs: [],
+          loading: false,
+          error: null,
+        };
+      }
+      
+      // Mark the blog as shared and add metadata
+      const sharedBlog = {
+        ...blog,
+        is_shared: true,
+        shared_by_user_id: sharedByUserId,
+        original_author_id: originalAuthorId,
+        // You can also modify the relation/header to show "X shared Y's post"
+        header: {
+          ...blog.header,
+          relation: `shared by ${sharedByUserId}`,
+          // Or modify author info to show both original author and sharer
+        }
+      };
+      
+      // Check if blog already exists to avoid duplicates
+      const existingIndex = state.blogs[blogType].blogs.findIndex(
+        b => b.id === blog.id
+      );
+      
+      if (existingIndex === -1) {
+        // Add shared blog at the beginning of the list
+        state.blogs[blogType].blogs.unshift(sharedBlog);
+      } else {
+        // Update existing blog with share info
+        state.blogs[blogType].blogs[existingIndex] = sharedBlog;
+      }
+      
+      console.log('Added shared blog to store:', blogType, blog.id, 'shared by:', sharedByUserId);
+    },
+    // ✅ NEW: Remove shared blog handler
+    removeSharedBlog: (
+      state,
+      action: PayloadAction<{ 
+        blogType: string; 
+        blogId: string;
+        sharedByUserId: string;
+      }>
+    ) => {
+      const { blogType, blogId, sharedByUserId } = action.payload;
+      if (!state.blogs[blogType]) {
+        return;
+      }
+      
+      // Find the blog in the store
+      const blogIndex = state.blogs[blogType].blogs.findIndex(
+        b => b.id === blogId
+      );
+      
+      if (blogIndex !== -1) {
+        const blog = state.blogs[blogType].blogs[blogIndex];
+        
+        // Check if this is the same shared blog (same sharer)
+        const blogAny = blog as any;
+        if (blogAny.is_shared && blogAny.shared_by_user_id === sharedByUserId) {
+          // Remove the blog from the list
+          state.blogs[blogType].blogs.splice(blogIndex, 1);
+          console.log('Removed shared blog from store:', blogType, blogId, 'unshared by:', sharedByUserId);
+        } else {
+          console.log('Blog found but not matching share criteria:', blogId);
+        }
+      } else {
+        console.log('Blog not found in store for removal:', blogId);
+      }
+    },
     addComment: (
       state,
       action: PayloadAction<{
@@ -288,7 +377,6 @@ const blogSlice = createSlice({
         }
       }
     },
-    // Remove the incrementCommentCount action as we're no longer using it
     removeTempComment: (
       state,
       action: PayloadAction<{
@@ -314,14 +402,17 @@ const blogSlice = createSlice({
 });
 
 export const {
+  clearBlogs,
   setLoading,
   setBlogs,
   setError,
   updateBlog,
   addBlog,
+  addSharedBlog,
+  removeSharedBlog, // Export the new action
   addComment,
   updateComment,
-  removeTempComment, // Export the new action
+  removeTempComment,
   addReplyToComment,
   setReplyingState,
   setReplyText,

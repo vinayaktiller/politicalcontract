@@ -158,6 +158,8 @@ const milestonesSlice = createSlice({
   name: 'milestones',
   initialState,
   reducers: {
+    // This action resets milestones to initial state (used for logout)
+    clearMilestones: () => initialState,
     resetMilestones: () => initialState,
     invalidateMilestoneCache: (state) => {
       if (state.lastUpdated && !isToday(new Date(state.lastUpdated))) {
@@ -218,5 +220,10 @@ function isToday(date: Date): boolean {
          date.getFullYear() === today.getFullYear();
 }
 
-export const { resetMilestones, invalidateMilestoneCache, addMilestone } = milestonesSlice.actions;
+export const { 
+  clearMilestones, // Export the new action
+  resetMilestones, 
+  invalidateMilestoneCache, 
+  addMilestone 
+} = milestonesSlice.actions;
 export default milestonesSlice.reducer;

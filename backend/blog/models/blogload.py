@@ -2,7 +2,6 @@ from django.db import models
 import uuid
 from django.contrib.postgres.fields import ArrayField
 
-
 class BlogLoad(models.Model):
     userid = models.BigIntegerField(primary_key=True)
     loaded_blogs = ArrayField(models.UUIDField(), blank=True, default=list)
@@ -15,4 +14,4 @@ class BlogLoad(models.Model):
         return str(self.userid)
     class Meta:
         db_table = 'blog"."blog_load'
-    
+

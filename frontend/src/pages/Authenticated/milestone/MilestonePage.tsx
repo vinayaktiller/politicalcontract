@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
@@ -33,6 +32,7 @@ const MilestonePage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'detail' | 'gallery'>('detail');
   const [filterType, setFilterType] = useState<string>('all');
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
     if (location.state?.fromCelebration) {
@@ -46,17 +46,55 @@ const MilestonePage: React.FC = () => {
     }
   }, [location]);
 
+  // FIXED: Improved data fetching logic
+  useEffect(() => {
+    const storedId = localStorage.getItem("user_id");
+    if (!storedId) {
+      console.error("No user_id found in localStorage");
+      return;
+    }
+
+    const userId = parseInt(storedId, 10);
+    if (isNaN(userId)) {
+      console.error("Invalid user_id in localStorage:", storedId);
+      return;
+    }
+
+    console.log("Fetching milestones for user:", userId);
+    
+    // Always invalidate cache first to ensure fresh data
+    dispatch(invalidateMilestoneCache());
+
+    // Fetch data regardless of status if we haven't fetched yet or if connection is restored
+    if (!hasFetched || (status === 'idle' && isConnected)) {
+      dispatch(fetchUserMilestones(userId))
+        .unwrap()
+        .then(() => {
+          setHasFetched(true);
+          console.log("Milestones fetched successfully");
+        })
+        .catch((err) => {
+          console.error("Failed to fetch milestones:", err);
+        });
+    }
+  }, [dispatch, isConnected, hasFetched, status]);
+
+  // Alternative: Force fetch on component mount
   useEffect(() => {
     const storedId = localStorage.getItem("user_id");
     if (!storedId) return;
 
     const userId = parseInt(storedId, 10);
-    dispatch(invalidateMilestoneCache());
-
-    if (status === 'idle' && isConnected) {
+    
+    // Force fetch after a short delay to ensure component is mounted
+    const timer = setTimeout(() => {
+      dispatch(invalidateMilestoneCache());
       dispatch(fetchUserMilestones(userId));
-    }
-  }, [dispatch, status, isConnected]);
+      setHasFetched(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [dispatch]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -85,7 +123,6 @@ const MilestonePage: React.FC = () => {
         }, 3000);
       }
     }
-
   }, [location.search, transitionData, showClone]);
 
   useEffect(() => {
@@ -119,10 +156,9 @@ const MilestonePage: React.FC = () => {
       if (location.pathname === "/milestones" && !location.search) {
         container.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (card) {
-        // Scroll so the card is visible (offset can be adjusted)
         const containerRect = container.getBoundingClientRect();
         const cardRect = card.getBoundingClientRect();
-        const offset = cardRect.top - containerRect.top - 20; // 20px padding
+        const offset = cardRect.top - containerRect.top - 20;
         container.scrollTo({ top: offset, behavior: 'smooth' });
       }
 
@@ -149,6 +185,16 @@ const MilestonePage: React.FC = () => {
     ? sortedMilestones
     : sortedMilestones.filter(m => m.type === filterType);
 
+  // Add retry functionality for errors
+  const handleRetry = () => {
+    const storedId = localStorage.getItem("user_id");
+    if (!storedId) return;
+
+    const userId = parseInt(storedId, 10);
+    dispatch(invalidateMilestoneCache());
+    dispatch(fetchUserMilestones(userId));
+  };
+
   if (status === 'loading') {
     return (
       <div className="milestone-page-container" ref={milestoneListRef}>
@@ -162,8 +208,11 @@ const MilestonePage: React.FC = () => {
     return (
       <div className="milestone-page-container" ref={milestoneListRef}>
         <div className="milestone-page-error">
-          <h3>Error</h3>
-          <p>{typeof error === 'string' ? error : JSON.stringify(error)}</p>
+          <h3>Error Loading Milestones</h3>
+          <p>{typeof error === 'string' ? error : 'Failed to load milestones'}</p>
+          <button onClick={handleRetry} className="retry-button">
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -207,11 +256,15 @@ const MilestonePage: React.FC = () => {
           <div className="milestone-page-empty-icon">🏆</div>
           <h3>No Milestones Yet</h3>
           <p>Continue building your network to earn achievements!</p>
+          {status === 'succeeded' && (
+            <button onClick={handleRetry} className="retry-button">
+              Check Again
+            </button>
+          )}
         </div>
       ) : viewMode === 'detail' ? (
         <div className="milestone-grid">
           {sortedMilestones.map(milestone => {
-            // const imgUrl = `http://localhost:3000/${milestone.type}/${milestone.photo_id}.jpg`;
             const imgUrl = `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${milestone.type}/${milestone.photo_id}.jpg`;
             const badgeClass = `milestone-badge milestone-badge-${milestone.type}`;
             const isHighlighted = highlightedId === milestone.id;
@@ -247,7 +300,7 @@ const MilestonePage: React.FC = () => {
                     alt={milestone.title}
                     className="milestone-image"
                     onError={e => {
-                      (e.target as HTMLImageElement).src = `http://localhost:3000/initiation/1.jpg`;
+                      (e.target as HTMLImageElement).src = `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/initiation/1.jpg`;
                     }}
                   />
                 </div>
@@ -272,7 +325,6 @@ const MilestonePage: React.FC = () => {
       ) : (
         <div className="gallery-grid">
           {filteredMilestones.map(milestone => {
-            // const imgUrl = `http://localhost:3000/${milestone.type}/${milestone.photo_id}.jpg`;
             const imgUrl = `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${milestone.type}/${milestone.photo_id}.jpg`;
             return (
               <div key={milestone.id} className="gallery-item">
@@ -282,7 +334,7 @@ const MilestonePage: React.FC = () => {
                     alt={milestone.title}
                     className="gallery-image"
                     onError={e => {
-                      (e.target as HTMLImageElement).src = `http://localhost:3000/initiation/1.jpg`;
+                      (e.target as HTMLImageElement).src = `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/initiation/1.jpg`;
                     }}
                   />
                 </div>

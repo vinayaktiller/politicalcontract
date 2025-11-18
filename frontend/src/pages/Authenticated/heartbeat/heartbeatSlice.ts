@@ -129,7 +129,11 @@ const heartbeatSlice = createSlice({
         historyStatus: state.historyStatus,
         activityHistory: state.activityHistory,
       };
-    }
+    },
+    // ✅ NEW: Clear all heartbeat data explicitly
+    clearAllHeartbeatData: (state) => {
+      return initialState;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -201,5 +205,10 @@ const heartbeatSlice = createSlice({
   },
 });
 
-export const { resetState, invalidateIfStale, resetForNewDay } = heartbeatSlice.actions;
+export const { 
+  resetState, 
+  invalidateIfStale, 
+  resetForNewDay,
+  clearAllHeartbeatData // ✅ Export the new action
+} = heartbeatSlice.actions;
 export default heartbeatSlice.reducer;

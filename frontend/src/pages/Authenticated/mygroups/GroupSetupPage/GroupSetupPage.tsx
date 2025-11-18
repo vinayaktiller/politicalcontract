@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../../api';
 import './GroupSetupPage.css';
@@ -12,10 +12,11 @@ interface User {
 interface GroupDetails {
   group_id: number;
   group_name: string;
+  profile_pic: string | null;
   founder: User;
   speakers: User[];
   pending_speakers_details: User[];
-  members: number[]; // Added members field
+  members: number[];
 }
 
 const GroupSetupPage: React.FC = () => {
@@ -28,8 +29,18 @@ const GroupSetupPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState<boolean>(false);
+  const [uploadingProfilePic, setUploadingProfilePic] = useState<boolean>(false);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  console.log("group", group);
 
   useEffect(() => {
+    // Get current user ID from localStorage
+    const userId = localStorage.getItem('user_id');
+    if (userId) {
+      setCurrentUserId(parseInt(userId));
+    }
+
     const fetchGroup = async () => {
       try {
         const response = await api.get<GroupDetails>(`/api/event/group/${groupId}/`);
@@ -51,6 +62,9 @@ const GroupSetupPage: React.FC = () => {
 
     fetchGroup();
   }, [groupId, navigate]);
+
+  // Check if current user is the group founder
+  const isGroupFounder = currentUserId && group && currentUserId === group.founder.id;
 
   const validateSpeaker = async () => {
     if (!speakerId.trim()) {
@@ -97,6 +111,76 @@ const GroupSetupPage: React.FC = () => {
     }
   };
 
+  const handleProfilePicUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !group) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setError('Please select a valid image file (JPEG, PNG, GIF, WebP)');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size too large. Maximum size is 5MB');
+      return;
+    }
+
+    // Validate image dimensions for landscape
+    const img = new Image();
+    img.onload = async () => {
+      const isLandscape = img.width > img.height;
+      if (!isLandscape) {
+        setError('Please upload a landscape-oriented photo (width greater than height)');
+        return;
+      }
+
+      try {
+        setUploadingProfilePic(true);
+        setError(null);
+
+        const formData = new FormData();
+        formData.append('profile_pic', file);
+
+        const response = await api.patch(
+          `/api/event/group/${groupId}/upload-profile-picture/`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+
+        setGroup((response.data as { group: GroupDetails }).group);
+        setSuccess('Group profile picture uploaded successfully!');
+        setTimeout(() => setSuccess(null), 3000);
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'Failed to upload profile picture');
+      } finally {
+        setUploadingProfilePic(false);
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    };
+
+    img.onerror = () => {
+      setError('Failed to load image. Please try another file.');
+    };
+
+    img.src = URL.createObjectURL(file);
+  };
+
+  const triggerFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   const completeSetup = () => {
     navigate(`/group/${groupId}`);
   };
@@ -128,6 +212,77 @@ const GroupSetupPage: React.FC = () => {
   return (
     <div className="group-setup-container">
       <h1 className="setup-header">Setup Group: {group.group_name}</h1>
+      
+      {/* Profile Picture Upload Section - Only show for founder */}
+      {isGroupFounder && (
+        <div className="setup-section">
+          <h2>Group Profile Picture</h2>
+          <p className="section-description">
+            Upload a landscape-oriented profile picture for your group. This will be visible to all group members.
+            <br />
+            <strong>Recommended:</strong> Landscape photo with group of people (width greater than height)
+          </p>
+          
+          <div className="profile-pic-section">
+            <div className="current-profile-pic">
+              {group.profile_pic ? (
+                <img 
+                  src={group.profile_pic} 
+                  alt="Group profile"
+                  className="group-profile-pic"
+                />
+              ) : (
+                <div className="group-profile-pic-placeholder">
+                  <div className="placeholder-icon">🏞️</div>
+                  <span>No group photo yet</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="upload-controls">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleProfilePicUpload}
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                style={{ display: 'none' }}
+              />
+              <button 
+                onClick={triggerFileInput}
+                disabled={uploadingProfilePic}
+                className="upload-button"
+              >
+                {uploadingProfilePic ? 'Uploading...' : 'Upload Group Photo'}
+              </button>
+              <p className="upload-hint">
+                Supported formats: JPEG, PNG, GIF, WebP. Max size: 5MB
+                <br />
+                <strong>Must be landscape orientation</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Show current profile picture to non-founders */}
+      {!isGroupFounder && group.profile_pic && (
+        <div className="setup-section">
+          <h2>Group Profile Picture</h2>
+          <div className="profile-pic-section">
+            <div className="current-profile-pic">
+              <img 
+                src={group.profile_pic} 
+                alt="Group profile"
+                className="group-profile-pic"
+              />
+            </div>
+            <div className="view-only-message">
+              <p>Group profile picture (view only)</p>
+              <span>Only the group founder can update this photo</span>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="setup-section">
         <h2>Add Speakers</h2>
@@ -258,7 +413,7 @@ const GroupSetupPage: React.FC = () => {
         <button 
           onClick={completeSetup}
           className="primary-button"
-          disabled={isAdding}
+          disabled={isAdding || uploadingProfilePic}
         >
           Complete Setup
         </button>

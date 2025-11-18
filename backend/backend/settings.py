@@ -87,6 +87,7 @@ INSTALLED_APPS = [
     'chat',
     'blog',
     'blog_related',
+    'storages',
 
 
 ]
@@ -142,6 +143,7 @@ DATABASES = {
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 ASGI_APPLICATION = 'backend.asgi.application'
+
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
@@ -258,8 +260,15 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATIC_URL = 'static/'
 
-MEDIA_URL = '/media/'  # URL path for media files
+# MEDIA_URL = '/media/'  # URL path for media files
+
+MEDIA_URL = 'https://pfssabe01.blob.core.windows.net/publicfundingsystem/'  # URL path for media files
+
+
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+DEFAULT_FILE_STORAGE = "backend.azure_storage.AzureMediaStorage"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -441,3 +450,6 @@ CELERY_BEAT_SCHEDULE = {
 
 }
 
+AZURE_ACCOUNT_NAME = os.getenv('AZURE_ACCOUNT_NAME')
+AZURE_ACCOUNT_KEY = os.getenv('AZURE_ACCOUNT_KEY')
+AZURE_CONTAINER = os.getenv('AZURE_CONTAINER')

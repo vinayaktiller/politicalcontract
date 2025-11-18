@@ -195,3 +195,97 @@ body {
     display: none;
   }
 }
+/* Add these notification badge styles to your Mainbar.css */
+
+/* Notification wrapper for proper positioning */
+.notification-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* Notification badge styles - properly positioned on top of bell */
+.notification-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #ff4444;
+  color: white;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgb(245, 245, 245);
+  animation: pulse 2s infinite;
+  z-index: 121; /* Higher than head z-index */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px rgba(255, 68, 68, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 68, 68, 0);
+  }
+}
+
+/* Ensure buttons are properly styled */
+.nav-toggle,
+.noti-toggle {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.nav-toggle:hover,
+.noti-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.nav-toggle:disabled,
+.noti-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Mobile specific badge styles */
+@media (max-width: 767px) {
+  .notification-badge {
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.6rem;
+    top: -6px;
+    right: -6px;
+    border: 2px solid rgb(245, 245, 245);
+  }
+  
+  .nav-toggle,
+  .noti-toggle {
+    font-size: 1.3rem;
+    padding: 6px;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .notification-badge {
+    min-width: 19px;
+    height: 19px;
+    font-size: 0.65rem;
+  }
+}

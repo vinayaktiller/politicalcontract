@@ -1,17 +1,38 @@
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from geographies.models.geos import Country, State, District, Subdistrict, Village
+from backend.azure_storage import AzureMediaStorage
+
+# Image extensions for validation
+IMAGE_EXTENSIONS = [
+    'bmp', 'dib', 'gif', 'jfif', 'jpe', 'jpg', 'jpeg', 'pbm', 'pgm', 'ppm', 'pnm', 'pfm', 'png', 'apng', 'blp',
+    'bufr', 'cur', 'pcx', 'dcx', 'dds', 'ps', 'eps', 'fit', 'fits', 'fli', 'flc', 'ftc', 'ftu', 'gbr', 'grib',
+    'h5', 'hdf', 'jp2', 'j2k', 'jpc', 'jpf', 'jpx', 'j2c', 'icns', 'ico', 'im', 'iim', 'mpg', 'mpeg', 'tif',
+    'tiff', 'mpo', 'msp', 'palm', 'pcd', 'pdf', 'pxr', 'psd', 'qoi', 'bw', 'rgb', 'rgba', 'sgi', 'ras', 'tga',
+    'icb', 'vda', 'vst', 'webp', 'wmf', 'emf', 'xbm', 'xpm'
+]
 
 class Group(models.Model):
     name = models.CharField(max_length=255)
-    founder = models.BigIntegerField ()
+    founder = models.BigIntegerField()
     
-    profile_pic = models.URLField(
+    # profile_pic = models.URLField(
+    #     max_length=500,
+    #     blank=True,
+    #     null=True,
+    #     help_text="URL for the group's main profile picture"
+    # )
+    
+    profile_pic = models.ImageField(
+        upload_to='group_profile_pics/',
+        storage=AzureMediaStorage(),
         max_length=500,
-        blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=IMAGE_EXTENSIONS)],
         null=True,
-        help_text="URL for the group's main profile picture"
+        blank=True,
+        help_text="Profile picture for the group"
     )
     
     speakers = ArrayField(
@@ -73,9 +94,9 @@ class Group(models.Model):
     # Automatic timestamps
     created_at = models.DateTimeField(auto_now_add=True)
 
-
     def __str__(self):
         return self.name
+
     def add_speaker(self, user_id):
         """Add speaker and update UserGroupParticipation"""
         if user_id not in self.speakers:

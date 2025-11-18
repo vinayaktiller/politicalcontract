@@ -8,18 +8,17 @@ from django.core.exceptions import ObjectDoesNotExist
 from ...models.groups import Group 
 from ...models.group_speaker_invitation_notifiation import GroupSpeakerInvitationNotification
 from users.models.petitioners import Petitioner
-from .serializers import GroupSerializer,UserTreeSerializer
+from .serializers import GroupSerializer, UserTreeSerializer
 from users.models.usertree import UserTree
 from django.db.models import Prefetch
 from users.login.authentication import CookieJWTAuthentication 
 import logging
+
 logger = logging.getLogger(__name__)
 
 class GroupDetailView(APIView):
-
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
-
 
     def get(self, request, group_id):
         try:
@@ -120,3 +119,66 @@ class AddPendingSpeakerView(APIView):
 
         except ObjectDoesNotExist:
             return Response({"error": "Group not found"}, status=status.HTTP_404_NOT_FOUND)
+
+class UploadGroupProfilePictureView(APIView):
+    """Handles group profile picture upload - only founder can upload"""
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, group_id):
+        try:
+            group = Group.objects.get(id=group_id)
+            
+            # Check if the current user is the founder
+            if request.user.id != group.founder:
+                return Response(
+                    {"error": "Only the group founder can upload profile picture"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Check if profile picture is in request
+            if 'profile_pic' not in request.FILES:
+                return Response(
+                    {"error": "Profile picture file is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            profile_pic_file = request.FILES['profile_pic']
+            
+            # Validate file size (optional - 5MB limit)
+            if profile_pic_file.size > 5 * 1024 * 1024:
+                return Response(
+                    {"error": "File size too large. Maximum size is 5MB"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Save the profile picture
+            group.profile_pic = profile_pic_file
+            group.save()
+            
+            # Return the updated group data
+            user_ids = [group.founder] + group.speakers + group.pending_speakers
+            users = UserTree.objects.filter(id__in=user_ids)
+            user_map = {user.id: user for user in users}
+            
+            serializer = GroupSerializer(group, context={
+                'request': request,
+                'user_map': user_map
+            })
+            
+            return Response({
+                "success": "Profile picture uploaded successfully",
+                "group": serializer.data
+            }, status=status.HTTP_200_OK)
+            
+        except ObjectDoesNotExist:
+            return Response(
+                {"error": "Group not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error uploading profile picture: {str(e)}")
+            return Response(
+                {"error": "Failed to upload profile picture"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

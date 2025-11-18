@@ -105,11 +105,22 @@ const HomePage: React.FC<HomePageProps> = ({ isAdmin = true }) => {
               />
             </div>
             <span className="button-text">Admin Dashboard</span>
+            
           </div>
+          
         )}
+
 
         {/* other commented buttons kept for future */}
       </div>
+      <div>
+              <button 
+                    onClick={() => navigate('/reports/generate')}
+                    className="generate-reports-btn"
+                  >
+                    Generate Reports
+                  </button>
+            </div>
     </div>
   );
 };

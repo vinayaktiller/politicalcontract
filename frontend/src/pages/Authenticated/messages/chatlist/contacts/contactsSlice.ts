@@ -1,3 +1,4 @@
+// src/features/chat/contacts/contactsSlice.ts
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import api from '../../../../../api'; 
 import { RootState } from '../../../../../store';
@@ -43,7 +44,9 @@ export const fetchContacts = createAsyncThunk(
 const contactsSlice = createSlice({
   name: 'contacts',
   initialState,
-  reducers: {},
+  reducers: {
+    resetContacts: () => initialState,
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchContacts.pending, (state) => {
@@ -63,6 +66,7 @@ const contactsSlice = createSlice({
   },
 });
 
+export const { resetContacts } = contactsSlice.actions;
 export default contactsSlice.reducer;
 
 export const selectContacts = (state: RootState) => state.contacts.contacts;

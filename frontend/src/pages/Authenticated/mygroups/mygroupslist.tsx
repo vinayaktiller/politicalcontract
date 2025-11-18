@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../api';
 import './styles.css'; // Import your CSS styles
+import { c } from 'framer-motion/dist/types.d-Bq-Qm38R';
 
 interface Group {
   group_id: number;
@@ -25,6 +26,7 @@ const MyGroupsPage: React.FC = () => {
         const response = await api.get<{ groups: Group[] }>('/api/event/user-groups/', {
           // params: { user_id: 11021801300001 } // Replace with actual user ID
         });
+        console.log("API Response:", response.data);
         setGroups(response.data.groups);
         setError(null);
       } catch (err: any) {
@@ -54,7 +56,7 @@ const MyGroupsPage: React.FC = () => {
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
-
+  console.log("groups:", groups)
   if (loading) {
     return (
       <div className="groups-loading">
@@ -101,6 +103,7 @@ const MyGroupsPage: React.FC = () => {
       
       <div className="groups-grid">
         {groups.map(group => (
+          
           <div 
             key={group.group_id} 
             className={`group-card ${group.group_type}`}

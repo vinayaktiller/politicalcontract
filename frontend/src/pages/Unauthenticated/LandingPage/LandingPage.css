@@ -1,0 +1,357 @@
+/* LandingPage.css - Mobile First Approach */
+
+/* Base Styles */
+.landing-page-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+.landing-page-content {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+}
+
+/* Header Section */
+.landing-page-header {
+  margin-bottom: 32px;
+}
+
+.logo-section {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.system-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e3c72;
+  margin: 0;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.welcome-section {
+  margin-bottom: 8px;
+}
+
+.welcome-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #2a5298;
+  margin: 0 0 16px 0;
+}
+
+.welcome-subtitle {
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+  text-align: center;
+}
+
+/* Values Section */
+.values-section {
+  margin-bottom: 32px;
+}
+
+.values-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e3c72;
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.value-card {
+  padding: 20px 16px;
+  border-radius: 12px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.value-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(30, 60, 114, 0.1);
+  border-color: #2a5298;
+}
+
+.value-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.value-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e3c72;
+  margin: 0 0 8px 0;
+}
+
+.value-description {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Action Section */
+.action-section {
+  padding-top: 24px;
+  border-top: 2px solid #f0f0f0;
+}
+
+.action-content {
+  margin-bottom: 16px;
+}
+
+.action-text {
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
+/* Google Button Section */
+.google-button-section {
+  margin-top: 24px;
+}
+
+.google-button-text {
+  font-size: 0.95rem;
+  color: #666;
+  margin: 0 0 16px 0;
+  text-align: center;
+}
+
+.google-button-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+/* Custom Google Button Styles */
+.google-button-wrapper .google-button {
+  width: 100%;
+  max-width: 280px;
+  border-radius: 50px !important;
+  box-shadow: 0 8px 20px rgba(30, 60, 114, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.google-button-wrapper .google-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(30, 60, 114, 0.3) !important;
+}
+
+.google-button-wrapper .google-button:active {
+  transform: translateY(0);
+}
+
+.google-button-wrapper .google-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading States */
+.landing-page-loading {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  color: #666;
+}
+
+.landing-page-loading p {
+  margin: 0;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.button-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Tablet Styles (768px and up) */
+@media (min-width: 768px) {
+  .landing-page-content {
+    padding: 40px;
+    max-width: 600px;
+    border-radius: 20px;
+  }
+
+  .system-title {
+    font-size: 2.25rem;
+  }
+
+  .welcome-title {
+    font-size: 2.5rem;
+  }
+
+  .welcome-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .values-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .value-card {
+    padding: 24px 20px;
+  }
+
+  .value-name {
+    font-size: 1.2rem;
+  }
+
+  .value-description {
+    font-size: 1rem;
+  }
+
+  .action-text {
+    font-size: 1.1rem;
+  }
+
+  .google-button-text {
+    font-size: 1rem;
+  }
+
+  .google-button-wrapper .google-button {
+    max-width: 300px;
+  }
+}
+
+/* Desktop Styles (1024px and up) */
+@media (min-width: 1024px) {
+  .landing-page-content {
+    max-width: 800px;
+    padding: 48px;
+  }
+
+  .landing-page-header {
+    margin-bottom: 40px;
+  }
+
+  .system-title {
+    font-size: 2.5rem;
+  }
+
+  .welcome-title {
+    font-size: 2.75rem;
+  }
+
+  .values-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+
+  .value-card {
+    padding: 28px 24px;
+  }
+
+  .value-icon {
+    font-size: 3rem;
+  }
+
+  .action-section {
+    padding-top: 32px;
+  }
+
+  .google-button-wrapper .google-button {
+    max-width: 320px;
+  }
+}
+
+/* Large Desktop Styles (1200px and up) */
+@media (min-width: 1200px) {
+  .landing-page-content {
+    max-width: 900px;
+  }
+
+  .values-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  .value-card,
+  .google-button-wrapper .google-button {
+    transition: none;
+  }
+  
+  .button-spinner {
+    animation: none;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .landing-page-container {
+    background: #000;
+  }
+  
+  .landing-page-content {
+    background: #fff;
+    border: 2px solid #000;
+  }
+  
+  .value-card {
+    border: 2px solid #000;
+  }
+  
+  .google-button-wrapper .google-button {
+    border: 2px solid #000 !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .landing-page-container {
+    background: white !important;
+  }
+  
+  .landing-page-content {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+  
+  .google-button-wrapper {
+    display: none;
+  }
+}

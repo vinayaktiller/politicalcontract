@@ -3,6 +3,7 @@ from rest_framework import serializers
 from ...models.groups import Group
 from users.models.usertree import UserTree
 
+
 class UserTreeSerializer(serializers.ModelSerializer):
     profilepic = serializers.SerializerMethodField()
 

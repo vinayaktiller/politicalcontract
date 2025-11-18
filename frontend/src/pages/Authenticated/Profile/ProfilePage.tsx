@@ -14,6 +14,7 @@ const ProfilePage: React.FC = () => {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
@@ -32,25 +33,33 @@ const ProfilePage: React.FC = () => {
     loadData();
   }, [userId]);
 
+  useEffect(() => {
+    setImageError(false);
+  }, [profileData]);
+
   if (loading) return <div className="profile-loading">Loading profile...</div>;
   if (error) return <div className="profile-error">Error: {error}</div>;
   if (!profileData) return <div className="profile-not-found">Profile not found</div>;
 
   const { user, user_tree, profile_description, milestones, founded_groups, speaking_groups, streak } = profileData;
 
+  // Take first letter of last name for placeholder
+  const lastInitial = user?.first_name?.charAt(0) || "?";
+
   return (
     <div className="profile-container">
       {/* Author photo only in header */}
       <div className="author-header">
-        {user_tree?.profilepic ? (
+        {user_tree?.profilepic && !imageError ? (
           <img
             src={user_tree.profilepic}
-            alt={`${user.first_name} ${user.last_name}`}
+            alt="Profile"
             className="author-photo"
+            onError={() => setImageError(true)}
           />
         ) : (
           <div className="author-photo-placeholder">
-            {user.first_name.charAt(0)}{user.last_name.charAt(0)}
+            {lastInitial}
           </div>
         )}
       </div>

@@ -10,7 +10,7 @@ import api from "../../../api";
 import "./login.css";
 import axios from "axios";
 import handleLogout from "../../../login/logout";
-import { config, getApiUrl, getWsUrl } from "../config";
+import { config, getApiUrl } from "../config";
 
 interface CodeResponse {
   code: string;
@@ -24,9 +24,9 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     const userType = localStorage.getItem("user_type");
     if (userType === "pendinguser") {
-      // navigate("/waiting");
+      navigate("/waiting");
     } else if (userType === "no_initiator") {
-      // navigate("/waiting", { state: { noInitiator: true } });
+      navigate("/waiting", { state: { noInitiator: true } });
     }
   }, [navigate]);
 
@@ -90,7 +90,6 @@ const LoginPage: React.FC = () => {
           dispatch(connectWebSocket(user_id) as any);
         }
         await triggerLoginNotification(user_id);
-        // navigate("/heartbeat");
       } else if (user_type === "pendinguser") {
         localStorage.setItem("user_type", user_type);
         navigate("/waiting");
@@ -134,9 +133,9 @@ const LoginPage: React.FC = () => {
           <GoogleButton onClick={() => googleLogin()} label="Sign in with Google" />
         </div>
       </div>
-      <button onClick={testCookieAuth} style={{ marginTop: "20px" }}>
+      {/* <button onClick={testCookieAuth} style={{ marginTop: "20px" }}>
         Test Cookie Authentication
-      </button>
+      </button> */}
     </div>
   );
 };

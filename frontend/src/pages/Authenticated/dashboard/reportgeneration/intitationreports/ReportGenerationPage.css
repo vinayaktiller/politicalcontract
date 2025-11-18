@@ -1,0 +1,280 @@
+/* ReportGenerationPage.css */
+.generation-content {
+  min-height: 400px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.yesterday-report-section {
+  background: white;
+  border-radius: 8px;
+  padding: 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+}
+
+.yesterday-report-section h3 {
+  margin-bottom: 20px;
+  color: #2c3e50;
+  text-align: center;
+}
+
+.status-card {
+  text-align: center;
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e1e8ed;
+}
+
+.status-header h4 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.status-indicator {
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status-message {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  color: #666;
+}
+
+.generate-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.generate-btn:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.generate-btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.view-report-link {
+  margin-top: 10px;
+}
+
+.view-report-btn {
+  background: #9b59b6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.view-report-btn:hover {
+  background: #8e44ad;
+}
+
+.generation-result {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.generation-result.success {
+  border-left: 4px solid #27ae60;
+}
+
+.generation-result.error {
+  border-left: 4px solid #e74c3c;
+}
+
+.generation-result.already_exists {
+  border-left: 4px solid #f39c12;
+}
+
+.result-icon {
+  font-size: 24px;
+  margin-right: 15px;
+}
+
+.result-success .result-icon { color: #27ae60; }
+.result-error .result-icon { color: #e74c3c; }
+.result-already_exists .result-icon { color: #f39c12; }
+
+.result-content {
+  flex: 1;
+}
+
+.result-content h3 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+}
+
+.result-content p {
+  margin: 0 0 5px 0;
+  color: #666;
+}
+
+.result-date {
+  font-size: 12px;
+  color: #999;
+}
+
+.close-result-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.close-result-btn:hover {
+  color: #666;
+}
+
+.info-section {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.info-section h4 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+.info-section ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #666;
+}
+
+.info-section li {
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.navigation-footer {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e1e8ed;
+}
+
+.view-reports-btn {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.view-reports-btn:hover {
+  background: #219653;
+}
+
+.refresh-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.refresh-btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+/* Loader and Error States */
+.loader {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-style: italic;
+}
+
+.error-message {
+  background: #fee;
+  border: 1px solid #e74c3c;
+  color: #e74c3c;
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.close-error {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #e74c3c;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .generation-content {
+    max-width: 100%;
+    padding: 0 10px;
+  }
+  
+  .yesterday-report-section {
+    padding: 20px;
+  }
+  
+  .status-header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  
+  .generation-result {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+  
+  .result-icon {
+    margin-right: 0;
+  }
+}

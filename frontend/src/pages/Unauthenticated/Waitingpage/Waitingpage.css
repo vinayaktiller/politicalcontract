@@ -115,3 +115,38 @@
 .phone-form-section {
   margin-top: 20px;
 }
+
+/* Add these styles to your existing Waitingpage.css */
+
+.rejection-reason-section {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.rejection-reason-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #c62828;
+}
+
+.rejection-reason-text {
+  color: #d32f2f;
+  font-style: italic;
+  margin: 0;
+}
+
+.rejection-actions {
+  margin-top: 20px;
+}
+
+.rejection-button {
+  background-color: #d32f2f !important;
+}
+
+.rejection-button:hover {
+  background-color: #b71c1c !important;
+}

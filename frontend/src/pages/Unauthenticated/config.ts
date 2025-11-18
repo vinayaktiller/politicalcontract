@@ -1,3 +1,4 @@
+// config.ts
 // Centralized configuration for the application
 export const config = {
   // Base URLs
@@ -10,12 +11,13 @@ export const config = {
   // API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
   // WS_BASE_URL: process.env.REACT_APP_WS_BASE_URL || 'ws://localhost:8000',
   
-  // API Endpoints
+  // API Endpoints - ensure they match your backend exactly
   endpoints: {
     googleAuth: '/api/users/auth/google/',
+    landingAuth: '/api/users/auth/landing/', // 🔥 New endpoint for landing page auth
     pushNotification: '/api/users/push-notification/login/',
     testCookie: '/api/users/test-cookie/',
-    createPendingUser: '/api/pendingusers/pending-user/create/',
+    createPendingUser: '/api/pendingusers/pending-user/create/', // Added trailing slash
   },
   
   // WebSocket paths

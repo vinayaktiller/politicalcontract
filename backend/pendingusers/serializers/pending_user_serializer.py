@@ -35,7 +35,7 @@ class PendingUserSerializer(serializers.ModelSerializer):
     district = serializers.CharField(source='district.name', read_only=True)
     subdistrict = serializers.CharField(source='subdistrict.name', read_only=True)
     village = serializers.CharField(source='village.name', read_only=True)
-    profile_picture = serializers.SerializerMethodField()
+    # profile_picture = serializers.SerializerMethodField()
 
     class Meta:
         model = PendingUser
@@ -46,8 +46,8 @@ class PendingUserSerializer(serializers.ModelSerializer):
             'profile_picture'
         ]
 
-    def get_profile_picture(self, obj):
-        base_url = "http://localhost:8000/"
-        if obj.profile_picture and hasattr(obj.profile_picture, 'url'):
-            return f"{base_url}{obj.profile_picture.url.lstrip('/')}"
-        return None
+    # def get_profile_picture(self, obj):
+    #     base_url = "http://localhost:8000/"
+    #     if obj.profile_picture and hasattr(obj.profile_picture, 'url'):
+    #         return f"{base_url}{obj.profile_picture.url.lstrip('/')}"
+    #     return None

@@ -10,3 +10,4 @@ from .report_insight_blog import report_insight_micro, report_insight_short_essa
 from .milestoneblog import MicroMilestoneJourneyBlog, ShortEssayMilestoneJourneyBlog, ArticleMilestoneJourneyBlog
 from .comments import Comment
 from .blogload import BlogLoad
+from .UserSharedBlog import UserSharedBlog

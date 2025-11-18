@@ -1,4 +1,3 @@
-
 import '../css/NotificationBar.css';
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -7,7 +6,7 @@ import { RootState, AppDispatch } from "../../store";
 import { Notification } from "../../pages/Authenticated/flowpages/notificationpages/notification_state/notificationsTypes";
 import { triggerCelebration } from "../../pages/Authenticated/milestone/celebration/celebrationSlice";
 import { removeNotificationByDetails } from "../../pages/Authenticated/flowpages/notificationpages/notification_state/notificationsSlice";
-import {addMilestone} from "../../pages/Authenticated/milestone/milestonesSlice";
+import { addMilestone } from "../../pages/Authenticated/milestone/milestonesSlice";
 
 interface NotificationBarProps {
   toggleNotifications: () => void;
@@ -18,13 +17,14 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
   const navigate = useNavigate();
   const { notifications, isConnected } = useSelector((state: RootState) => state.notifications);
 
-  // Add route for Group Speaker Invitation
+  // Updated routes - Message notification goes to chat list
   const notificationRoutes: Record<string, string> = {
     Initiation_Notification: "/Initiationnotifications",
     Connection_Notification: "/Connectionnotifications",
     Connection_Status: "/ConnectionStatusNotifications",
     Group_Speaker_Invitation: "/GroupSpeakerInvitation",
-    Milestone_Notification: "/MilestoneNotifications"
+    Milestone_Notification: "/MilestoneNotifications",
+    Message_Notification: "/chat" // NEW: Navigate to chat list
   };
 
   const handleView = (notificationNumber: string) => {
@@ -37,7 +37,6 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
         console.log('Milestone Data:', milestoneData);
         dispatch(addMilestone(milestoneData));
 
-
         // Trigger celebration modal
         dispatch(triggerCelebration({
           ...notification.notification_data,
@@ -49,16 +48,29 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
           notification_type: notification.notification_type,
           notification_number: notification.notification_number,
         }));
-      } else {
-      const routeBase = notificationRoutes[notification.notification_type];
-      const destination = routeBase 
-        ? `${routeBase}/${notification.id}`
-        : `/notifications/${notification.id}`;
-      navigate(destination);
+      } 
+      // NEW: Handling for Message notifications
+      else if (notification.notification_type === "Message_Notification") {
+        // Navigate to chat list page
+        navigate('/messages/chatlist');
+        
+        // Remove the message notification when clicked
+        dispatch(removeNotificationByDetails({
+          notification_type: notification.notification_type,
+          notification_number: notification.notification_number,
+        }));
+      } 
+      else {
+        const routeBase = notificationRoutes[notification.notification_type];
+        const destination = routeBase 
+          ? `${routeBase}/${notification.id}`
+          : `/notifications/${notification.id}`;
+        navigate(destination);
+      }
+      toggleNotifications();
     }
-    toggleNotifications();
-  }
-};
+  };
+
   const classifyNotifications = (notificationGroup: Notification[]) => {
     return notificationGroup.reduce((acc, notification) => {
       const type = notification.notification_type;
@@ -70,8 +82,6 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
   };
 
   const newNotifications = notifications.filter(n => !n.notification_freshness);
-  console.log('New Notifications:', newNotifications);
-  console.log('Old Notifications:', notifications.filter(n => n.notification_freshness));
   const oldNotifications = notifications.filter(n => n.notification_freshness);
   const groupedNewNotifications = classifyNotifications(newNotifications);
   const groupedOldNotifications = classifyNotifications(oldNotifications);

@@ -14,10 +14,11 @@ from notifications.channels_handlers.connection_status_handler import handle_con
 from notifications.channels_handlers.speaker_invitation_handler import handle_speaker_invitation
 from notifications.channels_handlers.chat_system_handler import handle_chat_system
 from notifications.channels_handlers.milestone_handler import handle_milestone_notification
+from notifications.login_push.services.push_notifications import handle_user_notifications_on_login
 
 from users.models import Circle
 from blog.models import BlogLoad, BaseBlogModel
-from blog.posting_blogs.blog_utils import BlogDataBuilder
+from blog.posting_blogs.blog_utils import BlogDataBuilder  # Fixed import
 from blog.blogpage.serializers import BlogSerializer
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,9 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
         # Mark user as online
         await self.mark_user_online(True)
+
+        # Send pending notifications
+        await sync_to_async(handle_user_notifications_on_login)(self.scope.get('user', None))
 
         # Send pending blogs
         await self.send_pending_new_blogs()
@@ -284,6 +288,20 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             "blog_id": event["blog_id"],
             "action": event["action"],
             "blog": event["blog"],
+            "user_id": event["user_id"]
+        }))
+
+    # ✅ NEW: Add blog_shared handler
+    async def blog_shared(self, event):
+        """Sends blog share updates to the WebSocket client"""
+        print("Sending blog share update to WebSocket client")
+        await self.send(text_data=json.dumps({
+            "type": "blog_shared",
+            "blog_id": event["blog_id"],
+            "action": event["action"],
+            "blog": event["blog"],
+            "shared_by_user_id": event["shared_by_user_id"],
+            "original_author_id": event["original_author_id"],
             "user_id": event["user_id"]
         }))
 

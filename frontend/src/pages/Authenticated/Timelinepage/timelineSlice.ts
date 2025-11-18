@@ -140,6 +140,19 @@ const timelineSlice = createSlice({
         state.timelines[timelineNumber].timelineTail = tail.slice(0, index + 1);
       }
     },
+    // ✅ NEW: Clear all timeline data explicitly
+    clearAllTimelines: (state) => {
+      state.timelines = {};
+      state.status = "idle";
+      state.error = null;
+    },
+    // ✅ NEW: Clear specific timeline
+    clearTimeline: (state, action) => {
+      const { timelineNumber } = action.payload;
+      if (state.timelines[timelineNumber]) {
+        delete state.timelines[timelineNumber];
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -204,6 +217,8 @@ export const {
   addTimeline,
   updateScrollPosition,
   shiftTimelinePath,
+  clearAllTimelines, // ✅ Export the new action
+  clearTimeline,     // ✅ Export the new action
 } = timelineSlice.actions;
 
 export default timelineSlice.reducer;

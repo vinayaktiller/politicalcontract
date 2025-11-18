@@ -5,6 +5,7 @@ import { ProfileData, RelationProfile } from "../Timelinepage/timelineTypes";
 import api from "../../../api";
 import "./css/ChildrenPage.css";
 
+
 interface LocationState {
   profileData?: ProfileData;
   timelineNumber?: number;
@@ -13,7 +14,9 @@ interface LocationState {
   endPoint?: boolean;
 }
 
+
 type SortableAttribute = "influence" | "depth" | "weight" | "childcount";
+
 
 const ConnectionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +30,7 @@ const ConnectionPage: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [profilesPerPage, setProfilesPerPage] = useState(6);
+  const [imageError, setImageError] = useState(false); // NEW: fallback state
   
   const {
     profileData: initialProfileData,
@@ -68,6 +72,8 @@ const ConnectionPage: React.FC = () => {
         if (initialTimelineNumber === 1) setTimelineNumber(1);
         if (initialTimeshift === false) setTimeshift(false);
         if (initialEndPoint === false) setEndPoint(false);
+
+        setImageError(false); // reset error if profile changes
       } catch (error) {
         console.error("Error fetching profile data:", error);
       } finally {
@@ -135,11 +141,12 @@ const ConnectionPage: React.FC = () => {
     <div className="children-page-container">
       <div className="children-page-main-profile-container">
         <div className="children-page-main-profile-container-left">
-          {profileData.profilepic ? (
+          {profileData.profilepic && !imageError ? (
             <img 
               src={profileData.profilepic} 
               alt="Profile" 
               className="children-page-main-profile-pic"
+              onError={() => setImageError(true)} // NEW: fallback trigger
             />
           ) : (
             <div className="children-page-main-profile-pic-placeholder">
@@ -264,5 +271,6 @@ const ConnectionPage: React.FC = () => {
     </div>
   );
 };
+
 
 export default ConnectionPage;

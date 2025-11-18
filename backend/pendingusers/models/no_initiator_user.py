@@ -9,7 +9,12 @@ class NoInitiatorUser(models.Model):
     phone_number = models.CharField(max_length=15, null=True, blank=True)
     verification_status = models.CharField(
         max_length=20,
-        choices=[("unclaimed", "Unclaimed"), ("claimed", "Claimed"), ("verified", "Verified"), ("spam", "Spam")],
+        choices=[
+            ("unclaimed", "Unclaimed"), 
+            ("claimed", "Claimed"), 
+            ("verified", "Verified"), 
+            ("rejected", "Rejected")  # Only added this
+        ],
         default="unclaimed"
     )
     claimed_by = models.ForeignKey(

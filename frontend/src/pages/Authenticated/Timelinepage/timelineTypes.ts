@@ -12,7 +12,8 @@ export interface ProfileData {
   members?: RelationProfile[];
   connections?: RelationProfile[];
   children?: ChildProfile[];
-  groupmembers?: RelationProfile[];  // Replaced children with groupmembers
+  groupmembers?: RelationProfile[]; 
+  online_initiates?: RelationProfile[]; 
 }
 
 export interface RelationProfile {

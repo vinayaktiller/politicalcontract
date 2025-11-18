@@ -3,6 +3,7 @@ from django.db import models
 from django.core.validators import FileExtensionValidator
 from geographies.models.geos import Country, State, District, Subdistrict, Village
 from prometheus_client import Counter
+from backend.azure_storage import AzureMediaStorage
 
 
 logger = logging.getLogger(__name__)
@@ -30,11 +31,21 @@ class PendingUser(models.Model):
     gmail = models.EmailField(unique=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
+    # profile_picture = models.ImageField(
+    #     upload_to='profile_pics/',
+    #     max_length=100,
+    #     validators=[FileExtensionValidator(allowed_extensions=IMAGE_EXTENSIONS)],
+    #     null=True, 
+    #     blank=True
+    # )
+
+    
     profile_picture = models.ImageField(
         upload_to='profile_pics/',
+        storage=AzureMediaStorage(),
         max_length=100,
         validators=[FileExtensionValidator(allowed_extensions=IMAGE_EXTENSIONS)],
-        null=True, 
+        null=True,
         blank=True
     )
     date_of_birth = models.DateField()

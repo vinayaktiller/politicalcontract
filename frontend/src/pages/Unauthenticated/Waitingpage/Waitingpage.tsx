@@ -1,4 +1,3 @@
-// WaitingPage.tsx
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -19,8 +18,12 @@ const WaitingPage: React.FC = () => {
   const location = useLocation();
   const [status, setStatus] = useState<string>("");
   const [notificationId, setNotificationId] = useState<number | null>(null);
+  const [pendingUserId, setPendingUserId] = useState<number | null>(null);
+  const [generatedUserId, setGeneratedUserId] = useState<number | null>(null);
   const [noInitiator, setNoInitiator] = useState<boolean>(false);
   const [showPhoneForm, setShowPhoneForm] = useState<boolean>(false);
+  const [rejectionReason, setRejectionReason] = useState<string>("");
+  const [claimedByName, setClaimedByName] = useState<string>("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const ws: WebSocketRef = useRef(null);
@@ -28,11 +31,32 @@ const WaitingPage: React.FC = () => {
   // Track if verification is done in no-initiator path
   const [initiatorOkDone, setInitiatorOkDone] = useState(false);
 
+  // Check localStorage for existing no-initiator status on component mount
   useEffect(() => {
-    if (location.state && (location.state as any).noInitiator) {
+    const savedUserType = localStorage.getItem("user_type");
+    const savedStatus = localStorage.getItem("no_initiator_status");
+    
+    if (savedUserType === "no_initiator" || (location.state && (location.state as any).noInitiator)) {
       setNoInitiator(true);
-      setStatus("no_initiator");
-      setShowPhoneForm(true);
+      
+      // If we have a saved status, use it immediately
+      if (savedStatus) {
+        setStatus(savedStatus);
+        
+        // If status is verified/rejected, ensure buttons appear
+        if (savedStatus === "verified" || savedStatus === "rejected") {
+          setShowPhoneForm(false);
+          if (savedStatus === "verified") {
+            setInitiatorOkDone(true);
+          }
+        } else {
+          setShowPhoneForm(true);
+        }
+      } else {
+        setStatus("no_initiator");
+        setShowPhoneForm(true);
+      }
+      
       localStorage.setItem("user_type", "no_initiator");
     }
   }, [location]);
@@ -47,46 +71,117 @@ const WaitingPage: React.FC = () => {
     no_initiator: { icon: "⏳", message: "Waiting for initiator assignment. Our team will review your application shortly." },
     admin_review: { icon: "📋", message: "Your application is under review by our team." },
     initiator_assigned: { icon: "✅", message: "An initiator has been assigned to you. Please wait for their verification." },
+    unclaimed: { icon: "⏳", message: "Your application is awaiting review by our team." },
+    claimed: { icon: "👀", message: "Your application is currently being reviewed by an admin." },
     default: { icon: "📩", message: "Your request has been submitted!" },
   };
-
-  useEffect(() => {
-    if ((location.state && (location.state as any).noInitiator) || 
-        localStorage.getItem("user_type") === "no_initiator") {
-      setNoInitiator(true);
-      setStatus("no_initiator");
-      setShowPhoneForm(true);
-    }
-  }, [location]);
 
   useEffect(() => {
     if (user_email) {
       const wsUrl = getWsUrl(`/ws/waitingpage/${user_email}/`);
       ws.current = new WebSocket(wsUrl);
-      ws.current.onopen = () => console.log(`✅ WebSocket connected: ${ws.current?.url}`);
+      ws.current.onopen = () => {
+        console.log(`✅ WebSocket connected: ${ws.current?.url}`);
+        
+        // If we're a no-initiator user but don't have current status, the backend
+        // will automatically send it when we connect due to the consumer logic
+      };
 
       ws.current.onmessage = (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data);
           console.log("📩 Message received:", data);
 
-          // Handle different message types
+          // Handle no-initiator status updates (on connect and real-time)
           if (data.type === "no_initiator_status") {
+            setNoInitiator(true);
             setStatus(data.status);
-          } else if (data.type === "admin_verification") {
-                setStatus(data.status);
-                if (data.status === "verified") {
-                    // Store user data and await OK click for navigation
-                    localStorage.setItem("user_id", data.generated_user_id);
-                    localStorage.setItem("name", data.name || "");
-                    localStorage.setItem("profile_pic", data.profile_pic || "");
-                    console.log("🔹 Stored generated_user_id in local storage:", data.generated_user_id);
-                    dispatch(login({ user_email }));
-                    // Do NOT navigate yet—wait for user OK click (handled below)
-                    setInitiatorOkDone(true);
-                }
+            setPendingUserId(data.pending_user_id);
+            setRejectionReason(data.rejection_reason || "");
+            setClaimedByName(data.claimed_by_name || "");
+            
+            // Save status to localStorage for persistence across refreshes
+            localStorage.setItem("no_initiator_status", data.status);
+            localStorage.setItem("user_type", "no_initiator");
+            
+            // Show phone form only for unclaimed/claimed statuses
+            if (data.status === "unclaimed" || data.status === "claimed") {
+              setShowPhoneForm(true);
+              setInitiatorOkDone(false);
+            } else {
+              setShowPhoneForm(false);
+              
+              // If status is verified, mark that we're ready for OK button
+              if (data.status === "verified") {
+                setInitiatorOkDone(true);
+              }
             }
-           else if (data.status) {
+            
+            console.log(`🔹 No-initiator status: ${data.status}, pending_user_id: ${data.pending_user_id}`);
+          }
+          // Handle admin verification messages (both verification and rejection)
+          else if (data.type === "admin_verification") {
+            setStatus(data.status);
+            
+            if (data.status === "verified") {
+              // Store pending user ID for later cleanup
+              setPendingUserId(data.pending_user_id);
+              console.log("🔹 Pending user ID for cleanup:", data.pending_user_id);
+              
+              // Hide phone form immediately when verified
+              setShowPhoneForm(false);
+              
+              // Save to localStorage
+              localStorage.setItem("no_initiator_status", "verified");
+              
+              // Mark that we're ready for OK button
+              setInitiatorOkDone(true);
+            } 
+            else if (data.status === "rejected") {
+              // Handle rejection
+              setRejectionReason(data.rejection_reason || "No reason provided");
+              setPendingUserId(data.pending_user_id);
+              setShowPhoneForm(false);
+              
+              // Save to localStorage
+              localStorage.setItem("no_initiator_status", "rejected");
+              
+              console.log("🔹 Received rejection with pending_user_id:", data.pending_user_id);
+            }
+          }
+          // Handle verification success (when petitioner is created)
+          else if (data.type === "verification_success") {
+            // Store user data from the actual created petitioner
+            localStorage.setItem("user_id", data.generated_user_id);
+            localStorage.setItem("name", data.name || "");
+            localStorage.setItem("profile_pic", data.profile_pic || "");
+            localStorage.setItem("user_type", "olduser"); // 🔥 Set user type to olduser
+            setGeneratedUserId(data.generated_user_id);
+            console.log("🔹 Stored generated_user_id in local storage:", data.generated_user_id);
+            dispatch(login({ user_email }));
+          }
+          // Handle cleanup success messages
+          else if (data.type === "no_initiator_cleanup_success") {
+            console.log("✅ No-initiator verification cleanup successful");
+            // Clear localStorage
+            localStorage.removeItem("no_initiator_status");
+            localStorage.setItem("user_type", "olduser"); // 🔥 Set user type to olduser
+            // Now navigate since cleanup is complete and petitioner is created
+            navigate("/landing");
+          }
+          else if (data.type === "no_initiator_rejection_cleanup_success") {
+            console.log("✅ No-initiator rejection cleanup successful");
+            // Clear localStorage
+            localStorage.removeItem("no_initiator_status");
+            localStorage.removeItem("user_type");
+            navigate("/login");
+          }
+          else if (data.type === "no_initiator_verification_failed") {
+            console.error("❌ No-initiator verification failed");
+            // Show error message to user
+            setStatus("verification_failed");
+          }
+          else if (data.status) {
             setStatus(data.status);
           }
           
@@ -96,28 +191,23 @@ const WaitingPage: React.FC = () => {
             localStorage.setItem("notification_id", data.notification_id.toString());
           }
 
-          // Handle no-initiator specific statuses
-          if (data.type === "admin_review") {
-            setStatus("admin_review");
-          } else if (data.type === "initiator_assigned") {
-            setStatus("initiator_assigned");
-            setNoInitiator(false);
-          }
-
-          // Store generated_user_id when verification is successful
+          // Handle verification success for regular flow
           if (data.type === "verification_success" && data.generated_user_id) {
             localStorage.setItem("user_id", data.generated_user_id);
             localStorage.setItem("name", data.name);
             localStorage.setItem("profile_pic", data.profile_pic || "");
+            localStorage.setItem("user_type", "olduser"); // 🔥 Set user type to olduser
             console.log("🔹 Stored generated_user_id in local storage:", data.generated_user_id);
             dispatch(login({ user_email }));
+            
+            // Hide phone form when verified in normal flow too
+            setShowPhoneForm(false);
+            
             // For normal (non-noInitiator) flow, perform direct navigation
             if (!noInitiator) {
-              navigate("/heartbeat");
-            } else {
-              // For noInitiator case, wait for user OK click
-              setInitiatorOkDone(true);
+              navigate("/landing");
             }
+            // For noInitiator case, we wait for cleanup success message
           }
         } catch (error) {
           console.error("❌ WebSocket message parsing error:", error);
@@ -125,57 +215,102 @@ const WaitingPage: React.FC = () => {
       };
 
       ws.current.onerror = (error: Event) => console.error("⚠️ WebSocket error:", error);
-      ws.current.onclose = (event: CloseEvent) => console.log(`🔻 WebSocket closed: ${event.reason}`);
+      ws.current.onclose = (event: CloseEvent) => {
+        console.log(`🔻 WebSocket closed: ${event.reason}`);
+        // Optionally attempt to reconnect here
+      };
 
-      return () => ws.current?.close();
+      return () => {
+        if (ws.current) {
+          ws.current.close();
+        }
+      };
     }
   }, [user_email, noInitiator, navigate, dispatch]);
 
+  // Handle no-initiator verification acceptance
+  const handleNoInitiatorVerification = () => {
+    if (ws.current?.readyState === WebSocket.OPEN && pendingUserId) {
+      ws.current.send(JSON.stringify({ 
+        type: "accept_no_initiator_verification", 
+        user_email, 
+        pending_user_id: pendingUserId
+      }));
+      console.log("📤 Sent accept_no_initiator_verification message");
+    } else {
+      console.warn("⚠️ WebSocket is not open or pending_user_id missing");
+    }
+  };
+
+  // Handle no-initiator rejection acceptance
+  const handleNoInitiatorRejection = () => {
+    if (ws.current?.readyState === WebSocket.OPEN && pendingUserId) {
+      ws.current.send(JSON.stringify({ 
+        type: "accept_no_initiator_rejection", 
+        user_email, 
+        pending_user_id: pendingUserId 
+      }));
+      console.log("📤 Sent accept_no_initiator_rejection message");
+    } else {
+      console.warn("⚠️ WebSocket is not open or pending_user_id missing");
+    }
+  };
+
   // Normal OK click (used after verified in initiator scenario)
   const handleOkClick = () => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
+    if (ws.current?.readyState === WebSocket.OPEN && notificationId) {
       ws.current.send(JSON.stringify({ type: "accept_verification", user_email, notificationId }));
       console.log("📤 Sent accept_verification message");
     } else {
-      console.warn("⚠️ WebSocket is not open");
+      console.warn("⚠️ WebSocket is not open or notificationId missing");
     }
 
     if (user_email) {
       dispatch(login({ user_email }));
     }
-    navigate("/heartbeat");
+    navigate("/landing");
   };
 
-  // Special OK click for "no initiator" scenario after verification
-  const handleNoInitiatorOkClick = () => {
-    // Mark user_type old_user
-    localStorage.setItem("user_type", "old_user");
-    if (ws.current?.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({ type: "accept_verification", user_email, notificationId }));
-      console.log("📤 Sent accept_verification message (no_initiator)");
-    } else {
-      console.warn("⚠️ WebSocket is not open");
-    }
-    dispatch(login({ user_email }));
-    navigate("/heartbeat");
-  };
-
+  // Handle rejection for regular users
   const handleAcceptRejection = () => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
+    if (ws.current?.readyState === WebSocket.OPEN && notificationId) {
       ws.current.send(JSON.stringify({ type: "accept_rejection", user_email, notificationId }));
       console.log("📤 Sent accept_rejection message");
+      navigate("/login");
     } else {
-      console.warn("⚠️ WebSocket is not open");
+      console.warn("⚠️ WebSocket is not open or notificationId missing");
     }
-    navigate("/login");
   };
 
   const handlePhoneNumberUpdated = () => {
-    // Optional: You can add any logic to run after phone number is updated
     console.log("Phone number updated successfully");
   };
 
-  const { icon, message } = statusMessages[status] || statusMessages.default;
+  const getStatusMessage = () => {
+    // For no-initiator with claimed status, show custom message with admin name
+    if (noInitiator && status === "claimed" && claimedByName) {
+      return {
+        icon: "👀",
+        message: `Your application is being reviewed by ${claimedByName}.`
+      };
+    }
+    
+    // For verification failed scenario
+    if (status === "verification_failed") {
+      return {
+        icon: "❌",
+        message: "Verification failed. Please contact support."
+      };
+    }
+    
+    return statusMessages[status] || statusMessages.default;
+  };
+
+  const { icon, message } = getStatusMessage();
+
+  // Determine which buttons to show
+  const showVerifiedButton = status === "verified";
+  const showRejectedButton = status === "rejected";
 
   return (
     <div className="waiting-page-container">
@@ -183,13 +318,15 @@ const WaitingPage: React.FC = () => {
         <span className="waiting-page-status-icon">{icon}</span>
         <p className="waiting-page-text">{message}</p>
 
-        {noInitiator && status === "no_initiator" && (
-          <div className="no-initiator-info">
-            <p>We'll notify you once an initiator has been assigned to you.</p>
+        {/* Show rejection reason if available */}
+        {status === "rejected" && rejectionReason && (
+          <div className="rejection-reason">
+            <p><strong>Reason:</strong> {rejectionReason}</p>
           </div>
         )}
 
-        {showPhoneForm && noInitiator && (
+        {/* Show phone form only when not verified/rejected and in no-initiator flow */}
+        {showPhoneForm && noInitiator && status !== "verified" && status !== "rejected" && (
           <div className="phone-form-section">
             <PhoneNumberForm 
               userEmail={user_email} 
@@ -199,18 +336,35 @@ const WaitingPage: React.FC = () => {
         )}
 
         {/* OK Button for verified status in normal initiator workflow */}
-        {status === "verified" && !noInitiator ? (
+        {showVerifiedButton && !noInitiator && (
           <button className="waiting-page-button" onClick={handleOkClick}>OK</button>
-        ) : null}
+        )}
 
-        {/* OK Button for verified status in noInitiator workflow: user must click before proceeding */}
-        {status === "verified" && noInitiator && initiatorOkDone ? (
-          <button className="waiting-page-button" onClick={handleNoInitiatorOkClick}>OK</button>
-        ) : null}
+        {/* OK Button for verified status in noInitiator workflow */}
+        {showVerifiedButton && noInitiator && (
+          <button className="waiting-page-button" onClick={handleNoInitiatorVerification}>OK</button>
+        )}
 
-        {status === "rejected" ? (
-          <button className="waiting-page-button" onClick={handleAcceptRejection}>Accept Rejection</button>
-        ) : null}
+        {/* Rejection button for no-initiator users */}
+        {showRejectedButton && noInitiator && (
+          <button className="waiting-page-button" onClick={handleNoInitiatorRejection}>
+            Accept Rejection
+          </button>
+        )}
+
+        {/* Rejection button for regular users */}
+        {showRejectedButton && !noInitiator && (
+          <button className="waiting-page-button" onClick={handleAcceptRejection}>
+            Accept Rejection
+          </button>
+        )}
+
+        {/* Show loading state while connecting */}
+        {!status && (
+          <div className="loading-state">
+            <p>Connecting...</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,14 @@
 # serializers.py
 from rest_framework import serializers
 from ..models import PendingUser, NoInitiatorUser
+from ..models import RejectedPendingUser
+
+class RejectedPendingUserSerializer(serializers.ModelSerializer):
+    rejected_by_name = serializers.CharField(source='rejected_by.user.username', read_only=True)
+    
+    class Meta:
+        model = RejectedPendingUser
+        fields = '__all__'
 
 class NoInitiatorUserSerializer(serializers.ModelSerializer):
     claimed_by_name = serializers.CharField(source='claimed_by.user.username', read_only=True)

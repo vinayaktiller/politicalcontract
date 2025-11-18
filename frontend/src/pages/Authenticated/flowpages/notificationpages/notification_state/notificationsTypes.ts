@@ -14,6 +14,7 @@ export interface InitiationNotificationData {
   event_id: number;
   initiator_id: number;
 }
+
 export interface MilestoneNotificationData {
   initiator_id: number;
   milestone_id: string;
@@ -52,6 +53,18 @@ export interface GroupSpeakerInvitationNotificationData {
   action_required: boolean;
 }
 
+// NEW: Message Notification Data
+export interface MessageNotificationData {
+  conversation_id: string;
+  sender_id: number;
+  sender_name: string;
+  message_content: string;
+  message_count: number;
+  conversation_count: number;
+  timestamp: string;
+  profile_picture?: string | null; // ADD THIS LINE - make it optional
+}
+
 type NotificationBase<T extends string, D> = {
   id: number;
   notification_type: T;
@@ -66,12 +79,15 @@ export type InitiationNotification = NotificationBase<"Initiation_Notification",
 export type ConnectionNotification = NotificationBase<"Connection_Notification", ConnectionNotificationData>;
 export type ConnectionStatusNotification = NotificationBase<"Connection_Status", ConnectionStatusNotificationData>;
 export type GroupSpeakerInvitationNotification = NotificationBase<"Group_Speaker_Invitation", GroupSpeakerInvitationNotificationData>;
-
 export type MilestoneNotification = NotificationBase<"Milestone_Notification", MilestoneNotificationData>;
+
+// NEW: Message Notification Type
+export type MessageNotification = NotificationBase<"Message_Notification", MessageNotificationData>;
 
 export type Notification =
   | InitiationNotification
   | ConnectionNotification
   | ConnectionStatusNotification
   | GroupSpeakerInvitationNotification
-  | MilestoneNotification;  // Add to union type
+  | MilestoneNotification
+  | MessageNotification;

@@ -397,3 +397,38 @@
   color: white;
   border-color: #007bff;
 }
+
+/* Add these styles for disabled button state */
+.btn-primary.disabled,
+.btn-primary:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-primary.disabled:hover,
+.btn-primary:disabled:hover {
+  background-color: #cccccc;
+  transform: none;
+}
+
+/* Optional: Add a tooltip for disabled state */
+.btn-primary:disabled::after {
+  content: "Please fill all required fields";
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.btn-primary:disabled:hover::after {
+  opacity: 1;
+}

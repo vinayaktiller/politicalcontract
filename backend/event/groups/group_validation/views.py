@@ -28,8 +28,8 @@ email_block_counter = Counter(
 )
 
 class GroupValidationAPIView(APIView):
-    authentication_classes = [CookieJWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    # authentication_classes = [CookieJWTAuthentication]
+    # permission_classes = [IsAuthenticated]
 
     def post(self, request):
         group_id = request.data.get("group_id")

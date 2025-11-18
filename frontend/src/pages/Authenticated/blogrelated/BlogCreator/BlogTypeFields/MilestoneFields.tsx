@@ -149,8 +149,10 @@ const MilestoneFields: React.FC<Props> = ({
 
   const milestoneImgUrl =
     type && photo_id
-      ? `http://localhost:3000/${type}/${photo_id}.jpg`
-      : `http://localhost:3000/initiation/1.jpg`;
+      // ? `http://localhost:3000/${type}/${photo_id}.jpg`
+      ? `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${type}/${photo_id}.jpg`
+      // : `http://localhost:3000/initiation/1.jpg`;
+      : `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/initiation/1.jpg`;
 
   // Footer menu outside-click handling
   useEffect(() => {
@@ -182,7 +184,8 @@ const MilestoneFields: React.FC<Props> = ({
             className="milestone-header-image"
             onError={(e) => {
               (e.target as HTMLImageElement).src =
-                'http://localhost:3000/initiation/1.jpg';
+                // 'http://localhost:3000/initiation/1.jpg';
+                'https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/initiation/1.jpg';
             }}
           />
         </div>

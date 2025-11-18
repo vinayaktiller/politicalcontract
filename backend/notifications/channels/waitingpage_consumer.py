@@ -1,4 +1,3 @@
-# consumers.py
 import logging
 import re
 import json
@@ -6,9 +5,11 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.cache import cache
+from django.db import transaction
 from pendingusers.models.notifications import InitiationNotification
-from pendingusers.models import PendingVerificationNotification
+from pendingusers.models import PendingVerificationNotification, PendingUser, NoInitiatorUser
 from users.models import UserTree
+from notifications.login_push.services.push_notifications import handle_user_notifications_on_login
 
 logger = logging.getLogger(__name__)
 
@@ -31,33 +32,26 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
-        # Check for pending verification notifications
-        pending_notifications = await self.get_pending_notifications(self.user_email)
-        for notification in pending_notifications:
-            await self.send(text_data=json.dumps({
-                "type": "admin_verification",
-                "status": "verified",
-                "message": "🎉 Congratulations! Your account has been verified by our team.",
-                "generated_user_id": notification.generated_user_id,
-                "name": notification.name,
-                "profile_pic": notification.profile_pic or "",
-                "user_email": self.user_email,
-            }))
-            
-            # Mark notification as delivered
-            await self.mark_notification_delivered(notification.id)
-
-        # Check if this is a no-initiator user
-        is_no_initiator = await self.check_no_initiator(self.user_email)
-        
-        if is_no_initiator:
-            await self.send(text_data=json.dumps({
-                "type": "no_initiator_status",
-                "status": "admin_review",
-                "message": "Your application is under review by our team.",
-                "user_email": self.user_email,
-            }))
+        # Check if this is a no-initiator user and send current status
+        no_initiator_status = await self.get_no_initiator_status(self.user_email)
+        if no_initiator_status:
+            await self.send_no_initiator_status(no_initiator_status)
         else:
+            # Regular flow - check for pending verification notifications
+            pending_notifications = await self.get_pending_notifications(self.user_email)
+            for notification in pending_notifications:
+                await self.send(text_data=json.dumps({
+                    "type": "admin_verification",
+                    "status": "pending_verification",
+                    "message": "🎉 Your account has been approved! Click to complete verification.",
+                    "pending_user_id": notification.pending_user_id,
+                    "user_email": self.user_email,
+                }))
+                
+                # Mark notification as delivered
+                await self.mark_notification_delivered(notification.id)
+
+            # Check for regular initiation notifications
             notification = await self.get_latest_notification(self.user_email)
             if notification:
                 await self.send(text_data=json.dumps({
@@ -82,7 +76,7 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
             data = json.loads(text_data)
             message_type = data.get("type")
             user_email = data.get("user_email", "unknown_user")
-            notification_id = data.get("notificationId")
+            pending_user_id = data.get("pending_user_id")
 
             logger.info(f"Received message from {user_email}: {data}")
 
@@ -91,12 +85,15 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
             
             if is_no_initiator:
                 # Handle no-initiator specific messages
-                if message_type == "admin_verification_success":
-                    await self.handle_admin_verification_success(user_email, data)
+                if message_type == "accept_no_initiator_verification":
+                    await self.handle_accept_no_initiator_verification(user_email, pending_user_id)
+                elif message_type == "accept_no_initiator_rejection":
+                    await self.handle_accept_no_initiator_rejection(user_email, pending_user_id)
                 else:
                     logger.warning(f"Unknown message type for no-initiator user: {message_type}")
             else:
                 # Handle regular initiator flow
+                notification_id = data.get("notificationId")
                 exists = await self.notification_exists(notification_id)
                 if not exists:
                     logger.warning(f"Notification with ID {notification_id} not found.")
@@ -129,6 +126,162 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
         except json.JSONDecodeError:
             logger.error("Failed to decode JSON message.")
 
+    async def send_no_initiator_status(self, status_data):
+        """Send the current no-initiator status to the client"""
+        await self.send(text_data=json.dumps({
+            "type": "no_initiator_status",
+            "status": status_data["status"],
+            "message": status_data["message"],
+            "user_email": self.user_email,
+            "pending_user_id": status_data["pending_user_id"],
+            "rejection_reason": status_data.get("rejection_reason", ""),
+            "claimed_by_name": status_data.get("claimed_by_name", ""),
+        }))
+
+    async def handle_accept_no_initiator_verification(self, user_email, pending_user_id):
+        """Handle when no-initiator user accepts verification"""
+        try:
+            # Perform the actual verification and transfer
+            petitioner, user_tree = await self.perform_no_initiator_verification(user_email, pending_user_id)
+            
+            if petitioner and user_tree:
+                # Send success response
+                await self.send(text_data=json.dumps({
+                    "type": "verification_success",
+                    "user_email": user_email,
+                    "generated_user_id": petitioner.id,
+                    "name": user_tree.name,
+                    "profile_pic": user_tree.profilepic.url if user_tree.profilepic else None,
+                    "message": "Verification completed successfully"
+                }))
+                
+                # Clean up pending user data
+                success = await self.cleanup_no_initiator_user(user_email)
+                if success:
+                    logger.info(f"No-initiator verification completed and cleanup done for {user_email}")
+                    # Send cleanup success message
+                    await self.send(text_data=json.dumps({
+                        "type": "no_initiator_cleanup_success",
+                        "user_email": user_email,
+                        "message": "Cleanup completed successfully"
+                    }))
+                else:
+                    logger.error(f"No-initiator verification cleanup failed for {user_email}")
+            else:
+                await self.send(text_data=json.dumps({
+                    "type": "no_initiator_verification_failed",
+                    "user_email": user_email,
+                    "message": "Verification failed. Please contact support."
+                }))
+                logger.error(f"No-initiator verification failed for {user_email}")
+
+        except Exception as e:
+            logger.error(f"Error in handle_accept_no_initiator_verification: {str(e)}")
+            await self.send(text_data=json.dumps({
+                "type": "no_initiator_verification_failed",
+                "user_email": user_email,
+                "message": "Verification failed due to server error."
+            }))
+
+    async def handle_accept_no_initiator_rejection(self, user_email, pending_user_id):
+        """Handle when no-initiator user accepts rejection"""
+        # Perform cleanup - delete pending user and no initiator data
+        success = await self.cleanup_no_initiator_user(user_email)
+        
+        if success:
+            await self.send(text_data=json.dumps({
+                "type": "no_initiator_rejection_cleanup_success",
+                "user_email": user_email,
+                "message": "Rejection accepted and data cleaned up"
+            }))
+            logger.info(f"No-initiator rejection cleanup completed for {user_email}")
+        else:
+            await self.send(text_data=json.dumps({
+                "type": "no_initiator_rejection_cleanup_failed", 
+                "user_email": user_email,
+                "message": "Cleanup failed. Please contact support."
+            }))
+            logger.error(f"No-initiator rejection cleanup failed for {user_email}")
+
+    @database_sync_to_async
+    def perform_no_initiator_verification(self, user_email, pending_user_id):
+        """Perform the actual verification and transfer for no-initiator user"""
+        try:
+            with transaction.atomic():
+                # Get the pending user
+                pending_user = PendingUser.objects.select_for_update().get(gmail=user_email, id=pending_user_id)
+                
+                # Get the NoInitiatorUser to find who verified it
+                no_initiator_data = getattr(pending_user, 'no_initiator_data', None)
+                if not no_initiator_data or no_initiator_data.verified_by is None:
+                    logger.error(f"No verified_by found for pending user {user_email}")
+                    return None, None
+
+                # Set initiator and event type for verification
+                pending_user.initiator_id = no_initiator_data.verified_by.id
+                pending_user.event_type = 'online'
+                pending_user.save()
+
+                # Verify and transfer (returns Petitioner)
+                petitioner = pending_user.verify_and_transfer()
+
+                # Get the corresponding UserTree
+                user_tree = UserTree.objects.get(id=petitioner.id)
+
+                return petitioner, user_tree
+                
+        except Exception as e:
+            logger.error(f"Error in perform_no_initiator_verification: {str(e)}")
+            return None, None
+
+    @database_sync_to_async
+    def get_no_initiator_status(self, user_email):
+        """Get the current status of a no-initiator user"""
+        try:
+            pending_user = PendingUser.objects.get(gmail=user_email, initiator_id__isnull=True)
+            no_initiator_data = getattr(pending_user, 'no_initiator_data', None)
+            
+            if not no_initiator_data:
+                return None
+
+            status_info = {
+                "pending_user_id": pending_user.id,
+                "status": no_initiator_data.verification_status,
+                "rejection_reason": "",
+                "claimed_by_name": ""
+            }
+
+            # Set appropriate message based on status
+            if no_initiator_data.verification_status == "unclaimed":
+                status_info["message"] = "⏳ Your application is awaiting review by our team."
+            elif no_initiator_data.verification_status == "claimed":
+                status_info["message"] = "👀 Your application is currently being reviewed by an admin."
+                if no_initiator_data.claimed_by:
+                    status_info["claimed_by_name"] = no_initiator_data.claimed_by.name
+            elif no_initiator_data.verification_status == "verified":
+                status_info["message"] = "🎉 Your account has been verified! Click OK to complete the process."
+            elif no_initiator_data.verification_status == "rejected":
+                status_info["message"] = "❌ Your application has been rejected."
+                # Extract rejection reason from notes if available
+                if no_initiator_data.notes and "Reason:" in no_initiator_data.notes:
+                    try:
+                        reason_part = no_initiator_data.notes.split("Reason:")[1].strip()
+                        status_info["rejection_reason"] = reason_part
+                    except:
+                        status_info["rejection_reason"] = "No reason provided"
+                else:
+                    status_info["rejection_reason"] = "No reason provided"
+            else:
+                status_info["message"] = "⏳ Your application is being processed."
+
+            return status_info
+
+        except PendingUser.DoesNotExist:
+            return None
+        except Exception as e:
+            logger.error(f"Error getting no-initiator status for {user_email}: {str(e)}")
+            return None
+
     async def waitingpage_message(self, event):
         await self.send(text_data=json.dumps({
             "user_email": self.user_email,
@@ -138,8 +291,7 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
         }))
         
     async def admin_verification_message(self, event):
-        """Handle admin verification messages for no-initiator users"""
-        # Extract message from event (it's now a dict, not a string)
+        """Handle admin verification messages - both verification and rejection"""
         message_data = event["message"]
         
         await self.send(text_data=json.dumps({
@@ -147,15 +299,15 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
             "user_email": self.user_email,
             "status": message_data.get("status", "unknown"),
             "message": message_data.get("message", ""),
-            "generated_user_id": message_data.get("generated_user_id"),
-            "name": message_data.get("name"),
-            "profile_pic": message_data.get("profile_pic", ""),
+            "pending_user_id": message_data.get("pending_user_id"),
+            "rejection_reason": message_data.get("rejection_reason", ""),
         }))
 
+    # Keep all your existing database_sync_to_async methods
     @database_sync_to_async
     def mark_user_online(self, user_email, is_online):
         """Mark user as online or offline in cache"""
-        cache.set(f"user_online_{user_email}", is_online, timeout=300)  # 5 minute timeout
+        cache.set(f"user_online_{user_email}", is_online, timeout=300)
 
     @database_sync_to_async
     def get_pending_notifications(self, user_email):
@@ -178,7 +330,6 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def check_no_initiator(self, email):
         """Check if a user is a no-initiator user"""
-        from pendingusers.models import PendingUser
         try:
             pending_user = PendingUser.objects.get(gmail=email)
             return pending_user.initiator_id is None
@@ -205,7 +356,6 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
                 .select_related('applicant')
                 .get(id=notification_id)
             )
-            # mark_as_completed deletes notification & applicant, returns petitioner
             petitioner = notification.mark_as_completed()
             return petitioner
         except Exception as e:
@@ -229,19 +379,22 @@ class WaitingpageConsumer(AsyncWebsocketConsumer):
             logger.warning(f"Notification {notification_id} does not exist.")
         except Exception as e:
             logger.error(f"Error moving notification {notification_id} to archive: {str(e)}")
+
+    @database_sync_to_async
+    def cleanup_no_initiator_user(self, user_email):
+        """Clean up no-initiator user data after verification/rejection acceptance"""
+        try:
+            pending_user = PendingUser.objects.get(gmail=user_email)
+            no_initiator_data = getattr(pending_user, 'no_initiator_data', None)
             
-    async def handle_admin_verification_success(self, user_email, data):
-        """Handle admin verification success for no-initiator users"""
-        # Store user data in local storage
-        generated_user_id = data.get("generated_user_id")
-        name = data.get("name")
-        profile_pic = data.get("profile_pic")
-        
-        if generated_user_id:
-            await self.send(text_data=json.dumps({
-                "type": "admin_verification_success",
-                "user_email": user_email,
-                "generated_user_id": generated_user_id,
-                "name": name,
-                "profile_pic": profile_pic or ""
-            }))
+            if no_initiator_data:
+                no_initiator_data.delete()
+            
+            pending_user.delete()
+            return True
+        except PendingUser.DoesNotExist:
+            logger.warning(f"PendingUser with email {user_email} does not exist for cleanup")
+            return True
+        except Exception as e:
+            logger.error(f"Error cleaning up no-initiator user {user_email}: {str(e)}")
+            return False

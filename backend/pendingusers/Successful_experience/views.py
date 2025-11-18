@@ -6,10 +6,14 @@ from django.db import transaction
 import logging
 
 from ..models.notifications import InitiationNotification
-from pendingusers.models import PendingUser  # Make sure to import PendingUser if not already
+from pendingusers.models import PendingUser
+from users.models import Petitioner, UserTree
+from users.profilepic_manager.utils import get_profilepic_url
 
 logger = logging.getLogger(__name__)
+
 @api_view(['POST'])
+# @permission_classes([IsAuthenticated])  # Uncomment if authentication is required
 def verify_user_response(request):
     try:
         data = request.data
@@ -38,9 +42,7 @@ def verify_user_response(request):
             petitioner = None
 
             if response_val.lower() == "yes":
-                # mark_as_verified returns the Petitioner instance after transferring
                 petitioner = notification.mark_as_verified()
-
             elif response_val.lower() == "no":
                 notification.mark_as_rejected()
             else:
@@ -52,16 +54,12 @@ def verify_user_response(request):
             }
 
             if petitioner:
-                from users.models import UserTree
                 try:
                     user_tree = UserTree.objects.get(id=petitioner.id)
                 except UserTree.DoesNotExist:
                     user_tree = None
 
-                base_url = "http://localhost:8000/"
-                profile_picture_url = None
-                if user_tree and user_tree.profilepic and hasattr(user_tree.profilepic, 'url'):
-                    profile_picture_url = f"{base_url}{user_tree.profilepic.url.lstrip('/')}"
+                profile_picture_url = get_profilepic_url(user_tree, request)
 
                 response_data["user"] = {
                     "id": petitioner.id,

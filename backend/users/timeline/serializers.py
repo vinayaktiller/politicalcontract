@@ -23,11 +23,12 @@ class ExtendedProfileSerializer(ProfileSerializer):
     initiates = serializers.SerializerMethodField()
     members = serializers.SerializerMethodField()
     connections = serializers.SerializerMethodField()
-    groupmembers = serializers.SerializerMethodField()  # New field
+    groupmembers = serializers.SerializerMethodField()
+    online_initiates = serializers.SerializerMethodField()  # New field for online initiates
     
     class Meta(ProfileSerializer.Meta):
         fields = ProfileSerializer.Meta.fields + [
-            'initiates', 'members', 'connections', 'groupmembers'
+            'initiates', 'members', 'connections', 'groupmembers', 'online_initiates'
         ]
     
     def _get_relation_profiles(self, obj, relation_type):
@@ -62,3 +63,7 @@ class ExtendedProfileSerializer(ProfileSerializer):
     
     def get_groupmembers(self, obj):
         return self._get_relation_profiles(obj, 'groupmembers')
+    
+    def get_online_initiates(self, obj):
+        """Get online initiates for the user"""
+        return self._get_relation_profiles(obj, 'online_initiate')

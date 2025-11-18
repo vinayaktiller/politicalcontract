@@ -97,19 +97,20 @@ const BlogCard: React.FC<BlogCardProps> = ({
                 </p>
               )}
             </div>
-            {blog.body.body_type_fields.milestone.photo_url && (
-              <div className="blog-card-milestone-image-container">
-                <img
-                  src={blog.body.body_type_fields.milestone.photo_url}
-                  alt={blog.body.body_type_fields.milestone.title}
-                  className="blog-card-milestone-image"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = 'http://localhost:3000/initiation/1.jpg';
-                  }}
-                />
-              </div>
-            )}
+            {blog.body.body_type_fields.milestone.photo_id && blog.body.body_type_fields.milestone.type && (
+                <div className="BlogDetailPage-milestone-image-container">
+                  <img
+                    src={`http://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${blog.body.body_type_fields.milestone.type}/${blog.body.body_type_fields.milestone.photo_id}.jpg`}
+                    alt={blog.body.body_type_fields.milestone.title}
+                    className="BlogDetailPage-milestone-image"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      // target.src = "http://localhost:3000/initiation/1.jpg";
+                      target.src = "https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/initiation/1.jpg";
+                    }}
+                  />
+                </div>
+              )}
           </div>
         )}
 

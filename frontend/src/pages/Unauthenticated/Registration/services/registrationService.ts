@@ -33,11 +33,16 @@ export const registrationService = {
     try {
       const response = await fetch(getApiUrl(config.endpoints.createPendingUser), {
         method: 'POST',
-        headers: { 'X-CSRFToken': csrfToken },
+        headers: { 
+          'X-CSRFToken': csrfToken,
+          // Remove 'Content-Type' header when sending FormData - let browser set it with boundary
+        },
+        credentials: 'include', // Important for cookies
         body: formDataToSend,
       });
 
       console.log("📡 Server response received, status:", response.status);
+      console.log("🔗 Request URL:", getApiUrl(config.endpoints.createPendingUser));
 
       if (response.ok) {
         const result = await response.json();
@@ -46,7 +51,7 @@ export const registrationService = {
       } else {
         const errorData = await response.text();
         console.error("❌ Error creating user, response:", errorData);
-        throw new Error(`Server error: ${errorData}`);
+        throw new Error(`Server error: ${response.status}: ${errorData}`);
       }
     } catch (error) {
       console.error("🔥 Error submitting form:", error);

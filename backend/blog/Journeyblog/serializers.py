@@ -8,6 +8,7 @@ from ..models import (
     BaseBlogModel
 )
 from users.models import Circle, UserTree
+from users.profilepic_manager.utils import get_profilepic_url
 
 class UserSummarySerializer(serializers.ModelSerializer):
     profilepic_url = serializers.SerializerMethodField()
@@ -17,10 +18,14 @@ class UserSummarySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'profilepic_url']
 
     def get_profilepic_url(self, obj):
-        if obj.profilepic:
-            request = self.context.get('request')
-            return request.build_absolute_uri(obj.profilepic.url) if request else obj.profilepic.url
-        return None
+        request = self.context.get('request')
+        return get_profilepic_url(obj, request)
+
+    # def get_profilepic_url(self, obj):
+    #     if obj.profilepic:
+    #         request = self.context.get('request')
+    #         return request.build_absolute_uri(obj.profilepic.url) if request else obj.profilepic.url
+    #     return None
 
 class BaseBlogSerializer(serializers.ModelSerializer):
     class Meta:

@@ -25,6 +25,7 @@ function ChildrenPage() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [profilesPerPage, setProfilesPerPage] = useState(6);
+  const [imageError, setImageError] = useState(false); // NEW: fallback state
   
   const {
     profileData: initialProfileData,
@@ -38,12 +39,13 @@ function ChildrenPage() {
   const [groupmembers, setGroupmembers] = useState<RelationProfile[]>(initialProfileData?.groupmembers || []);
   const [initiates, setInitiates] = useState<RelationProfile[]>(initialProfileData?.initiates || []);
   const [members, setMembers] = useState<RelationProfile[]>(initialProfileData?.members || []);
+  const [onlineInitiates, setOnlineInitiates] = useState<RelationProfile[]>(initialProfileData?.online_initiates || []);
   const [loading, setLoading] = useState(!initialProfileData);
   const [timelineNumber, setTimelineNumber] = useState(initialTimelineNumber);
   const [timeshift, setTimeshift] = useState(initialTimeshift);
   const [parentNumber, setParentNumber] = useState(initialParentNumber);
   const [endPoint, setEndPoint] = useState(initialEndPoint);
-  const [activeTab, setActiveTab] = useState<'groupmembers' | 'initiates' | 'members'>('groupmembers');
+  const [activeTab, setActiveTab] = useState<'groupmembers' | 'initiates' | 'members' | 'online_initiates'>('groupmembers');
   
   // Determine if we're in timeline context
   const isTimelineContext = !!initialProfileData;
@@ -67,11 +69,14 @@ function ChildrenPage() {
         setGroupmembers(response.data.groupmembers || []);
         setInitiates(response.data.initiates || []);
         setMembers(response.data.members || []);
+        setOnlineInitiates(response.data.online_initiates || []);
         
         // Set default values if not provided via state
         if (initialTimelineNumber === 1) setTimelineNumber(1);
         if (initialTimeshift === false) setTimeshift(false);
         if (initialEndPoint === false) setEndPoint(false);
+        
+        setImageError(false); // reset error when new profile loads
       } catch (error) {
         console.error("Error fetching profile data:", error);
       } finally {
@@ -101,6 +106,8 @@ function ChildrenPage() {
       setInitiates(sorted as RelationProfile[]);
     } else if (activeTab === 'members') {
       setMembers(sorted as RelationProfile[]);
+    } else if (activeTab === 'online_initiates') {
+      setOnlineInitiates(sorted as RelationProfile[]);
     }
   };
 
@@ -109,6 +116,7 @@ function ChildrenPage() {
       case 'groupmembers': return groupmembers;
       case 'initiates': return initiates;
       case 'members': return members;
+      case 'online_initiates': return onlineInitiates;
       default: return groupmembers;
     }
   };
@@ -154,11 +162,12 @@ function ChildrenPage() {
     <div className="children-page-container">
       <div className="children-page-main-profile-container">
         <div className="children-page-main-profile-container-left">
-          {profileData.profilepic ? (
+          {profileData.profilepic && !imageError ? (
             <img 
               src={profileData.profilepic} 
               alt="Profile" 
               className="children-page-main-profile-pic"
+              onError={() => setImageError(true)} // NEW: fallback trigger
             />
           ) : (
             <div className="children-page-main-profile-pic-placeholder">
@@ -205,6 +214,19 @@ function ChildrenPage() {
         >
           Members ({members.length})
         </button>
+        
+        {/* Conditionally render Online Initiates tab only if there are online initiates */}
+        {onlineInitiates.length > 0 && (
+          <button 
+            className={`children-page-tab-button ${activeTab === 'online_initiates' ? 'children-page-tab-active' : ''}`}
+            onClick={() => {
+              setActiveTab('online_initiates');
+              setCurrentPage(1);
+            }}
+          >
+            Online Initiates ({onlineInitiates.length})
+          </button>
+        )}
       </div>
 
       <div className="children-page-controls">
@@ -272,7 +294,7 @@ function ChildrenPage() {
           ))
         ) : (
           <div className="children-page-no-profiles-message">
-            No {activeTab} available
+            No {activeTab === 'online_initiates' ? 'online initiates' : activeTab} available
           </div>
         )}
       </div>

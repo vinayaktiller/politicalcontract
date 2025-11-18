@@ -9,7 +9,8 @@ import {
 import { addMessage, updateMessage } from '../../../messages/ChatPage/chatSlice';
 import { updateConversation } from '../../../messages/chatlist/chatListSlice';
 import { fetchUserMilestones } from '../../../milestone/milestonesSlice';
-import { updateBlog, addComment, addBlog } from '../../../blogrelated/blogpage/blogSlice';
+import { updateBlog, addComment, addBlog, addSharedBlog, removeSharedBlog } from '../../../blogrelated/blogpage/blogSlice';
+import { MessageNotification } from './notificationsTypes';
 
 // === Helper functions for comment tree ===
 
@@ -143,8 +144,6 @@ const handleBlogUpdateMessage = (
 ) => {
   const { blog_id, update_type, action, user_id } = data;
   
-
-  
   const currentUserId = parseInt(localStorage.getItem('user_id') || '0', 10);
   
   if (user_id === currentUserId) return;
@@ -226,14 +225,15 @@ const handleReplyUpdateMessage = (
   );
 };
 
-// Update the handleBlogUpload function in your thunk
+// === Blog Creation Handler ===
+
 const handleBlogUpload = (
   data: any,
   dispatch: Dispatch,
   getState: () => RootState
 ) => {
   const { blog_id, action, blog, user_id } = data;
-  const blog_type = data.blog_type; // This should be the base type (e.g., 'journey')
+  const blog_type = data.blog_type;
   console.log('Blog upload received:', blog_type);
   const currentUserId = parseInt(localStorage.getItem('user_id') || '0', 10);
 
@@ -252,6 +252,88 @@ const handleBlogUpload = (
     }
   }
 };
+
+// === Blog Share Handler ===
+
+const handleBlogShared = (
+  data: any,
+  dispatch: Dispatch,
+  getState: () => RootState
+) => {
+  const { blog_id, action, blog, shared_by_user_id, original_author_id, user_id } = data;
+  console.log('Blog share received:', blog_id, 'shared by:', shared_by_user_id);
+  
+  const currentUserId = parseInt(localStorage.getItem('user_id') || '0', 10);
+
+  // Don't process if it's our own share action
+  if (user_id === currentUserId) {
+    console.log('Ignoring own blog share action');
+    return;
+  }
+
+  if (action === 'shared' && blog && shared_by_user_id && original_author_id) {
+    console.log('Processing shared blog:', blog_id, 'shared by:', shared_by_user_id);
+    
+    // Use the addSharedBlog action to add the blog with share metadata
+    dispatch(addSharedBlog({
+      blogType: 'circle',
+      blog: blog,
+      sharedByUserId: shared_by_user_id,
+      originalAuthorId: original_author_id
+    }));
+    
+    console.log('Added shared blog to store:', blog_id);
+  } else {
+    console.error('Invalid share data received:', { 
+      blog_id, 
+      blog: !!blog, 
+      shared_by_user_id, 
+      original_author_id,
+      action 
+    });
+  }
+};
+
+// === Blog Unshare Handler ===
+
+const handleBlogUnshared = (
+  data: any,
+  dispatch: Dispatch,
+  getState: () => RootState
+) => {
+  const { blog_id, action, shared_by_user_id, original_author_id, user_id } = data;
+  console.log('Blog unshare received:', blog_id, 'unshared by:', shared_by_user_id);
+  
+  const currentUserId = parseInt(localStorage.getItem('user_id') || '0', 10);
+
+  // Don't process if it's our own unshare action
+  if (user_id === currentUserId) {
+    console.log('Ignoring own blog unshare action');
+    return;
+  }
+
+  if (action === 'unshared' && shared_by_user_id && original_author_id) {
+    console.log('Processing unshared blog:', blog_id, 'unshared by:', shared_by_user_id);
+    
+    // Use the removeSharedBlog action to remove the shared blog
+    dispatch(removeSharedBlog({
+      blogType: 'circle',
+      blogId: blog_id,
+      sharedByUserId: shared_by_user_id
+    }));
+    
+    console.log('Removed shared blog from store:', blog_id);
+  } else {
+    console.error('Invalid unshare data received:', { 
+      blog_id, 
+      shared_by_user_id, 
+      original_author_id,
+      action 
+    });
+  }
+};
+
+// === Blog Modification Handler ===
 
 const handleBlogModified = (
   data: any,
@@ -293,6 +375,88 @@ const handleBlogModified = (
     console.error('Invalid blog data received:', { blog_id, blog, blog_type });
   }
 };
+
+// === Message Notification Handler ===
+
+const handleMessageNotification = (
+  data: any,
+  dispatch: Dispatch,
+  getState: () => RootState
+) => {
+  const state = getState();
+  const currentRoomId = state.chat.currentRoomId;
+  const conversationId = data.conversation_id;
+  
+  // Don't show notification if user is in this specific chat room
+  if (currentRoomId === conversationId) {
+    return;
+  }
+
+  // Check if we already have a message notification
+  const existingMessageNotification = state.notifications.notifications.find(
+    n => n.notification_type === 'Message_Notification'
+  ) as MessageNotification | undefined;
+
+  const chatListState = state.chatList;
+  const totalUnreadCount = chatListState.ids.reduce((count, id) => {
+    const conv = chatListState.entities[id];
+    return count + (conv?.unread_count || 0);
+  }, 0);
+
+  const conversationCount = chatListState.ids.filter(id => {
+    const conv = chatListState.entities[id];
+    return conv && conv.unread_count > 0;
+  }).length;
+
+  if (existingMessageNotification) {
+    // Update existing notification
+    const updatedNotification: Omit<MessageNotification, 'id'> = {
+      notification_type: "Message_Notification",
+      notification_message: `You have ${totalUnreadCount} new messages from ${conversationCount} conversations`,
+      notification_data: {
+        conversation_id: conversationId,
+        sender_id: data.sender_id,
+        sender_name: data.sender_name,
+        message_content: data.content,
+        message_count: totalUnreadCount,
+        conversation_count: conversationCount,
+        timestamp: data.timestamp,
+        profile_picture: data.sender_profile || null
+      },
+      notification_number: existingMessageNotification.notification_number,
+      notification_freshness: false
+    };
+
+    // Remove old and add updated one to maintain order
+    dispatch(removeNotificationByDetails({
+      notification_type: "Message_Notification",
+      notification_number: existingMessageNotification.notification_number,
+    }));
+    
+    dispatch(addNotification(updatedNotification));
+  } else {
+    // Create new notification
+    const messageNotification: Omit<MessageNotification, 'id'> = {
+      notification_type: "Message_Notification",
+      notification_message: `You have ${totalUnreadCount} new messages from ${conversationCount} conversations`,
+      notification_data: {
+        conversation_id: conversationId,
+        sender_id: data.sender_id,
+        sender_name: data.sender_name,
+        message_content: data.content,
+        message_count: totalUnreadCount,
+        conversation_count: conversationCount,
+        timestamp: data.timestamp,
+        profile_picture: data.sender_profile || null
+      },
+      notification_number: `message_${Date.now()}`,
+      notification_freshness: false
+    };
+    
+    dispatch(addNotification(messageNotification));
+  }
+};
+
 // === Chat System Handler ===
 
 const handleChatSystemMessage = (
@@ -352,6 +516,11 @@ const handleChatSystemMessage = (
           moveToTop: true,
         })
       );
+
+      // Trigger message notification if not in current chat room
+      if (!isCurrentRoom) {
+        handleMessageNotification(data, dispatch, getState);
+      }
       break;
     }
 
@@ -413,7 +582,6 @@ export const connectWebSocket =
         return;
       }
     }
-      // `ws://localhost:8000/ws/notifications/${userId}/?token=${authToken}`
 
     try {
       const authToken = localStorage.getItem('access_token');
@@ -450,10 +618,25 @@ export const connectWebSocket =
         try {
           const data = JSON.parse(event.data);
           console.log('WebSocket message received:', data);
+
+          // === Blog Creation Handling ===
           if (data.type === "blog_created") {
-            const blog_type = data.blog_type
-            console.log('Blog upload received:', data);
-            handleBlogUpload(data,  dispatch, getState);
+            console.log('Blog creation received:', data);
+            handleBlogUpload(data, dispatch, getState);
+            return;
+          }
+
+          // === Blog Share Handling ===
+          if (data.type === "blog_shared") {
+            console.log('Blog share received:', data);
+            handleBlogShared(data, dispatch, getState);
+            return;
+          }
+
+          // === Blog Unshare Handling ===
+          if (data.type === "blog_unshared") {
+            console.log('Blog unshare received:', data);
+            handleBlogUnshared(data, dispatch, getState);
             return;
           }
 
@@ -462,8 +645,10 @@ export const connectWebSocket =
             handleBlogUpdateMessage(data, dispatch, getState);
             return;
           }
-          if(data.type === 'blog_modified') {
-            handleBlogModified (data, dispatch, getState);
+
+          // === Blog Modification Handling ===
+          if (data.type === 'blog_modified') {
+            handleBlogModified(data, dispatch, getState);
             return;
           }
 
@@ -472,16 +657,19 @@ export const connectWebSocket =
             handleCommentUpdateMessage(data, dispatch, getState);
             return;
           }
+
           // === Blog Comment Like Handling ===
           if (data.type === 'comment_like_update') {
             handleCommentLikeUpdateMessage(data, dispatch, getState);
             return;
           }
+
           // === Reply Update Handling ===
           if (data.type === 'reply_update') {
             handleReplyUpdateMessage(data, dispatch, getState);
             return;
           }
+
           // === Milestone Notification Handling ===
           if (data?.notification?.notification_type === 'Milestone_Notification') {
             console.log('Milestone Notification received:', data.notification);
@@ -511,6 +699,7 @@ export const connectWebSocket =
 
             return;
           }
+
           // === Chat System and Other Notification Messages ===
           if (data?.type === 'notification_message' && data?.category === 'chat_system') {
             handleChatSystemMessage(data, dispatch, getState);

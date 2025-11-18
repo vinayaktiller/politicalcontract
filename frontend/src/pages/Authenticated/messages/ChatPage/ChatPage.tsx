@@ -326,7 +326,7 @@ const ChatPage: React.FC = () => {
                         className="retry-button"
                         aria-label="Retry sending message"
                       >
-                        <ReplayIcon fontSize="small" />
+                        {/* <ReplayIcon fontSize="small" /> */}
                       </IconButton>
                     )}
                   </Box>

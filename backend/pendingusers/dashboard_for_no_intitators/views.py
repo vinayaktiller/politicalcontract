@@ -11,6 +11,16 @@ from rest_framework.permissions import IsAuthenticated
 from users.permissions.permissions import IsSuperUser
 from rest_framework.pagination import PageNumberPagination
 from users.models.usertree import UserTree
+from ..models import PendingUser, NoInitiatorUser, RejectedPendingUser  # Add RejectedPendingUser
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+import json
+import re
+import logging
+from django.core.cache import cache
+
+logger = logging.getLogger(__name__)
+
 
 
 class PendingUserNoInitiatorPagination(PageNumberPagination):
@@ -245,3 +255,104 @@ class MarkAsSpam(APIView):
             no_initiator_data.save()
 
             return Response({"message": "User marked as spam successfully"}, status=status.HTTP_200_OK)
+        
+# class RejectPendingUser(APIView):
+#     authentication_classes = [CookieJWTAuthentication]
+#     permission_classes = [IsAuthenticated, IsSuperUser]
+
+#     def post(self, request, user_id):
+#         with transaction.atomic():
+#             pending_user = get_object_or_404(
+#                 PendingUser.objects.select_for_update(),
+#                 id=user_id,
+#                 initiator_id__isnull=True
+#             )
+#             no_initiator_data = getattr(pending_user, 'no_initiator_data', None)
+            
+#             try:
+#                 current_usertree = UserTree.objects.get(id=request.user.id)
+#             except UserTree.DoesNotExist:
+#                 return Response({"error": "UserTree entry not found for current user"}, status=status.HTTP_404_NOT_FOUND)
+
+#             # Check if claimed by this user (or allow superuser to reject any)
+#             if no_initiator_data and no_initiator_data.claimed_by != current_usertree and not request.user.is_superuser:
+#                 return Response({"error": "You can only reject users you've claimed"}, status=status.HTTP_403_FORBIDDEN)
+
+#             # Get rejection reason from request
+#             rejection_reason = request.data.get('rejection_reason', '')
+
+#             try:
+#                 # Create rejected user record
+#                 rejected_user = RejectedPendingUser.objects.create(
+#                     gmail=pending_user.gmail,
+#                     first_name=pending_user.first_name,
+#                     last_name=pending_user.last_name,
+#                     profile_picture=pending_user.profile_picture.url if pending_user.profile_picture else None,
+#                     date_of_birth=pending_user.date_of_birth,
+#                     gender=pending_user.gender,
+#                     country_id=pending_user.country.id if pending_user.country else None,
+#                     country_name=pending_user.country.name if pending_user.country else None,
+#                     state_id=pending_user.state.id if pending_user.state else None,
+#                     state_name=pending_user.state.name if pending_user.state else None,
+#                     district_id=pending_user.district.id if pending_user.district else None,
+#                     district_name=pending_user.district.name if pending_user.district else None,
+#                     subdistrict_id=pending_user.subdistrict.id if pending_user.subdistrict else None,
+#                     subdistrict_name=pending_user.subdistrict.name if pending_user.subdistrict else None,
+#                     village_id=pending_user.village.id if pending_user.village else None,
+#                     village_name=pending_user.village.name if pending_user.village else None,
+#                     rejected_by=current_usertree,
+#                     rejection_reason=rejection_reason,
+#                     original_pending_user_id=pending_user.id,
+#                     event_type=pending_user.event_type,
+#                     is_online=pending_user.is_online
+#                 )
+
+#                 # Send rejection notification to user if online
+#                 is_online = self.is_user_online(pending_user.gmail)
+#                 if is_online:
+#                     self.send_rejection_notification(
+#                         pending_user.gmail,
+#                         rejection_reason
+#                     )
+
+#                 # Delete the NoInitiatorUser and PendingUser instances
+#                 if no_initiator_data:
+#                     no_initiator_data.delete()
+#                 pending_user.delete()
+
+#                 return Response({
+#                     "message": "User rejected successfully", 
+#                     "rejected_user_id": rejected_user.id
+#                 }, status=status.HTTP_200_OK)
+
+#             except Exception as e:
+#                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+#     def is_user_online(self, user_email):
+#         """Check if user is currently connected to WebSocket"""
+#         return cache.get(f"user_online_{user_email}", False)
+        
+#     def send_rejection_notification(self, user_email, rejection_reason):
+#         """Send WebSocket notification to the user about rejection"""
+#         try:
+#             channel_layer = get_channel_layer()
+#             sanitized_email = re.sub(r'[^a-zA-Z0-9]', '_', user_email)
+#             group_name = f"waiting_{sanitized_email}"
+            
+#             message = {
+#                 "type": "admin_rejection",
+#                 "status": "rejected",
+#                 "message": "❌ Your application has been rejected by our team.",
+#                 "rejection_reason": rejection_reason or "No reason provided"
+#             }
+            
+#             async_to_sync(channel_layer.group_send)(
+#                 group_name,
+#                 {
+#                     "type": "admin_rejection_message",
+#                     "message": message
+#                 }
+#             )
+#             logger.info(f"Rejection notification sent to {user_email}")
+#         except Exception as e:
+#             logger.error(f"Failed to send rejection WebSocket notification: {str(e)}")

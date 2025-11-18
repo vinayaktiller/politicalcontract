@@ -1,4 +1,3 @@
-// src/AppRoutes.tsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -6,6 +5,9 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import LoginPage from "./pages/Unauthenticated/Loginpage/LoginPage";
 import Registration from "./pages/Unauthenticated/Registration/Registration";
 import Waitingpage from "./pages/Unauthenticated/Waitingpage/Waitingpage";
+
+// 🔥 Import the new Landing Page
+import LandingPage from "./pages/Unauthenticated/LandingPage/LandingPage";
 
 import Mainbar from "./Layout/bars/Mainbar";
 import HomePage from "./pages/Authenticated/homepage/HomePage";
@@ -50,9 +52,8 @@ import ContributionsList from "./pages/Authenticated/ContributionsList/Contribut
 import ProfilePage from "./pages/Authenticated/Profile/ProfilePage";
 import AdminPendingUsers from "./pages/Authenticated/AdminPendingUsers/AdminPendingUsers";
 import AnswersPage from "./pages/Authenticated/questionspage/AnswersPage/AnswersPage";
+import ReportGenerationPage from "./pages/Authenticated/dashboard/reportgeneration/intitationreports/ReportGenerationPage";
 
-// 🔥 New imports for new routes
-// import ProfilePage from "./pages/Authenticated/profile/ProfilePage";
 import BlogDetailPage from "./pages/Authenticated/blogrelated/BlogDetailPage/BlogDetailPage";
 
 const clientId =
@@ -69,14 +70,18 @@ const AppRoutes: React.FC = () => {
         <Route path="/register" element={<Registration />} />
         <Route path="/waiting" element={<Waitingpage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* 🔥 Landing page as the first entry point after verification */}
+        <Route path="landing" element={<LandingPage />} />
 
         {/* Protected routes */}
         <Route path="/" element={<ProtectedRoute />}>
           <Route path="/" element={<Mainbar />}>
-            {/* Redirect root to /heartbeat */}
+            {/* 🔥 Redirect root to /landing instead of /heartbeat */}
             <Route index element={<Navigate to="/heartbeat" replace />} />
 
-            {/* Heartbeat as first/default authenticated route */}
+            
+
+            {/* Heartbeat route */}
             <Route path="heartbeat" element={<HeartbeatPage />} />
 
             {/* Other authenticated routes */}
@@ -142,7 +147,7 @@ const AppRoutes: React.FC = () => {
             {/* Blogs */}
             <Route path="blogs" element={<BlogListPage />} />
             <Route path="blog-creator" element={<BlogCreator />} />
-            <Route path="blog/:blogId" element={<BlogDetailPage />} /> ✅ New
+            <Route path="blog/:blogId" element={<BlogDetailPage />} />
 
             {/* Contributions */}
             <Route path="claim-contribution" element={<ClaimContributionForm />} />
@@ -155,10 +160,12 @@ const AppRoutes: React.FC = () => {
             <Route path="questions" element={<QuestionsPage />} />
 
             {/* Profiles */}
-            <Route path="profile/:userId" element={<ProfilePage />} /> ✅ New
+            <Route path="profile/:userId" element={<ProfilePage />} />
 
             <Route path="/admin/pending-users" element={<AdminPendingUsers />} />
             <Route path="answers/:questionId" element={<AnswersPage />} />
+            <Route path="/reports/generate" element={<ReportGenerationPage />} />
+            
           </Route>
         </Route>
       </Routes>

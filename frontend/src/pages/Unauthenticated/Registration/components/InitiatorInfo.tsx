@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FormStepProps } from '../types/registrationTypes';
 import { useInitiatorValidation } from '../hooks/useInitiatorValidation';
 import { useSpeakerValidation } from '../hooks/useSpeakerValidation';
@@ -42,12 +42,52 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
   const [showSameIdPopup, setShowSameIdPopup] = useState(false);
   const [showGroupConfirm, setShowGroupConfirm] = useState(false);
   const [hasInitiator, setHasInitiator] = useState<boolean>(true);
+  const [isSubmitDisabled, setIsSubmitDisabled] = useState<boolean>(true);
 
   const [isSpeakerValidated, setIsSpeakerValidated] = useState(false);
   const [isGroupValidated, setIsGroupValidated] = useState(false);
   const [isInitiatorValidated, setIsInitiatorValidated] = useState(false);
 
   const navigate = useNavigate();
+
+  // Effect to handle submit button state
+  useEffect(() => {
+    let disabled = true;
+
+    if (!hasInitiator) {
+      // For no initiator case - button is always enabled since no validation needed
+      disabled = false;
+    } else {
+      // For has initiator case
+      if (!hasEvent) {
+        // No event - only initiator ID validation required
+        disabled = !isInitiatorValidated;
+      } else {
+        // Has event - both event and initiator validation required
+        if (formData.event_type === 'private') {
+          disabled = !(isSpeakerValidated && isInitiatorValidated);
+        } else if (formData.event_type === 'group') {
+          disabled = !(isGroupValidated && isInitiatorValidated);
+        } else if (formData.event_type === 'public') {
+          // For public events, we need event ID filled and initiator validated
+          disabled = !(tempEventId.trim() !== '' && isInitiatorValidated);
+        } else {
+          // Event type not selected yet
+          disabled = true;
+        }
+      }
+    }
+
+    setIsSubmitDisabled(disabled);
+  }, [
+    hasInitiator,
+    hasEvent,
+    formData.event_type,
+    isInitiatorValidated,
+    isSpeakerValidated,
+    isGroupValidated,
+    tempEventId
+  ]);
 
   const clearFields = () => {
     setTempEventId('');
@@ -175,6 +215,11 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent submission if button is disabled (double safety)
+    if (isSubmitDisabled) {
+      return;
+    }
 
     // Handle no-initiator case
     if (!hasInitiator) {
@@ -493,7 +538,11 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
         <button type="button" onClick={prevStep} className="btn-secondary">
           Previous
         </button>
-        <button type="submit" className="btn-primary">
+        <button 
+          type="submit" 
+          className={`btn-primary ${isSubmitDisabled ? 'disabled' : ''}`}
+          disabled={isSubmitDisabled}
+        >
           {hasInitiator ? 'Complete Registration' : 'Register Without Initiator'}
         </button>
       </div>

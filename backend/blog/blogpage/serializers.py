@@ -1,10 +1,11 @@
 from rest_framework import serializers
-from ..models import BaseBlogModel, Comment
+from ..models import BaseBlogModel, Comment, UserSharedBlog
 from users.models import UserTree, Milestone
 from geographies.models.geos import Village, Subdistrict, District, State, Country
 from django.apps import apps
 import django.db.models as django_models
 import uuid
+from users.profilepic_manager.utils import get_profilepic_url
 
 class CommentUserSerializer(serializers.Serializer):
     id = serializers.IntegerField()
@@ -13,13 +14,7 @@ class CommentUserSerializer(serializers.Serializer):
 
     def get_profile_pic(self, obj):
         request = self.context.get('request')
-        if getattr(obj, 'profilepic', None):
-            if request:
-                return request.build_absolute_uri(obj.profilepic.url)
-            else:
-                # Fallback for cases without request context
-                return f"http://127.0.0.1:8000{obj.profilepic.url}"
-        return None
+        return get_profilepic_url(obj, request)
 
 class CommentSerializer(serializers.Serializer):
     id = serializers.UUIDField()
@@ -82,6 +77,9 @@ class BlogHeaderSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
     user = BlogUserSerializer(source='*')
     narrative = serializers.CharField(required=False, allow_null=True)
+    is_shared = serializers.BooleanField(default=False)
+    shared_by_user_id = serializers.IntegerField(required=False, allow_null=True)
+    shared_at = serializers.DateTimeField(required=False, allow_null=True)
 
 class BlogBodySerializer(serializers.Serializer):
     body_text = serializers.CharField(allow_null=True, source='content')
@@ -101,7 +99,7 @@ class BlogSerializer(serializers.Serializer):
     header = BlogHeaderSerializer(source='*')
     body = BlogBodySerializer(source='*')
     footer = BlogFooterSerializer(source='*')
-    comments = CommentSerializer(many=True, required=False)  # Add comments field
+    comments = CommentSerializer(many=True, required=False)
 
     def get_location_hierarchy(self, entity, level):
         """Build location hierarchy string based on geographical level"""
@@ -225,7 +223,10 @@ class BlogSerializer(serializers.Serializer):
         base_blog = instance['base']
         concrete_blog = instance['concrete']
         blog_type = instance['type']
-        comments = instance.get('comments', [])  # Get comments from instance
+        comments = instance.get('comments', [])
+        is_shared = instance.get('is_shared', False)
+        shared_by_user_id = instance.get('shared_by_user_id')
+        shared_at = instance.get('shared_at')
 
         user_data = BlogUserSerializer(instance['author'], context=self.context).data
         user_data['relation'] = instance['relation']
@@ -233,7 +234,10 @@ class BlogSerializer(serializers.Serializer):
         header_data = {
             'type': blog_type,
             'created_at': base_blog.created_at,
-            'user': user_data
+            'user': user_data,
+            'is_shared': is_shared,
+            'shared_by_user_id': shared_by_user_id,
+            'shared_at': shared_at
         }
 
         body_text = getattr(concrete_blog, 'content', None)
