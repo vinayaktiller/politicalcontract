@@ -149,6 +149,7 @@ export default function TimelinePage() {
 
       // Load more when near top
       if (scrollTop < 200 && timelineDataRef.current.timelineHead.length < max) {
+        console.log("Loading more timeline head... timelineDataRef.current.timelineHead.length:", timelineDataRef.current.timelineHead.length, "max:", max);
         const oldScrollHeight = containerRef.current.scrollHeight;
         setIsTimelineLoading(true);
         

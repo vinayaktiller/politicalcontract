@@ -2,10 +2,9 @@
 // Centralized configuration for the application
 export const config = {
   // Base URLs
-  API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'https://pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net',
+   API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'https://bacfor-pfs-etathmb8gphgf0db.canadacentral-01.azurewebsites.net',
+  WS_BASE_URL: process.env.REACT_APP_WS_BASE_URL || 'wss://bacfor-pfs-etathmb8gphgf0db.canadacentral-01.azurewebsites.net',
   
-  // WebSocket URLs
-  WS_BASE_URL: process.env.REACT_APP_WS_BASE_URL || 'wss://pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net',
   
   // Local development URLs (uncomment these and comment the above for local development)
   // API_BASE_URL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
@@ -18,11 +17,14 @@ export const config = {
     pushNotification: '/api/users/push-notification/login/',
     testCookie: '/api/users/test-cookie/',
     createPendingUser: '/api/pendingusers/pending-user/create/', // Added trailing slash
+    tokenRefresh: '/api/users/token/refresh-cookie/',
   },
   
   // WebSocket paths
   wsPaths: {
     waitingPage: '/ws/waitingpage/',
+    activity: '/ws/activity/today/',
+    notifications: '/ws/notifications/',
   },
 };
 

@@ -275,13 +275,18 @@ DEFAULT_FILE_STORAGE = "backend.azure_storage.AzureMediaStorage"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOWED_ORIGINS = [env('Frontendurl'),  "https://45e8-2405-201-c057-c039-b159-12fc-9adc-48c0.ngrok-free.app","https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net", "http://127.0.0.1:3000","http://localhost:3000"]
+# CORS and CSRF settings
+CORS_ALLOWED_ORIGINS = [env('Frontendurl'), env('frontendurl2') ,  "https://45e8-2405-201-c057-c039-b159-12fc-9adc-48c0.ngrok-free.app","https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net", "http://127.0.0.1:3000","http://localhost:3000", "https://pfs-frontend-blond.vercel.app" ]
 
+# Allow cookies to be included in cross-origin requests
 CORS_ALLOW_CREDENTIALS = True
 
-CSRF_TRUSTED_ORIGINS = [env('Frontendurl'), "https://45e8-2405-201-c057-c039-b159-12fc-9adc-48c0.ngrok-free.app","https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net","http://127.0.0.1:3000","http://localhost:3000"]
+
+# Add the frontend URL to the list of trusted origins
+CSRF_TRUSTED_ORIGINS = [env('Frontendurl'),  env('frontendurl2'), "https://45e8-2405-201-c057-c039-b159-12fc-9adc-48c0.ngrok-free.app","https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net","http://127.0.0.1:3000","http://localhost:3000", "https://pfs-frontend-blond.vercel.app"]
 
 CSRF_COOKIE_NAME = "csrftoken"
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -453,3 +458,15 @@ CELERY_BEAT_SCHEDULE = {
 AZURE_ACCOUNT_NAME = os.getenv('AZURE_ACCOUNT_NAME')
 AZURE_ACCOUNT_KEY = os.getenv('AZURE_ACCOUNT_KEY')
 AZURE_CONTAINER = os.getenv('AZURE_CONTAINER')
+
+AZURE_DOMAINS = {
+    'centralus': 'pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net',
+    'canadacentral_backend': 'bacfor-pfs-etathmb8gphgf0db.canadacentral-01.azurewebsites.net',
+    'canadacentral_frontend': 'pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net'
+}
+
+# Cookie domain roots for Azure
+AZURE_DOMAIN_ROOTS = {
+    'centralus-01.azurewebsites.net': '.centralus-01.azurewebsites.net',
+    'canadacentral-01.azurewebsites.net': '.canadacentral-01.azurewebsites.net'
+}

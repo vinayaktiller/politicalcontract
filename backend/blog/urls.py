@@ -2,11 +2,19 @@ from django.urls import path
 from .Journeyblog.views import JourneyBlogAPIView
 from .posting_blogs.views import BlogCreateAPIView
 from .circleconcontacts.views import CircleContactsView
-from .blogpage.views import (
-    CircleBlogsView, LikeBlogView, ShareBlogView, 
+# from .blogpage.views import (
+#     CircleBlogsView, LikeBlogView, ShareBlogView, 
+#     BlogDetailView, CommentView, CommentDetailView, 
+#     ReplyView, CommentLikeView,
+# )
+from .blogpage.views import CommentLikeView
+
+from .newmodel.api.views import (
+     CircleBlogsView, LikeBlogView, ShareBlogView, 
     BlogDetailView, CommentView, CommentDetailView, 
-    ReplyView, CommentLikeView,
+    ReplyView
 )
+
 
 urlpatterns = [
     path('journey-blogs/', JourneyBlogAPIView.as_view(), name='journey-blog-list'),
