@@ -5,7 +5,9 @@ import type { AppDispatch, RootState } from "../../../store";
 import { 
   checkUserActivity, 
   markUserActive,
-  fetchActivityHistory
+  fetchActivityHistory,
+  invalidateCache,
+  markActiveOptimistic // ✅ Import optimistic action
 } from './heartbeatSlice';
 import HeartbeatGraph from './HeartbeatGraph/HeartbeatGraph';
 import { useNavigate } from 'react-router-dom';
@@ -24,24 +26,53 @@ const HeartbeatPage: React.FC = () => {
     activityHistory,
     historyStatus,
     historyError,
+    lastFetched,
   } = heartbeatState;
   
   const userId = 11021801300001;
   const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
-    // Only run once on component mount
-    if (!hasInitialized) {
-      console.log('Initializing HeartbeatPage...');
-      dispatch(checkUserActivity(userId));
-      dispatch(fetchActivityHistory(userId));
+    // ✅ Only run once on component mount OR when data becomes stale
+    if (!hasInitialized || shouldRefetchData(lastFetched)) {
+      console.log('Initializing or refreshing HeartbeatPage...');
+      dispatch(checkUserActivity({ userId }));
+      dispatch(fetchActivityHistory({ userId }));
       setHasInitialized(true);
     }
-  }, [dispatch, userId, hasInitialized]);
+  }, [dispatch, userId, hasInitialized, lastFetched]);
 
-  const handleMarkActive = () => {
+  // ✅ Helper function to check if data should be refetched
+  const shouldRefetchData = (lastFetched: string | null): boolean => {
+    if (!lastFetched) return true;
+    
+    const lastFetchedDate = new Date(lastFetched);
+    const now = new Date();
+    
+    // Refetch if it's a new day or data is older than 1 hour
+    return !isSameDay(lastFetchedDate, now) || 
+           (now.getTime() - lastFetchedDate.getTime()) > 60 * 60 * 1000;
+  };
+
+  // ✅ Helper to check if two dates are the same day
+  const isSameDay = (date1: Date, date2: Date): boolean => {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+  };
+
+  const handleMarkActive = async () => {
     if (heartState !== 'active' && heartState !== 'hyperactive') {
-      dispatch(markUserActive(userId));
+      // ✅ Immediate optimistic update for better UX
+      dispatch(markActiveOptimistic());
+      
+      // Then make the actual API call
+      try {
+        await dispatch(markUserActive(userId)).unwrap();
+      } catch (error) {
+        // If API call fails, the state will be reverted by the rejected action
+        console.error('Failed to mark active:', error);
+      }
     }
   };
 
@@ -50,8 +81,17 @@ const HeartbeatPage: React.FC = () => {
   };
 
   const handleRetry = () => {
-    dispatch(checkUserActivity(userId));
-    dispatch(fetchActivityHistory(userId));
+    // ✅ Use force refresh to bypass cache
+    dispatch(invalidateCache());
+    dispatch(checkUserActivity({ userId, forceRefresh: true }));
+    dispatch(fetchActivityHistory({ userId, forceRefresh: true }));
+  };
+
+  const handleForceRefresh = () => {
+    // ✅ Manual refresh button for users with force refresh
+    dispatch(invalidateCache());
+    dispatch(checkUserActivity({ userId, forceRefresh: true }));
+    dispatch(fetchActivityHistory({ userId, forceRefresh: true }));
   };
 
   const statusMessages = {
@@ -122,6 +162,16 @@ const HeartbeatPage: React.FC = () => {
         <div className="heartbeat-header">
           <h1 className="heartbeat-title">Movement Heartbeat</h1>
           <p className="heartbeat-subtitle">Keep the movement alive with your daily support</p>
+          
+          {/* ✅ Add manual refresh button */}
+          <button 
+            className="refresh-button"
+            onClick={handleForceRefresh}
+            disabled={isLoading}
+            title="Force refresh data"
+          >
+            🔄 Refresh
+          </button>
         </div>
         
         <div 

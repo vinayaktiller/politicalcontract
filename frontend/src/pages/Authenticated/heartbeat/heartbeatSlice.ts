@@ -17,7 +17,6 @@ interface HeartbeatState {
   activityHistory: ActivityHistoryItem[];
   historyStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   historyError: string | null;
-  // ✅ NEW: Track when data was last fetched
   lastFetched: string | null;
 }
 
@@ -40,7 +39,7 @@ interface CheckUserActivityResponse {
   streak_count: number;
 }
 
-// ✅ NEW: Helper function to check if data is stale
+// ✅ Helper function to check if data is stale
 const shouldRefetchData = (lastFetched: string | null): boolean => {
   if (!lastFetched) return true;
   
@@ -55,19 +54,20 @@ const shouldRefetchData = (lastFetched: string | null): boolean => {
          (now.getTime() - lastFetchedDate.getTime()) > 60 * 60 * 1000; // 1 hour
 };
 
+// ✅ Updated to accept parameters object with forceRefresh option
 export const checkUserActivity = createAsyncThunk<
   CheckUserActivityResponse,
-  number,
+  { userId: number; forceRefresh?: boolean },
   { state: { heartbeat: HeartbeatState } }
 >(
   'heartbeat/checkActivity',
-  async (userId: number, { getState, rejectWithValue }) => {
+  async ({ userId, forceRefresh = false }, { getState, rejectWithValue }) => {
     try {
       const state = getState().heartbeat;
       
-      // ✅ Check if we need to refetch or can use cached data
-      if (!shouldRefetchData(state.lastFetched)) {
-        throw new Error('CACHE_VALID'); // Special signal to use cached data
+      // ✅ Only check cache if not forced to refresh
+      if (!forceRefresh && !shouldRefetchData(state.lastFetched)) {
+        throw new Error('CACHE_VALID');
       }
       
       const today = format(new Date(), 'yyyy-MM-dd');
@@ -77,12 +77,10 @@ export const checkUserActivity = createAsyncThunk<
       );
       return response.data as CheckUserActivityResponse;
     } catch (err: any) {
-      // If it's our cache valid signal, re-throw it so we can handle in extraReducers
       if (err.message === 'CACHE_VALID') {
         throw new Error('CACHE_VALID');
       }
       
-      // Regular error handling
       const message = err.response?.data
         ? typeof err.response.data === 'string'
           ? err.response.data
@@ -93,19 +91,20 @@ export const checkUserActivity = createAsyncThunk<
   }
 );
 
+// ✅ Updated to accept parameters object with forceRefresh option
 export const fetchActivityHistory = createAsyncThunk<
   ActivityHistoryItem[],
-  number,
+  { userId: number; forceRefresh?: boolean },
   { state: { heartbeat: HeartbeatState } }
 >(
   'heartbeat/fetchActivityHistory',
-  async (userId: number, { getState, rejectWithValue }) => {
+  async ({ userId, forceRefresh = false }, { getState, rejectWithValue }) => {
     try {
       const state = getState().heartbeat;
       
-      // ✅ Check if we need to refetch history
-      if (!shouldRefetchData(state.lastFetched)) {
-        throw new Error('CACHE_VALID'); // Special signal to use cached data
+      // ✅ Only check cache if not forced to refresh
+      if (!forceRefresh && !shouldRefetchData(state.lastFetched)) {
+        throw new Error('CACHE_VALID');
       }
       
       const response = await api.get(
@@ -129,6 +128,7 @@ export const fetchActivityHistory = createAsyncThunk<
   }
 );
 
+// ✅ Updated to force refresh after marking active
 export const markUserActive = createAsyncThunk<
   string,
   number,
@@ -143,9 +143,9 @@ export const markUserActive = createAsyncThunk<
         date: today,
       });
       
-      // Always refetch after marking active
-      await dispatch(checkUserActivity(userId));
-      await dispatch(fetchActivityHistory(userId));
+      // ✅ Force refresh both activity check and history to get updated data
+      await dispatch(checkUserActivity({ userId, forceRefresh: true }));
+      await dispatch(fetchActivityHistory({ userId, forceRefresh: true }));
       return today;
     } catch (err: any) {
       const message = err.response?.data
@@ -180,9 +180,19 @@ const heartbeatSlice = createSlice({
     clearAllHeartbeatData: (state) => {
       return initialState;
     },
-    // ✅ NEW: Manually invalidate cache to force refetch
+    // ✅ Manually invalidate cache to force refetch
     invalidateCache: (state) => {
       state.lastFetched = null;
+    },
+    // ✅ Optimistic update for immediate feedback
+    markActiveOptimistic: (state) => {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const newStreak = state.streak + 1;
+      
+      state.heartState = newStreak >= 5 ? 'hyperactive' : 'active';
+      state.streak = newStreak;
+      state.lastActiveDate = today;
+      state.lastUpdated = today;
     },
   },
   extraReducers: (builder) => {
@@ -278,6 +288,7 @@ export const {
   invalidateIfStale, 
   resetForNewDay,
   clearAllHeartbeatData,
-  invalidateCache // ✅ Export the new action
+  invalidateCache,
+  markActiveOptimistic // ✅ Export the new optimistic action
 } = heartbeatSlice.actions;
 export default heartbeatSlice.reducer;
