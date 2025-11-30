@@ -3,10 +3,18 @@ import { Dispatch } from '@reduxjs/toolkit';
 import { RootState } from '../../../../../../store';
 import { updateBlog, addComment } from '../../../../blogrelated/blogpage/blogSlice';
 import { MessageHandler } from './handlerRegistry';
+import { Blog, Comment } from '../../../../blogrelated/blogpage/blogTypes'; // Import types
+
+// Define types for comment operations
+interface CommentTreeUtils {
+  findCommentInTree: (comments: Comment[], commentId: string) => Comment | null;
+  updateCommentInTree: (comments: Comment[], commentId: string, updates: Partial<Comment>) => Comment[];
+  addReplyToCommentInTree: (comments: Comment[], commentId: string, reply: Comment) => Comment[];
+}
 
 // Helper functions for comment tree operations
-const commentTreeUtils = {
-  findCommentInTree: (comments: any[], commentId: string): any => {
+const commentTreeUtils: CommentTreeUtils = {
+  findCommentInTree: (comments: Comment[], commentId: string): Comment | null => {
     for (const comment of comments) {
       if (comment.id === commentId) return comment;
       if (comment.replies?.length > 0) {
@@ -17,8 +25,8 @@ const commentTreeUtils = {
     return null;
   },
 
-  updateCommentInTree: (comments: any[], commentId: string, updates: any): any[] => {
-    return comments.map(comment => {
+  updateCommentInTree: (comments: Comment[], commentId: string, updates: Partial<Comment>): Comment[] => {
+    return comments.map((comment: Comment) => {
       if (comment.id === commentId) {
         return { ...comment, ...updates };
       }
@@ -32,8 +40,8 @@ const commentTreeUtils = {
     });
   },
 
-  addReplyToCommentInTree: (comments: any[], commentId: string, reply: any): any[] => {
-    return comments.map(comment => {
+  addReplyToCommentInTree: (comments: Comment[], commentId: string, reply: Comment): Comment[] => {
+    return comments.map((comment: Comment) => {
       if (comment.id === commentId) {
         return {
           ...comment,
@@ -53,9 +61,9 @@ const commentTreeUtils = {
 
 // Blog utility functions
 const blogUtils = {
-  findBlogById: (state: RootState, blogId: string) => {
+  findBlogById: (state: RootState, blogId: string): { blogType: string | null; blog: Blog | null } => {
     for (const blogType of Object.keys(state.blog.blogs)) {
-      const blog = state.blog.blogs[blogType].blogs.find(b => b.id === blogId);
+      const blog = state.blog.blogs[blogType].blogs.find((b: Blog) => b.id === blogId);
       if (blog) return { blogType, blog };
     }
     return { blogType: null, blog: null };
@@ -66,16 +74,39 @@ const blogUtils = {
   }
 };
 
+// Define message data types
+interface CommentUpdateData {
+  blog_id: string;
+  action: string;
+  comment: Comment;
+  user_id: number;
+}
+
+interface CommentLikeUpdateData {
+  blog_id: string;
+  comment_id: string;
+  action: string;
+  likes_count: number;
+  user_id: number;
+}
+
+interface ReplyUpdateData {
+  blog_id: string;
+  comment_id: string;
+  reply: Comment;
+  user_id: number;
+}
+
 // Comment update handler
 export const handleCommentUpdateMessage: MessageHandler = (data, dispatch, getState) => {
-  const { blog_id, action, comment, user_id } = data;
+  const { blog_id, action, comment, user_id } = data as CommentUpdateData;
   const blogType = 'circle';
   const state = getState();
   const blogsState = state.blog?.blogs?.[blogType];
   
   if (!blogsState || !Array.isArray(blogsState.blogs)) return;
   
-  const blog = blogsState.blogs.find((b: any) => String(b.id) === String(blog_id));
+  const blog = blogsState.blogs.find((b: Blog) => String(b.id) === String(blog_id));
   if (!blog) return;
 
   if (action === 'comment_added') {
@@ -85,7 +116,7 @@ export const handleCommentUpdateMessage: MessageHandler = (data, dispatch, getSt
       comment: comment,
     }));
   } else if (action === 'comment_deleted') {
-    const updatedComments = blog.comments.filter((c: any) => c.id !== comment.id);
+    const updatedComments = blog.comments.filter((c: Comment) => c.id !== comment.id);
     dispatch(updateBlog({
       blogType,
       id: String(blog_id),
@@ -102,7 +133,7 @@ export const handleCommentUpdateMessage: MessageHandler = (data, dispatch, getSt
 
 // Comment like update handler
 export const handleCommentLikeUpdateMessage: MessageHandler = (data, dispatch, getState) => {
-  const { blog_id, comment_id, action, likes_count, user_id } = data;
+  const { blog_id, comment_id, action, likes_count, user_id } = data as CommentLikeUpdateData;
   
   if (user_id === blogUtils.getCurrentUserId()) return;
   
@@ -127,7 +158,7 @@ export const handleCommentLikeUpdateMessage: MessageHandler = (data, dispatch, g
 
 // Reply update handler
 export const handleReplyUpdateMessage: MessageHandler = (data, dispatch, getState) => {
-  const { blog_id, comment_id, reply, user_id } = data;
+  const { blog_id, comment_id, reply, user_id } = data as ReplyUpdateData;
   
   if (user_id === blogUtils.getCurrentUserId()) return;
   

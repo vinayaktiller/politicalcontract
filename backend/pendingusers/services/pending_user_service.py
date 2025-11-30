@@ -2,6 +2,7 @@ import logging
 from django.db import transaction
 from users.models.petitioners import Petitioner
 from users.models.usertree import UserTree
+from users.models.AdditionalInfo import AdditionalInfo
 from prometheus_client import Counter
 from ..models import PendingUser, NoInitiatorUser
 
@@ -9,6 +10,7 @@ pendinguser_verified = Counter(
     'pendinguser_verified_total',
     'Total number of verified pending users'
 )
+
 notifications_created = Counter(
     'pendinguser_notifications_created_total',
     'Total number of notifications created during user transfer'
@@ -38,6 +40,72 @@ def handle_pending_user_creation(user):
     except Exception as e:
         logger.error(f"Error creating initiation notification: {e}")
 
+def update_all_geographical_populations(village):
+    """Update population counts for all geographical levels and return sequence numbers"""
+    try:
+        sequence_numbers = {}
+        
+        # Update village population
+        village.online_population = (village.online_population or 0) + 1
+        sequence_numbers['village_number'] = village.online_population
+        village.save()
+        logger.info(f"Updated village {village.name} population to {village.online_population}")
+        
+        # Update subdistrict population
+        if village.subdistrict:
+            subdistrict = village.subdistrict
+            subdistrict.online_population = (subdistrict.online_population or 0) + 1
+            sequence_numbers['subdistrict_number'] = subdistrict.online_population
+            subdistrict.save()
+            logger.info(f"Updated subdistrict {subdistrict.name} population to {subdistrict.online_population}")
+        else:
+            sequence_numbers['subdistrict_number'] = 0
+            logger.warning(f"No subdistrict found for village {village.name}")
+        
+        # Update district population
+        if village.subdistrict and village.subdistrict.district:
+            district = village.subdistrict.district
+            district.online_population = (district.online_population or 0) + 1
+            sequence_numbers['district_number'] = district.online_population
+            district.save()
+            logger.info(f"Updated district {district.name} population to {district.online_population}")
+        else:
+            sequence_numbers['district_number'] = 0
+            logger.warning(f"No district found for village {village.name}")
+        
+        # Update state population
+        if (village.subdistrict and 
+            village.subdistrict.district and 
+            village.subdistrict.district.state):
+            state = village.subdistrict.district.state
+            state.online_population = (state.online_population or 0) + 1
+            sequence_numbers['state_number'] = state.online_population
+            state.save()
+            logger.info(f"Updated state {state.name} population to {state.online_population}")
+        else:
+            sequence_numbers['state_number'] = 0
+            logger.warning(f"No state found for village {village.name}")
+        
+        # Update country population
+        if (village.subdistrict and 
+            village.subdistrict.district and 
+            village.subdistrict.district.state and
+            village.subdistrict.district.state.country):
+            country = village.subdistrict.district.state.country
+            country.online_population = (country.online_population or 0) + 1
+            sequence_numbers['country_number'] = country.online_population
+            country.save()
+            logger.info(f"Updated country {country.name} population to {country.online_population}")
+        else:
+            sequence_numbers['country_number'] = 0
+            logger.warning(f"No country found for village {village.name}")
+        
+        return sequence_numbers
+        
+    except Exception as e:
+        logger.error(f"Error updating geographical populations: {e}")
+        raise
+
 @transaction.atomic
 def verify_and_transfer_user(user):
     """Transfer a pending user to Petitioner without deleting notifications or the user itself."""
@@ -49,9 +117,8 @@ def verify_and_transfer_user(user):
             logger.error(f"PendingUser {user.gmail} does not have a village assigned.")
             raise ValueError("Village is required to generate Petitioner ID.")
 
-        # Update village population
-        user.village.online_population = (user.village.online_population or 0) + 1
-        user.village.save()
+        # Update all geographical populations and get sequence numbers
+        sequence_numbers = update_all_geographical_populations(user.village)
 
         # Generate a unique ID
         village_id = str(user.village.id).zfill(9)
@@ -73,6 +140,20 @@ def verify_and_transfer_user(user):
             subdistrict=user.subdistrict,
             village=user.village,
         )
+        logger.info(f"Created Petitioner with ID: {generated_id}")
+
+        # Create AdditionalInfo record with geographical sequence numbers
+        AdditionalInfo.objects.create(
+            user_id=generated_id,
+            village_number=sequence_numbers['village_number'],
+            subdistrict_number=sequence_numbers['subdistrict_number'],
+            district_number=sequence_numbers['district_number'],
+            state_number=sequence_numbers['state_number'],
+            country_number=sequence_numbers['country_number'],
+            active_days=0,
+            last_active_date=None
+        )
+        logger.info(f"Created AdditionalInfo for user {generated_id} with sequence numbers: {sequence_numbers}")
 
         # Determine parent for UserTree
         if user.initiator_id in (0, None):
@@ -101,6 +182,7 @@ def verify_and_transfer_user(user):
 
         # Create UserTree entry
         UserTree.objects.create(**user_tree_data)
+        logger.info(f"Created UserTree entry for user {generated_id}")
 
         # Increment verified pending user metric
         pendinguser_verified.inc()
@@ -108,7 +190,7 @@ def verify_and_transfer_user(user):
         if user.initiator_id in (0, None):
             pendinguser = PendingUser.objects.filter(gmail=user.gmail).first()
             pendinguser.delete()
-        
+            logger.info(f"Deleted PendingUser for {user.gmail} as initiator_id was 0 or None")
 
         # DO NOT delete notifications or PendingUser instance!
 

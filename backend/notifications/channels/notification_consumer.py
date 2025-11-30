@@ -1,4 +1,3 @@
-# consumers.py - Modified NotificationConsumer
 import json
 import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -41,13 +40,27 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         await self.mark_user_online(True)
 
         # Send pending notifications
-        await sync_to_async(handle_user_notifications_on_login)(self.scope.get('user', None))
+        # Resolve the scope user (which may be a channels.auth.UserLazyObject) to
+        # the application's Petitioner model instance before processing. This
+        # prevents passing a UserLazyObject into code that expects a Petitioner
+        # or a numeric id (which caused "Field 'id' expected a number" errors).
+        from users.models import Petitioner
+        try:
+            petitioner = await sync_to_async(Petitioner.objects.get)(id=self.user_id)
+        except Exception as e:
+            logger.error(f"Failed to fetch Petitioner {self.user_id} for notifications: {e}")
+            petitioner = None
+
+        await sync_to_async(handle_user_notifications_on_login)(petitioner)
 
         # Send pending blogs
         await self.send_pending_new_blogs()
         
         # Send modified blogs
         await self.send_pending_modified_blogs()
+        
+        # Remove deleted blogs
+        await self.remove_deleted_blogs()
 
         # Fetch undelivered messages
         await self.fetch_undelivered_messages()
@@ -291,7 +304,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             "user_id": event["user_id"]
         }))
 
-    # ✅ NEW: Add blog_shared handler
     async def blog_shared(self, event):
         """Sends blog share updates to the WebSocket client"""
         print("Sending blog share update to WebSocket client")
@@ -305,8 +317,31 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             "user_id": event["user_id"]
         }))
 
+    async def blog_unshared(self, event):
+        """Sends blog unshare updates to the WebSocket client"""
+        print("Sending blog unshare update to WebSocket client")
+        
+        # Ensure all IDs are strings and consistent
+        blog_id = str(event.get("blog_id"))
+        shared_by_user_id = str(event.get("shared_by_user_id"))
+        original_author_id = str(event.get("original_author_id"))
+        user_id = str(event.get("user_id"))
+        
+        unshare_data = {
+            "type": "blog_unshared",
+            "blog_id": blog_id,
+            "action": "unshared",  # Changed from event["action"] to consistent "unshared"
+            "shared_by_user_id": shared_by_user_id,
+            "original_author_id": original_author_id,
+            "user_id": user_id,
+            "shares_count": event.get("shares_count", 0)
+        }
+        
+        print(f"[WEBSOCKET] Sending blog_unshared: {unshare_data}")
+        await self.send(text_data=json.dumps(unshare_data))
+
     # -----------------------------
-    # ✅ Added Pending Blog Senders
+    # ✅ Pending Blog Senders
     # -----------------------------
     
     async def send_pending_new_blogs(self):
@@ -429,6 +464,35 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
         except Exception as e:
             logger.error(f"Error sending pending modified blogs: {str(e)}")
+
+    async def remove_deleted_blogs(self):
+        """Check for deleted blogs in BlogLoad and send removal commands to the client"""
+        try:
+            blog_load = await sync_to_async(
+                BlogLoad.objects.filter(userid=self.user_id).first
+            )()
+
+            if blog_load and blog_load.deleted_blogs:
+                logger.info(f"Found {len(blog_load.deleted_blogs)} deleted blogs for user {self.user_id}")
+
+                # Make a copy of deleted_blogs to iterate safely while modifying original list
+                deleted_blogs_copy = list(blog_load.deleted_blogs)
+
+                for blog_id in deleted_blogs_copy:
+                    await self.send(text_data=json.dumps({
+                        "type": "blog_deleted",
+                        "blog_id": str(blog_id),
+                        "action": "blog_deleted"
+                    }))
+
+                    logger.info(f"Sent blog deletion for {blog_id} to user {self.user_id}")
+
+                    # Remove the blog_id from deleted_blogs after successfully sending
+                    blog_load.deleted_blogs.remove(blog_id)
+                    await sync_to_async(blog_load.save)()
+
+        except Exception as e:
+            logger.error(f"Error removing deleted blogs: {str(e)}")
 
     @staticmethod
     def recursive_convert_objects_to_str(data):

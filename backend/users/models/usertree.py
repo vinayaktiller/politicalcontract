@@ -11,7 +11,7 @@ class UserTree(models.Model):
         1: ("Worker", "you are a worker, you have initiated 1 member."),
         5: ("Initiator", "With 5 members initiated, you solidify your place as a key initiator and a community builder."),
         10: ("Promoter", "Initiating 10 members demonstrates your ability to promote community expansion and foster engagement."),
-        20: ("Seeder", "Initiating 20 members shows you’re seeding the community with potential and laying the foundation for future growth."),
+        20: ("Seeder", "Initiating 20 members shows you're seeding the community with potential and laying the foundation for future growth."),
         25: ("Cader", "Reaching 25 initiations signifies that you have become a core pillar of the movement, leading with dedication and vision."),
         30: ("Harbinger", "Achieving 30 initiations, you herald new beginnings and embody a vibrant spirit of growth."),
         40: ("Manson", "At 40 initiations, you reinforce your impact, demonstrating masterful skill in building a resilient community."),
@@ -32,7 +32,7 @@ class UserTree(models.Model):
         1500: ("Symbol", "You have become an icon, a figure of inspiration whose influence shapes the very essence of this community."),
     }
 
-    connexions_milestones = {
+    CONNECTION_MILESTONES = {
         5: ("Tailor", "With 5 connexions, your circle is well-fitted to the movement. You shape solidarity with precision and care."),
         10: ("Binder", "10 connexions show your ties are strong and purposeful. You are bound to a circle that walks the path of change."),
         20: ("Embroiderer", "At 20 connexions, your presence adds intricate detail to a collective tapestry. You are among those who carry the spirit of the movement."),
@@ -69,7 +69,7 @@ class UserTree(models.Model):
         ('group', 'Group Event'),
         ('public', 'Public Event'),
         ('private', 'Private Event'),
-        ('online', 'Online Initiation'),  # Added online initiation type
+        ('online', 'Online Initiation'),
     ]
     event_choice = models.CharField(max_length=20, choices=EVENT_CHOICES, default='no_event')
     event_id = models.BigIntegerField(null=True, blank=True)
@@ -122,6 +122,12 @@ class UserTree(models.Model):
             if hasattr(grandparent, 'check_grandchild_milestone'):
                 grandparent.check_grandchild_milestone()
 
+    def increment_connection_count(self):
+        """Increment connection count and check for milestones."""
+        self.connection_count += 1
+        self.save(update_fields=['connection_count'])
+        self.check_connection_milestone()
+
     def check_milestone(self):
         """Check and create initiation milestone if any."""
         if self.childcount in self.INITIATION_MILESTONES:
@@ -133,6 +139,12 @@ class UserTree(models.Model):
         if self.influence in self.INFLUENCE_MILESTONES:
             title, text = self.INFLUENCE_MILESTONES[self.influence]
             self.create_milestone(title, text, 'influence', self.influence)
+
+    def check_connection_milestone(self):
+        """Check and create connection milestone if any."""
+        if self.connection_count in self.CONNECTION_MILESTONES:
+            title, text = self.CONNECTION_MILESTONES[self.connection_count]
+            self.create_milestone(title, text, 'connection', self.connection_count)
 
     def create_milestone(self, title, text, milestone_type=None, level=None):
         from .petitioners import Petitioner
@@ -157,7 +169,11 @@ class UserTree(models.Model):
             milestone_index = levels.index(level)
             gender_offset = 0 if gender in ['M', 'Male'] else 1
             photo_id = milestone_index * 2 + gender_offset + 1
-
+        elif milestone_type == 'connection' and level is not None:
+            levels = sorted(self.CONNECTION_MILESTONES.keys())
+            milestone_index = levels.index(level)
+            gender_offset = 0 if gender in ['M', 'Male'] else 1
+            photo_id = milestone_index * 2 + gender_offset + 1
 
         if not Milestone.objects.filter(user_id=self.id, title=title).exists():
             Milestone.objects.create(
@@ -170,10 +186,10 @@ class UserTree(models.Model):
             )
 
     def create_initiator_circle_relation(self):
-        from .Circle import Circle  # Local import to avoid circular dependency
-        from event.models.groups import Group  # Local import for group handling
+        from .Circle import Circle
+        from event.models.groups import Group
 
-        if self.event_choice == 'online':  # Handle online initiation
+        if self.event_choice == 'online':
             Circle.objects.create(
                 userid=self.id,
                 onlinerelation='online_initiator',
@@ -185,7 +201,6 @@ class UserTree(models.Model):
                 otherperson=self.id
             )
         elif self.event_choice == 'private' and self.event_id:
-            # User-to-parent relationships
             Circle.objects.create(
                 userid=self.id,
                 onlinerelation='agent',
@@ -196,7 +211,6 @@ class UserTree(models.Model):
                 onlinerelation='members',
                 otherperson=self.id
             )
-            # Event-linked relationships
             Circle.objects.create(
                 userid=self.id,
                 onlinerelation='speaker',

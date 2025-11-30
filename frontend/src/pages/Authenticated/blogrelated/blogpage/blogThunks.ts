@@ -7,6 +7,7 @@ import {
   ShareActionResponse,
   CommentActionResponse,
   Comment,
+  BlogsState,
 } from "./blogTypes";
 import {
   setLoading,
@@ -54,16 +55,9 @@ export const fetchBlogs = createAsyncThunk<
   { state: RootState }
 >("blogs/fetchBlogs", async (blogType: string, { dispatch, getState }) => {
   try {
-    const state = getState() as RootState;
-    const currentBlogs = state.blog.blogs[blogType]?.blogs || [];
-    if (currentBlogs.length > 0) return;
-
     dispatch(setLoading({ blogType, loading: true }));
 
-    const response = await api.get("/api/blog/circle-blogs/"); // adjust endpoint if required
-    // Debug: log raw response if needed
-    // console.log("fetchBlogs raw response:", response.data);
-
+    const response = await api.get("/api/blog/circle-blogs/");
     const blogsArray = extractBlogsArray(response.data);
     console.log('fetchBlogs normalized blogsArray:', blogsArray);
 
@@ -96,7 +90,7 @@ export const fetchBlog = createAsyncThunk<
     const blogType = blogData.header?.type || "circle";
     const state = getState() as RootState;
     const currentBlogs = state.blog.blogs[blogType]?.blogs || [];
-    const blogIndex = currentBlogs.findIndex((b) => b.id === blogId);
+    const blogIndex = currentBlogs.findIndex((b: Blog) => b.id === blogId);
 
     if (blogIndex === -1) {
       // append (or you could unshift depending on desired ordering)
@@ -128,7 +122,7 @@ export const fetchComments = createAsyncThunk<
     const state = getState() as RootState;
     let blogType = "";
     Object.entries(state.blog.blogs).forEach(([type, blogState]) => {
-      if (blogState?.blogs?.find((b) => b.id === blogId)) {
+      if (blogState?.blogs?.find((b: Blog) => b.id === blogId)) {
         blogType = type;
       }
     });
@@ -159,7 +153,7 @@ export const likeBlog = createAsyncThunk<
 
     const state = getState() as RootState;
     const currentBlog =
-      state.blog.blogs[blogType]?.blogs.find((blog) => blog.id === blogId) || null;
+      state.blog.blogs[blogType]?.blogs.find((blog: Blog) => blog.id === blogId) || null;
 
     if (currentBlog) {
       const added = response.data?.action === "added";
@@ -197,7 +191,7 @@ export const shareBlog = createAsyncThunk<
 
     const state = getState() as RootState;
     const currentBlog =
-      state.blog.blogs[blogType]?.blogs.find((blog) => blog.id === blogId) || null;
+      state.blog.blogs[blogType]?.blogs.find((blog: Blog) => blog.id === blogId) || null;
 
     if (currentBlog) {
       const added = response.data?.action === "added";
@@ -298,7 +292,7 @@ export const likeComment = createAsyncThunk<
       const response = await api.post<LikeActionResponse>(`/api/blog/comments/${commentId}/like/`);
 
       const state = getState() as RootState;
-      const currentBlog = state.blog.blogs[blogType]?.blogs.find((b) => b.id === blogId);
+      const currentBlog = state.blog.blogs[blogType]?.blogs.find((b: Blog) => b.id === blogId);
 
       if (!currentBlog) return;
 
@@ -335,4 +329,4 @@ export const likeComment = createAsyncThunk<
       console.error("Error liking comment:", err);
     }
   }
-);
+);  

@@ -7,6 +7,7 @@ class BlogLoad(models.Model):
     loaded_blogs = ArrayField(models.UUIDField(), blank=True, default=list)
     modified_blogs = ArrayField(models.UUIDField(), blank=True, default=list)
     new_blogs = ArrayField(models.UUIDField(), blank=True, default=list)
+    deleted_blogs = ArrayField(models.UUIDField(), blank=True, default=list)
     outdated=models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 

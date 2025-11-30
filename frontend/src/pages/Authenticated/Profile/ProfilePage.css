@@ -30,7 +30,7 @@
   margin-bottom: 1.5rem;
 }
 
-.author-photo {
+.profile-author-photo {
   width: 160px;
   height: 160px;
   border-radius: 50%;
@@ -39,7 +39,7 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.author-photo-placeholder {
+.profile-author-photo-placeholder {
   width: 160px;
   height: 160px;
   border-radius: 50%;

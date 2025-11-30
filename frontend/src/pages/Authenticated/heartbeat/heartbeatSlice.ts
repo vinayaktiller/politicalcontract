@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import api from '../../../api';
-import { format, isToday } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 
 interface ActivityHistoryItem {
   date: string;
@@ -17,6 +17,8 @@ interface HeartbeatState {
   activityHistory: ActivityHistoryItem[];
   historyStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   historyError: string | null;
+  // ✅ NEW: Track when data was last fetched
+  lastFetched: string | null;
 }
 
 export const initialState: HeartbeatState = {
@@ -29,6 +31,7 @@ export const initialState: HeartbeatState = {
   activityHistory: [],
   historyStatus: 'idle',
   historyError: null,
+  lastFetched: null,
 };
 
 interface CheckUserActivityResponse {
@@ -37,13 +40,36 @@ interface CheckUserActivityResponse {
   streak_count: number;
 }
 
+// ✅ NEW: Helper function to check if data is stale
+const shouldRefetchData = (lastFetched: string | null): boolean => {
+  if (!lastFetched) return true;
+  
+  const lastFetchedDate = new Date(lastFetched);
+  const now = new Date();
+  
+  // Refetch if:
+  // 1. It's a new day (after midnight)
+  // 2. Data was fetched more than 1 hour ago (safety net)
+  // 3. Data was never fetched before
+  return !isToday(lastFetchedDate) || 
+         (now.getTime() - lastFetchedDate.getTime()) > 60 * 60 * 1000; // 1 hour
+};
+
 export const checkUserActivity = createAsyncThunk<
   CheckUserActivityResponse,
-  number
+  number,
+  { state: { heartbeat: HeartbeatState } }
 >(
   'heartbeat/checkActivity',
-  async (userId: number, { rejectWithValue }) => {
+  async (userId: number, { getState, rejectWithValue }) => {
     try {
+      const state = getState().heartbeat;
+      
+      // ✅ Check if we need to refetch or can use cached data
+      if (!shouldRefetchData(state.lastFetched)) {
+        throw new Error('CACHE_VALID'); // Special signal to use cached data
+      }
+      
       const today = format(new Date(), 'yyyy-MM-dd');
       const response = await api.get(
         `/api/activity_reports/heartbeat/check-activity/`,
@@ -51,7 +77,12 @@ export const checkUserActivity = createAsyncThunk<
       );
       return response.data as CheckUserActivityResponse;
     } catch (err: any) {
-      // Ensure error message is a string
+      // If it's our cache valid signal, re-throw it so we can handle in extraReducers
+      if (err.message === 'CACHE_VALID') {
+        throw new Error('CACHE_VALID');
+      }
+      
+      // Regular error handling
       const message = err.response?.data
         ? typeof err.response.data === 'string'
           ? err.response.data
@@ -64,11 +95,19 @@ export const checkUserActivity = createAsyncThunk<
 
 export const fetchActivityHistory = createAsyncThunk<
   ActivityHistoryItem[],
-  number
+  number,
+  { state: { heartbeat: HeartbeatState } }
 >(
   'heartbeat/fetchActivityHistory',
-  async (userId: number, { rejectWithValue }) => {
+  async (userId: number, { getState, rejectWithValue }) => {
     try {
+      const state = getState().heartbeat;
+      
+      // ✅ Check if we need to refetch history
+      if (!shouldRefetchData(state.lastFetched)) {
+        throw new Error('CACHE_VALID'); // Special signal to use cached data
+      }
+      
       const response = await api.get(
         `/api/activity_reports/heartbeat/activity-history/`,
         { params: { user_id: userId } }
@@ -76,6 +115,10 @@ export const fetchActivityHistory = createAsyncThunk<
       const data = response.data as { history: ActivityHistoryItem[] };
       return data.history;
     } catch (err: any) {
+      if (err.message === 'CACHE_VALID') {
+        throw new Error('CACHE_VALID');
+      }
+      
       const message = err.response?.data
         ? typeof err.response.data === 'string'
           ? err.response.data
@@ -86,7 +129,11 @@ export const fetchActivityHistory = createAsyncThunk<
   }
 );
 
-export const markUserActive = createAsyncThunk(
+export const markUserActive = createAsyncThunk<
+  string,
+  number,
+  { state: { heartbeat: HeartbeatState } }
+>(
   'heartbeat/markActive',
   async (userId: number, { rejectWithValue, dispatch }) => {
     try {
@@ -96,7 +143,7 @@ export const markUserActive = createAsyncThunk(
         date: today,
       });
       
-      // Refetch updated status after marking active
+      // Always refetch after marking active
       await dispatch(checkUserActivity(userId));
       await dispatch(fetchActivityHistory(userId));
       return today;
@@ -130,9 +177,12 @@ const heartbeatSlice = createSlice({
         activityHistory: state.activityHistory,
       };
     },
-    // ✅ NEW: Clear all heartbeat data explicitly
     clearAllHeartbeatData: (state) => {
       return initialState;
+    },
+    // ✅ NEW: Manually invalidate cache to force refetch
+    invalidateCache: (state) => {
+      state.lastFetched = null;
     },
   },
   extraReducers: (builder) => {
@@ -156,6 +206,7 @@ const heartbeatSlice = createSlice({
           state.status = 'succeeded';
           state.streak = streak_count;
           state.lastUpdated = format(new Date(), 'yyyy-MM-dd');
+          state.lastFetched = new Date().toISOString(); // ✅ Update fetch timestamp
           state.error = null;
           
           if (is_active_today) {
@@ -173,8 +224,16 @@ const heartbeatSlice = createSlice({
         }
       )
       .addCase(checkUserActivity.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload as string;
+        // ✅ Handle cache valid case - don't show error, keep existing data
+        if (action.error.message === 'CACHE_VALID') {
+          state.status = 'succeeded';
+          state.error = null;
+          // Keep existing data, just update the fetch timestamp
+          state.lastFetched = new Date().toISOString();
+        } else {
+          state.status = 'failed';
+          state.error = action.payload as string;
+        }
       })
       .addCase(fetchActivityHistory.pending, (state) => {
         state.historyStatus = 'loading';
@@ -184,10 +243,18 @@ const heartbeatSlice = createSlice({
         state.historyStatus = 'succeeded';
         state.activityHistory = action.payload;
         state.historyError = null;
+        state.lastFetched = new Date().toISOString(); // ✅ Update fetch timestamp
       })
       .addCase(fetchActivityHistory.rejected, (state, action) => {
-        state.historyStatus = 'failed';
-        state.historyError = action.payload as string;
+        // ✅ Handle cache valid case
+        if (action.error.message === 'CACHE_VALID') {
+          state.historyStatus = 'succeeded';
+          state.historyError = null;
+          state.lastFetched = new Date().toISOString();
+        } else {
+          state.historyStatus = 'failed';
+          state.historyError = action.payload as string;
+        }
       })
       .addCase(markUserActive.pending, (state) => {
         state.status = 'loading';
@@ -196,6 +263,7 @@ const heartbeatSlice = createSlice({
       .addCase(markUserActive.fulfilled, (state, action) => {
         state.lastActiveDate = action.payload;
         state.lastUpdated = format(new Date(), 'yyyy-MM-dd');
+        state.lastFetched = new Date().toISOString(); // ✅ Update fetch timestamp
         state.error = null;
       })
       .addCase(markUserActive.rejected, (state, action) => {
@@ -209,6 +277,7 @@ export const {
   resetState, 
   invalidateIfStale, 
   resetForNewDay,
-  clearAllHeartbeatData // ✅ Export the new action
+  clearAllHeartbeatData,
+  invalidateCache // ✅ Export the new action
 } = heartbeatSlice.actions;
 export default heartbeatSlice.reducer;

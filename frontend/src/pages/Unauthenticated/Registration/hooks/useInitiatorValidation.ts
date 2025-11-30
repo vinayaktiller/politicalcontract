@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiUrl } from '../../config'; // Adjust import path as needed
 
 interface InitiatorDetails {
   profilepic: string | null;
@@ -25,7 +26,7 @@ export function useInitiatorValidation() {
     }
 
     try {
-      const response = await fetch(`https://pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net/api/pendingusers/pending-user/validate-initiator/`, {
+      const response = await fetch(getApiUrl('/api/pendingusers/pending-user/validate-initiator/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initiator_id: id, email }),

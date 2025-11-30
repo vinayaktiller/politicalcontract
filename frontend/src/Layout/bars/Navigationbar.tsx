@@ -12,6 +12,7 @@ interface NavigationbarProps {
 const Navigationbar: React.FC<NavigationbarProps> = ({ toggleNav }) => {
   const dispatch = useDispatch();
   const [userId, setUserId] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     const id = localStorage.getItem("user_id");
@@ -20,7 +21,16 @@ const Navigationbar: React.FC<NavigationbarProps> = ({ toggleNav }) => {
     }
   }, []);
 
-  const handlelLogout = (): void => {
+  const handleLogoutConfirm = (): void => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleLogoutCancel = (): void => {
+    setShowLogoutConfirm(false);
+  };
+
+  const handleLogoutProceed = (): void => {
+    setShowLogoutConfirm(false);
     handleLogout();
   };
 
@@ -32,7 +42,7 @@ const Navigationbar: React.FC<NavigationbarProps> = ({ toggleNav }) => {
     <div className='navbar'>
       <div className='navbar-top'>
         <Link to={`/breakdown-id`} onClick={handleNavClick}>MY ID</Link>
-        <Link to={'/heartbeat/'} onClick={handleNavClick}>Home</Link>
+        <Link to={'/app'} onClick={handleNavClick}>Home</Link>
         
         <Link to={`/timeline/1`} onClick={handleNavClick}>Timeline</Link>
         
@@ -56,8 +66,26 @@ const Navigationbar: React.FC<NavigationbarProps> = ({ toggleNav }) => {
         
       </div>
       <div className='navbar-bottom'>
-        <button onClick={handlelLogout}>Logout</button>
+        <button onClick={handleLogoutConfirm}>Logout</button>
       </div>
+
+      {/* Custom Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Confirm Logout</h3>
+            <p>Are you sure you want to log out?</p>
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={handleLogoutCancel}>
+                Cancel
+              </button>
+              <button className="logout-btn" onClick={handleLogoutProceed}>
+                Yes, Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

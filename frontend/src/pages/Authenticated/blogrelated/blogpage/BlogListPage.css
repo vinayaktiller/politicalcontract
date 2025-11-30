@@ -38,12 +38,12 @@
   max-width: 800px;
 }
 
-/* Fixed Blog Creator Button */
+/* Fixed Blog Creator Button - UPDATED Z-INDEX */
 .blog-creator-fixed-btn {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  z-index: 1000;
+  z-index: 90; /* Reduced from 1000 to 90 to stay below navigation/notification bars */
   background-color: #1890ff;
   color: white;
   border: none;

@@ -54,10 +54,15 @@ class BlogInteractionService:
             
             with transaction.atomic():
                 # Check if user already shared this blog
-                if user_id in blog.shares:
+                shared_blog_exists = UserSharedBlog.objects.filter(
+                    userid=user_id, 
+                    shared_blog_id=blog_id
+                ).exists()
+                
+                if shared_blog_exists:
                     # Remove share
-                    blog.shares.remove(user_id)
-                    action = 'removed'
+                    if user_id in blog.shares:
+                        blog.shares.remove(user_id)
                     
                     # Remove from UserSharedBlog
                     UserSharedBlog.objects.filter(
@@ -65,13 +70,18 @@ class BlogInteractionService:
                         shared_blog_id=blog_id
                     ).delete()
                     
+                    action = 'removed'
+                    
+                    # Save blog first to get updated shares count
+                    blog.save()
+                    
                     # Distribute unshare
                     self.distribution_service.distribute_blog_unshare(blog, user_id)
                     
                 else:
                     # Add share
-                    blog.shares.append(user_id)
-                    action = 'added'
+                    if user_id not in blog.shares:
+                        blog.shares.append(user_id)
                     
                     # Create UserSharedBlog record
                     UserSharedBlog.objects.create(
@@ -80,19 +90,25 @@ class BlogInteractionService:
                         original_author_id=blog.userid
                     )
                     
+                    action = 'added'
+                    
+                    # Save blog first to get updated shares count
+                    blog.save()
+                    
                     # Distribute share
                     self.distribution_service.distribute_blog_share(blog, user_id)
-                
-                blog.save()
                 
                 return {
                     'status': 'success',
                     'action': action,
-                    'shares_count': len(blog.shares)
+                    'shares_count': len(blog.shares) if blog.shares else 0
                 }
                 
         except BaseBlogModel.DoesNotExist:
             return {'error': 'Blog not found'}
+        except Exception as e:
+            print(f"[BLOG INTERACTION] Error handling share: {str(e)}")
+            return {'error': 'Failed to process share'}
     
     def handle_comment(self, blog_id, text):
         """Handle new comment creation"""

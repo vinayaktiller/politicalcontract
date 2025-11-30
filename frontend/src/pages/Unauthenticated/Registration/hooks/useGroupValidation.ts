@@ -1,5 +1,6 @@
 // src/hooks/useGroupValidation.ts
 import { useState } from 'react';
+import { getApiUrl } from '../../config'; // Adjust import path as needed
 
 interface GroupDetails {
   id: number;
@@ -25,7 +26,7 @@ export function useGroupValidation() {
     setError('');
     
     try {
-      const response = await fetch(`https://pfs-be-01-buf0fwgnfgbechdu.centralus-01.azurewebsites.net/api/event/validate/`, {
+      const response = await fetch(getApiUrl('/api/event/validate/'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ group_id: id, email }),

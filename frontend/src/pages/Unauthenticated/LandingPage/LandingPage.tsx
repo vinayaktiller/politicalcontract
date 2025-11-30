@@ -84,7 +84,7 @@ const LandingPage: React.FC = () => {
         
         // Navigate to heartbeat after successful authentication
         console.log("Landing auth successful, navigating to heartbeat");
-        navigate("/heartbeat");
+        navigate("/app");
         
       } else if (user_type === "pendinguser") {
         localStorage.setItem("user_type", user_type);

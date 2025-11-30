@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from "../../../store";
 import { fetchUserMilestones, invalidateMilestoneCache } from './milestonesSlice';
+import { config } from '../../Unauthenticated/config';
 import './MilestonePage.css';
 
 const initialState = {
@@ -33,6 +34,9 @@ const MilestonePage: React.FC = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
+
+  // Get frontend base URL from config
+  const FRONTEND_BASE_URL = config.FRONTEND_BASE_URL;
 
   useEffect(() => {
     if (location.state?.fromCelebration) {
@@ -265,7 +269,7 @@ const MilestonePage: React.FC = () => {
       ) : viewMode === 'detail' ? (
         <div className="milestone-grid">
           {sortedMilestones.map(milestone => {
-            const imgUrl = `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${milestone.type}/${milestone.photo_id}.jpg`;
+            const imgUrl = `${FRONTEND_BASE_URL}/${milestone.type}/${milestone.photo_id}.jpg`;
             const badgeClass = `milestone-badge milestone-badge-${milestone.type}`;
             const isHighlighted = highlightedId === milestone.id;
             
@@ -300,7 +304,7 @@ const MilestonePage: React.FC = () => {
                     alt={milestone.title}
                     className="milestone-image"
                     onError={e => {
-                      (e.target as HTMLImageElement).src = `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/initiation/1.jpg`;
+                      (e.target as HTMLImageElement).src = `${FRONTEND_BASE_URL}/initiation/1.jpg`;
                     }}
                   />
                 </div>
@@ -325,7 +329,7 @@ const MilestonePage: React.FC = () => {
       ) : (
         <div className="gallery-grid">
           {filteredMilestones.map(milestone => {
-            const imgUrl = `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${milestone.type}/${milestone.photo_id}.jpg`;
+            const imgUrl = `${FRONTEND_BASE_URL}/${milestone.type}/${milestone.photo_id}.jpg`;
             return (
               <div key={milestone.id} className="gallery-item">
                 <div className="gallery-image-container">
@@ -334,7 +338,7 @@ const MilestonePage: React.FC = () => {
                     alt={milestone.title}
                     className="gallery-image"
                     onError={e => {
-                      (e.target as HTMLImageElement).src = `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/initiation/1.jpg`;
+                      (e.target as HTMLImageElement).src = `${FRONTEND_BASE_URL}/initiation/1.jpg`;
                     }}
                   />
                 </div>

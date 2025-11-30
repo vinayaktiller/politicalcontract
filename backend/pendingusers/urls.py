@@ -8,6 +8,7 @@ from .no_initiator.phone_number_views import PhoneNumberAPIView
 from .dashboard_for_no_intitators.views import PendingUserNoInitiatorListView, ClaimPendingUser, UnclaimPendingUser,  UpdatePendingUserNotes, MarkAsSpam
 from .dashboard_for_no_intitators.VerifyPendingUser.views import VerifyPendingUser
 from .dashboard_for_no_intitators.VerifyPendingUser.views import RejectPendingUser
+from .deletions.normalpendinguser.views import delete_pending_user_by_email
 # from .dashboard_for_no_intitators.VerifyPendingUser.views import AcceptRejectionCleanup
 
 urlpatterns = [
@@ -22,5 +23,7 @@ urlpatterns = [
     path('admin/pending-users/<int:user_id>/notes/', UpdatePendingUserNotes.as_view(), name='update-pending-user-notes'),
     path('admin/pending-users/<int:user_id>/mark-spam/', MarkAsSpam.as_view(), name='mark-pending-user-spam'),
     path('admin/pending-users/<int:user_id>/reject/', RejectPendingUser.as_view(), name='reject-pending-user'),
+    #
+    path('pending-users/delete/', delete_pending_user_by_email, name='delete-pending-user-by-email'),  # Changed URL pattern
     # path('admin/pending-users/<int:user_id>/cleanup-rejection/', AcceptRejectionCleanup.as_view(), name='cleanup-rejection'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

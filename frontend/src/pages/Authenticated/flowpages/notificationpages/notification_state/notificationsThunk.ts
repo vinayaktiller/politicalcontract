@@ -1,4 +1,4 @@
-// notificationsThunk.ts (REFINED - ORIGINAL FEATURES ONLY)
+// notificationsThunk.ts (FIXED)
 import { Dispatch } from '@reduxjs/toolkit';
 import { AppDispatch, RootState } from '../../../../../store';
 import {
@@ -16,9 +16,11 @@ import {
   handleWebSocketMessage 
 } from './handlers/handlerRegistry';
 
-// WebSocket connection management (ORIGINAL CONSTANTS)
+// WebSocket connection management
 const RECONNECT_BASE_DELAY = 1000;
+const MAX_RECONNECT_ATTEMPTS = 5;
 let reconnectAttempts = 0;
+let currentReconnectAttempts = 0;
 let reconnectTimeoutId: NodeJS.Timeout | null = null;
 
 const getReconnectDelay = () => {
@@ -26,7 +28,7 @@ const getReconnectDelay = () => {
   return Math.min(delay, 30000);
 };
 
-// Cleanup function (IMPROVED but same purpose)
+// Cleanup function
 const cleanupWebSocket = (socket: WebSocket | null) => {
   if (socket) {
     socket.onopen = null;
@@ -36,7 +38,7 @@ const cleanupWebSocket = (socket: WebSocket | null) => {
   }
 };
 
-// Milestone notification handler (EXACT SAME LOGIC)
+// Milestone notification handler
 const handleMilestoneNotification = (
   data: any,
   dispatch: Dispatch,
@@ -68,18 +70,18 @@ const handleMilestoneNotification = (
   }
 };
 
-// Main WebSocket connection thunk (ORIGINAL STRUCTURE WITH BUG FIXES)
+// Main WebSocket connection thunk (FIXED MESSAGE HANDLING)
 export const connectWebSocket =
   (userId: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
     const { notifications } = getState();
 
-    // Clear any existing reconnection timeout (BUG FIX)
+    // Clear any existing reconnection timeout
     if (reconnectTimeoutId) {
       clearTimeout(reconnectTimeoutId);
       reconnectTimeoutId = null;
     }
 
-    // Avoid duplicate connections (ORIGINAL LOGIC)
+    // Avoid duplicate connections
     if (notifications.socket instanceof WebSocket) {
       const socket = notifications.socket;
       if (socket.readyState === WebSocket.CONNECTING) {
@@ -95,7 +97,7 @@ export const connectWebSocket =
       const authToken = localStorage.getItem('access_token');
       console.log('WebSocket connecting...');
       
-      // Use centralized WebSocket URL configuration (ORIGINAL)
+      // Use centralized WebSocket URL configuration
       const wsUrl = getWsUrl('/ws/notifications/', userId);
       const socket = new WebSocket(`${wsUrl}/?token=${authToken}`);
 
@@ -103,10 +105,11 @@ export const connectWebSocket =
       const handlerRegistry = createHandlerRegistry();
 
       socket.onopen = () => {
+        currentReconnectAttempts = 0;
         reconnectAttempts = 0;
         dispatch(setConnected(true));
 
-        // Fetch milestones on connect if idle (ORIGINAL)
+        // Fetch milestones on connect if idle
         const storedUserId = localStorage.getItem('user_id');
         if (storedUserId) {
           const uid = parseInt(storedUserId, 10);
@@ -117,7 +120,7 @@ export const connectWebSocket =
           }
         }
 
-        // ORIGINAL: Notify server that user is online
+        // Notify server that user is online
         socket.send(JSON.stringify({
           category: 'chat_system',
           action: 'user_online',
@@ -129,66 +132,84 @@ export const connectWebSocket =
           const data = JSON.parse(event.data);
           console.log('WebSocket message received:', data);
 
-          // === Blog Creation Handling (ORIGINAL) ===
+          // === Blog Unshare Handling ===
+          if (data.type === "blog_unshared") {
+            console.log('Blog unshare received:', data);
+            const fixedData = {
+              ...data,
+              blog_id: data.blog_id,
+              action: data.action || 'unshared',
+              shared_by_user_id: data.shared_by_user_id,
+              original_author_id: data.original_author_id,
+              user_id: data.user_id,
+              shares_count: data.shares_count || 0
+            };
+            handleWebSocketMessage(fixedData, dispatch, getState, handlerRegistry);
+            return;
+          }
+
+          // === Blog Creation Handling ===
           if (data.type === "blog_created") {
             console.log('Blog creation received:', data);
-            // This will now be handled by the handler registry
             handleWebSocketMessage(data, dispatch, getState, handlerRegistry);
             return;
           }
 
-          // === Blog Share Handling (ORIGINAL) ===
+          // === Blog Share Handling ===
           if (data.type === "blog_shared") {
             console.log('Blog share received:', data);
             handleWebSocketMessage(data, dispatch, getState, handlerRegistry);
             return;
           }
 
-          // === Blog Unshare Handling (ORIGINAL) ===
-          if (data.type === "blog_unshared") {
-            console.log('Blog unshare received:', data);
-            handleWebSocketMessage(data, dispatch, getState, handlerRegistry);
-            return;
-          }
-
-          // === Blog Update Handling (ORIGINAL) ===
+          // === Blog Update Handling (for likes/shares) ===
           if (data.type === 'blog_update') {
+            console.log('Blog update received:', data);
             handleWebSocketMessage(data, dispatch, getState, handlerRegistry);
             return;
           }
 
-          // === Blog Modification Handling (ORIGINAL) ===
+          // === Blog Modification Handling (FIXED - This was the main issue) ===
           if (data.type === 'blog_modified') {
-            handleWebSocketMessage(data, dispatch, getState, handlerRegistry);
+            console.log('Blog modified received:', data);
+            // Ensure the data structure is correct for the handler
+            const modifiedData = {
+              ...data,
+              blog_id: data.blog_id,
+              blog: data.blog,
+              user_id: data.user_id,
+              blog_type: 'circle' // Add blog_type since handler expects it
+            };
+            handleWebSocketMessage(modifiedData, dispatch, getState, handlerRegistry);
             return;
           }
 
-          // === Blog Comment Handling (ORIGINAL) ===
+          // === Blog Comment Handling ===
           if (data.type === 'comment_update') {
             handleWebSocketMessage(data, dispatch, getState, handlerRegistry);
             return;
           }
 
-          // === Blog Comment Like Handling (ORIGINAL) ===
+          // === Blog Comment Like Handling ===
           if (data.type === 'comment_like_update') {
             handleWebSocketMessage(data, dispatch, getState, handlerRegistry);
             return;
           }
 
-          // === Reply Update Handling (ORIGINAL) ===
+          // === Reply Update Handling ===
           if (data.type === 'reply_update') {
             handleWebSocketMessage(data, dispatch, getState, handlerRegistry);
             return;
           }
 
-          // === Milestone Notification Handling (ORIGINAL) ===
+          // === Milestone Notification Handling ===
           if (data?.notification?.notification_type === 'Milestone_Notification') {
             console.log('Milestone Notification received:', data.notification);
             handleMilestoneNotification(data, dispatch, socket);
             return;
           }
 
-          // === Chat System and Other Notification Messages (ORIGINAL) ===
+          // === Chat System and Other Notification Messages ===
           if (data?.type === 'notification_message' && data?.category === 'chat_system') {
             handleWebSocketMessage(data, dispatch, getState, handlerRegistry);
           } else if (data?.notification) {
@@ -211,14 +232,28 @@ export const connectWebSocket =
 
       socket.onclose = (event: CloseEvent) => {
         dispatch(setConnected(false));
-        if (![4000, 4001].includes(event.code)) {
-          reconnectAttempts++;
-          const delay = getReconnectDelay();
-          reconnectTimeoutId = setTimeout(() => {
-            const storedUserId = localStorage.getItem('user_id');
-            if (storedUserId) dispatch(connectWebSocket(storedUserId) as any);
-          }, delay);
+        
+        // Don't reconnect for normal closures or auth failures
+        if ([1000, 4000, 4001].includes(event.code)) {
+          console.log('WebSocket closed normally, not reconnecting');
+          return;
         }
+        
+        // Limit reconnection attempts
+        if (currentReconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          console.log('Max reconnection attempts reached');
+          return;
+        }
+        
+        currentReconnectAttempts++;
+        const delay = getReconnectDelay();
+        
+        console.log(`WebSocket closed. Reconnecting in ${delay}ms (attempt ${currentReconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+        
+        reconnectTimeoutId = setTimeout(() => {
+          const storedUserId = localStorage.getItem('user_id');
+          if (storedUserId) dispatch(connectWebSocket(storedUserId) as any);
+        }, delay);
       };
 
       socket.onerror = (error: Event) => {
@@ -234,7 +269,7 @@ export const connectWebSocket =
     }
   };
 
-// Disconnect WebSocket thunk (ORIGINAL WITH CLEANUP)
+// Disconnect WebSocket thunk
 export const disconnectWebSocket =
   () => (dispatch: AppDispatch, getState: () => RootState) => {
     // Clear any pending reconnection
@@ -244,6 +279,7 @@ export const disconnectWebSocket =
     }
     
     reconnectAttempts = 0;
+    currentReconnectAttempts = 0;
 
     const { notifications } = getState();
     if (notifications.socket) {
@@ -254,7 +290,7 @@ export const disconnectWebSocket =
     }
   };
 
-// Send Message Over WebSocket Thunk (EXACTLY ORIGINAL)
+// Send Message Over WebSocket Thunk
 export const sendWebSocketMessage =
   (notificationType: string, messagetype: string, data: Record<string, any>) =>
   (dispatch: AppDispatch, getState: () => RootState) => {

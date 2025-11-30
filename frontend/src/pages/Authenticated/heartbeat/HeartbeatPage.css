@@ -407,3 +407,32 @@
     margin: 15px 0 25px;
   }
 }
+
+/* Network Button Styles */
+.heartbeat-network-button-container {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.heartbeat-network-button {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+.heartbeat-network-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+  background: linear-gradient(135deg, #2980b9, #3498db);
+}
+
+.heartbeat-network-button:active {
+  transform: translateY(0);
+}

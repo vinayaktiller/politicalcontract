@@ -240,7 +240,7 @@ const BlogCreator: React.FC = () => {
               clipRule="evenodd"
             />
           </svg>
-          Blog created successfully!
+          Blog created successfully! Redirecting to blogs...
         </div>
       )}
 
@@ -272,6 +272,7 @@ const BlogCreator: React.FC = () => {
             handleChange={handleChange}
             getMaxLength={getMaxLength}
             isSubmitting={isSubmitting}
+            success={success} // Pass success prop to JourneyFields
             {...(formData.type === 'report_insight' ? reportInsightExtraProps : {})}
             {...(formData.type === 'milestone' ? milestoneExtraProps : {})}
             {...(formData.type === 'answering_question' ? questionExtraProps : {})}

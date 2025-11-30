@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BlogFormData, ContentType } from '../types';
+import { config } from '../../../../Unauthenticated/config';
 import './MilestoneFields.css';
 
 // Map content_type to labels and lengths
@@ -38,6 +39,9 @@ const MilestoneFields: React.FC<Props> = ({
   milestone_kind,
   type,
 }) => {
+  // Get frontend base URL from config
+  const FRONTEND_BASE_URL = config.FRONTEND_BASE_URL;
+
   useEffect(() => {
     console.log('🏆 MilestoneFields Extra Props:', { 
       milestone_id, title, text, photo_id, milestone_kind, type 
@@ -149,10 +153,8 @@ const MilestoneFields: React.FC<Props> = ({
 
   const milestoneImgUrl =
     type && photo_id
-      // ? `http://localhost:3000/${type}/${photo_id}.jpg`
-      ? `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${type}/${photo_id}.jpg`
-      // : `http://localhost:3000/initiation/1.jpg`;
-      : `https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/initiation/1.jpg`;
+      ? `${FRONTEND_BASE_URL}/${type}/${photo_id}.jpg`
+      : `${FRONTEND_BASE_URL}/initiation/1.jpg`;
 
   // Footer menu outside-click handling
   useEffect(() => {
@@ -183,9 +185,7 @@ const MilestoneFields: React.FC<Props> = ({
             alt={title || 'Milestone image'}
             className="milestone-header-image"
             onError={(e) => {
-              (e.target as HTMLImageElement).src =
-                // 'http://localhost:3000/initiation/1.jpg';
-                'https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/initiation/1.jpg';
+              (e.target as HTMLImageElement).src = `${FRONTEND_BASE_URL}/initiation/1.jpg`;
             }}
           />
         </div>

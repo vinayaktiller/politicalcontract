@@ -55,6 +55,7 @@ import AnswersPage from "./pages/Authenticated/questionspage/AnswersPage/Answers
 import ReportGenerationPage from "./pages/Authenticated/dashboard/reportgeneration/intitationreports/ReportGenerationPage";
 
 import BlogDetailPage from "./pages/Authenticated/blogrelated/BlogDetailPage/BlogDetailPage";
+import HeartbeatNetworkPage from "./pages/Authenticated/heartbeat/heartbeatNetwork/HeartbeatNetworkPage";
 
 const clientId =
   "719395873709-ese7vg45i9gfndador7q6rmq3untnkcr.apps.googleusercontent.com";
@@ -76,13 +77,14 @@ const AppRoutes: React.FC = () => {
         {/* Protected routes */}
         <Route path="/" element={<ProtectedRoute />}>
           <Route path="/" element={<Mainbar />}>
-            {/* 🔥 Redirect root to /landing instead of /heartbeat */}
-            <Route index element={<Navigate to="/heartbeat" replace />} />
+            {/* ✅ CHANGED: Redirect root to /app instead of /heartbeat */}
+            <Route index element={<Navigate to="/app" replace />} />
 
+            {/* ✅ CHANGED: Heartbeat as main /app route to avoid server conflicts */}
+            <Route path="app" element={<HeartbeatPage />} />
             
-
-            {/* Heartbeat route */}
-            <Route path="heartbeat" element={<HeartbeatPage />} />
+            {/* ✅ KEEP: heartbeat-network as secondary route (less likely to conflict) */}
+            <Route path="heartbeat-network" element={<HeartbeatNetworkPage />} />
 
             {/* Other authenticated routes */}
             <Route path="home" element={<HomePage />} />
@@ -165,6 +167,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/admin/pending-users" element={<AdminPendingUsers />} />
             <Route path="answers/:questionId" element={<AnswersPage />} />
             <Route path="/reports/generate" element={<ReportGenerationPage />} />
+            
             
           </Route>
         </Route>

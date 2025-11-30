@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { login } from "../../../login/login_logoutSlice";
 import PhoneNumberForm from "../phonenumber/PhoneNumberForm";
 import "../Waitingpage/Waitingpage.css";
-import { getWsUrl } from "../config";
+import { getWsUrl, getApiUrl } from "../config";
 
 interface StatusMessage {
   icon: string;
@@ -24,6 +24,8 @@ const WaitingPage: React.FC = () => {
   const [showPhoneForm, setShowPhoneForm] = useState<boolean>(false);
   const [rejectionReason, setRejectionReason] = useState<string>("");
   const [claimedByName, setClaimedByName] = useState<string>("");
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const ws: WebSocketRef = useRef(null);
@@ -228,6 +230,54 @@ const WaitingPage: React.FC = () => {
     }
   }, [user_email, noInitiator, navigate, dispatch]);
 
+  // Handle delete registration request
+  const handleDeleteRegistration = async () => {
+    if (!user_email) {
+      console.error("❌ No user email found");
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(getApiUrl('/api/pendingusers/pending-users/delete/'), {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: user_email }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log("✅ Registration deleted successfully");
+        
+        // Clear local storage
+        localStorage.removeItem("user_email");
+        localStorage.removeItem("notification_id");
+        localStorage.removeItem("user_type");
+        localStorage.removeItem("no_initiator_status");
+        
+        // Close WebSocket connection
+        if (ws.current) {
+          ws.current.close();
+        }
+        
+        // Navigate to login page
+        navigate("/login");
+      } else {
+        console.error("❌ Failed to delete registration:", data.error);
+        alert("Failed to delete registration. Please try again.");
+      }
+    } catch (error) {
+      console.error("❌ Error deleting registration:", error);
+      alert("An error occurred while deleting registration. Please try again.");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirmation(false);
+    }
+  };
+
   // Handle no-initiator verification acceptance
   const handleNoInitiatorVerification = () => {
     if (ws.current?.readyState === WebSocket.OPEN && pendingUserId) {
@@ -306,66 +356,137 @@ const WaitingPage: React.FC = () => {
     return statusMessages[status] || statusMessages.default;
   };
 
+  // Determine if delete button should be visible
+  const shouldShowDeleteButton = () => {
+    // Only show in initiator flow (not no-initiator)
+    if (noInitiator) return false;
+    
+    // Only show when status is pending/waiting
+    const pendingStatuses = [
+      "sent", 
+      "not_viewed", 
+      "reacted_pending", 
+      "initiator_offline",
+      "default"
+    ];
+    
+    return pendingStatuses.includes(status) && !isDeleting;
+  };
+
   const { icon, message } = getStatusMessage();
 
   // Determine which buttons to show
   const showVerifiedButton = status === "verified";
   const showRejectedButton = status === "rejected";
+  const showDeleteButton = shouldShowDeleteButton();
 
   return (
     <div className="waiting-page-container">
-      <div className="waiting-page-message-box">
-        <span className="waiting-page-status-icon">{icon}</span>
-        <p className="waiting-page-text">{message}</p>
+      <div className="waiting-page-content">
+        {/* Main Status Card */}
+        <div className="waiting-page-message-box">
+          <span className="waiting-page-status-icon">{icon}</span>
+          <p className="waiting-page-text">{message}</p>
 
-        {/* Show rejection reason if available */}
-        {status === "rejected" && rejectionReason && (
-          <div className="rejection-reason">
-            <p><strong>Reason:</strong> {rejectionReason}</p>
-          </div>
-        )}
+          {/* Show rejection reason if available */}
+          {status === "rejected" && rejectionReason && (
+            <div className="rejection-reason">
+              <p><strong>Reason:</strong> {rejectionReason}</p>
+            </div>
+          )}
 
-        {/* Show phone form only when not verified/rejected and in no-initiator flow */}
-        {showPhoneForm && noInitiator && status !== "verified" && status !== "rejected" && (
-          <div className="phone-form-section">
-            <PhoneNumberForm 
-              userEmail={user_email} 
-              onPhoneNumberUpdated={handlePhoneNumberUpdated}
-            />
-          </div>
-        )}
+          {/* Show phone form only when not verified/rejected and in no-initiator flow */}
+          {showPhoneForm && noInitiator && status !== "verified" && status !== "rejected" && (
+            <div className="phone-form-section">
+              <PhoneNumberForm 
+                userEmail={user_email} 
+                onPhoneNumberUpdated={handlePhoneNumberUpdated}
+              />
+            </div>
+          )}
 
-        {/* OK Button for verified status in normal initiator workflow */}
-        {showVerifiedButton && !noInitiator && (
-          <button className="waiting-page-button" onClick={handleOkClick}>OK</button>
-        )}
+          {/* OK Button for verified status in normal initiator workflow */}
+          {showVerifiedButton && !noInitiator && (
+            <button className="waiting-page-button" onClick={handleOkClick}>OK</button>
+          )}
 
-        {/* OK Button for verified status in noInitiator workflow */}
-        {showVerifiedButton && noInitiator && (
-          <button className="waiting-page-button" onClick={handleNoInitiatorVerification}>OK</button>
-        )}
+          {/* OK Button for verified status in noInitiator workflow */}
+          {showVerifiedButton && noInitiator && (
+            <button className="waiting-page-button" onClick={handleNoInitiatorVerification}>OK</button>
+          )}
 
-        {/* Rejection button for no-initiator users */}
-        {showRejectedButton && noInitiator && (
-          <button className="waiting-page-button" onClick={handleNoInitiatorRejection}>
-            Accept Rejection
-          </button>
-        )}
+          {/* Rejection button for no-initiator users */}
+          {showRejectedButton && noInitiator && (
+            <button className="waiting-page-button" onClick={handleNoInitiatorRejection}>
+              Accept Rejection
+            </button>
+          )}
 
-        {/* Rejection button for regular users */}
-        {showRejectedButton && !noInitiator && (
-          <button className="waiting-page-button" onClick={handleAcceptRejection}>
-            Accept Rejection
-          </button>
-        )}
+          {/* Rejection button for regular users */}
+          {showRejectedButton && !noInitiator && (
+            <button className="waiting-page-button" onClick={handleAcceptRejection}>
+              Accept Rejection
+            </button>
+          )}
 
-        {/* Show loading state while connecting */}
-        {!status && (
-          <div className="loading-state">
-            <p>Connecting...</p>
+          {/* Show loading state while connecting */}
+          {!status && (
+            <div className="loading-state">
+              <p>Connecting...</p>
+            </div>
+          )}
+        </div>
+
+        {/* Delete Registration Section - Fixed at bottom */}
+        {showDeleteButton && (
+          <div className="delete-registration-section">
+            <div className="delete-info-text">
+              <h3>Having issues with your registration?</h3>
+              <p>
+                If your initiator didn't receive your registration notification, 
+                or if there's any other issue with the initiation process, 
+                you can delete your current registration and reapply.
+              </p>
+            </div>
+            <button 
+              className="delete-registration-button" 
+              onClick={() => setShowDeleteConfirmation(true)}
+              disabled={isDeleting}
+            >
+              Delete Registration Request
+            </button>
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Popup */}
+      {showDeleteConfirmation && (
+        <div className="confirmation-overlay">
+          <div className="confirmation-popup">
+            <h3>Confirm Deletion</h3>
+            <p>Are you sure you want to delete your registration request?</p>
+            <p className="warning-text">
+              This action cannot be undone. You will need to register again.
+            </p>
+            <div className="confirmation-buttons">
+              <button 
+                className="confirm-button" 
+                onClick={handleDeleteRegistration}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Yes, Delete"}
+              </button>
+              <button 
+                className="cancel-button" 
+                onClick={() => setShowDeleteConfirmation(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

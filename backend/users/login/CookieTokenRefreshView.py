@@ -62,7 +62,7 @@ class CookieTokenRefreshView(APIView):
                 'httponly': True,
                 'secure': secure_flag,
                 'samesite': same_site,
-                'max_age': 60,  # 1 minute (matches your login view)
+                'max_age': 600,  # 10 minute (matches your login view)
                 'path': '/',
             }
             

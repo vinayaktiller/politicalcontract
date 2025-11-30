@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { closeCelebration } from "./celebrationSlice";
 import confetti from "canvas-confetti";
+import { config } from "../../../Unauthenticated/config";
 import "./CelebrationModal.css";
 
 interface CelebrationModalProps {
@@ -18,14 +19,18 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({ data }) => {
   const [isClosing, setIsClosing] = useState(false);
   const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
 
+  // Get frontend base URL from config
+  const FRONTEND_BASE_URL = config.FRONTEND_BASE_URL;
+
   useEffect(() => {
     if (data.photo_url) {
       setImageUrl(data.photo_url);
     } else if (data.type) {
-      // setImageUrl(`http://localhost:3000/${data.type}/${data.photo_id}.jpg`);
-      setImageUrl(`https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${data.type}/${data.photo_id}.jpg`);
+      // Use centralized frontend URL from config
+      setImageUrl(`${FRONTEND_BASE_URL}/${data.type}/${data.photo_id}.jpg`);
     } else {
-      setImageUrl("http://localhost:3000/initiation/1.jpg");
+      // Use centralized fallback image
+      setImageUrl(`${FRONTEND_BASE_URL}/initiation/1.jpg`);
     }
 
     const fireConfetti = () => {
@@ -134,10 +139,11 @@ const CelebrationModal: React.FC<CelebrationModalProps> = ({ data }) => {
         canvasRef.current.width = canvasRef.current.width;
       }
     };
-  }, [dispatch, navigate, data, imageUrl]);
+  }, [dispatch, navigate, data, imageUrl, FRONTEND_BASE_URL]);
 
   const handleImageError = () => {
-    setImageUrl("http://localhost:3000/initiation/1.jpg");
+    // Use centralized fallback image
+    setImageUrl(`${FRONTEND_BASE_URL}/initiation/1.jpg`);
   };
 
   return (

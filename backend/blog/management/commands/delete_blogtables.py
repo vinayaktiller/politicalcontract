@@ -30,6 +30,7 @@ class Command(BaseCommand):
             'answering_question_blog_micro',
             'answering_question_blog_short_essay',
             'answering_question_blog_article',
+            'user_shared_blog',
         ]
 
         with transaction.atomic():

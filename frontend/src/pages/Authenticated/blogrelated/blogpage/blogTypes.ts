@@ -1,4 +1,3 @@
-
 // blogTypes.ts
 export interface User {
   id: number;
@@ -7,7 +6,6 @@ export interface User {
   relation: string;
 }
 
-// blogTypes.ts
 export interface Comment {
   id: string;
   user: User;
@@ -36,6 +34,7 @@ export interface BlogHeader {
   type: string;
   created_at: string;
   narrative?: string;
+  relation?: string; // Added this field
 }
 
 export interface BlogBody {
@@ -86,11 +85,22 @@ export interface Blog {
   header: BlogHeader;
   body: BlogBody;
   footer: BlogFooter;
-  comments: Comment[]; // Add comments to Blog interface
+  comments: Comment[];
+  
+  // Add these missing properties that are used in your components
+  is_shared?: boolean;
+  shared_by_user_id?: string;
+  original_author_id?: string;
+  created_at?: string;
+  narrative?: string;
+  
+  // Add any other properties that might come from the API
+  type?: string;
+  user?: User; // Sometimes blog might have direct user reference
 }
 
 export interface BlogsState {
-  blogs: Blog[];
+  blogs: Blog[] | any; // Allow any type since your normalizeBlogs handles different shapes
   loading: boolean;
   error: string | null;
 }
@@ -101,6 +111,15 @@ export interface BlogsSliceState {
   };
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
+  needsRefresh: {
+    [key: string]: boolean;
+  };
+  scrollPositions: { // NEW: Add scroll positions to state
+    [key: string]: number;
+  };
+  mainFetchDone: { // NEW: Track if main fetch has been done for each blog type
+    [key: string]: boolean;
+  };
 }
 
 export interface LikeActionResponse {
@@ -116,5 +135,26 @@ export interface CommentActionResponse {
   comment?: Comment;
   comment_id?: string;
   likes_count?: number;
+}
 
+// Add these types for better type safety
+export interface FetchBlogsParams {
+  blogType: string;
+}
+
+export interface LikeBlogParams {
+  blogType: string;
+  blogId: string;
+}
+
+export interface ShareBlogParams {
+  blogType: string;
+  blogId: string;
+}
+
+export interface AddCommentParams {
+  blogType: string;
+  blogId: string;
+  text: string;
+  parentCommentId?: string;
 }

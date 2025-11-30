@@ -6,26 +6,29 @@
 import { Dispatch } from '@reduxjs/toolkit';
 import { AppDispatch, RootState } from '../../../../../../store';
 
-// Import all handlers
+// Blog handlers
 import {
   handleBlogUpload,
   handleBlogShared,
   handleBlogUnshared,
-  handleBlogModified
+  handleBlogModified,
+  handleBlogDeleted,
 } from './blogHandlers';
-
-import {
-  handleCommentUpdateMessage,
-  handleCommentLikeUpdateMessage,
-  handleReplyUpdateMessage
-} from './commentHandlers';
 
 import { handleBlogUpdateMessage } from './blogUpdateHandlers';
 
+// Comment handlers (replace placeholders when you have real ones)
+import {
+  handleCommentUpdateMessage,
+  handleCommentLikeUpdateMessage,
+  handleReplyUpdateMessage,
+} from './commentHandlers';
+
+// Chat / notification handlers
 import {
   handleNotificationMessage,
   handleChatSystemMessage,
-  handleGenericNotification
+  handleGenericNotification,
 } from './chatHandlers';
 
 // -------------------------------
@@ -50,6 +53,7 @@ export const createHandlerRegistry = (): HandlerRegistry => ({
   blog_shared: handleBlogShared,
   blog_unshared: handleBlogUnshared,
   blog_modified: handleBlogModified,
+  blog_deleted: handleBlogDeleted,
   blog_update: handleBlogUpdateMessage,
 
   // Comment-related handlers
@@ -93,6 +97,7 @@ const determineMessageType = (data: any): string => {
   if (data?.type) return data.type;
   if (data?.category === 'chat_system') return 'chat_system';
 
+  // Example of a special-case notification type
   if (data?.notification?.notification_type === 'Milestone_Notification') {
     return 'milestone_notification';
   }

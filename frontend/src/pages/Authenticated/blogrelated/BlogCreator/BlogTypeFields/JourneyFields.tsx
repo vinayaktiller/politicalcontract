@@ -11,6 +11,7 @@ import {
   selectCircleStatus,
 } from '../CircleContacts/circleContactsSlice';
 import ProfileHeader from '../ProfileHeader';
+import { useNavigate } from 'react-router-dom';
 
 type Props = {
   formData: BlogFormData;
@@ -19,6 +20,7 @@ type Props = {
   ) => void;
   getMaxLength: () => number;
   isSubmitting: boolean;
+  success?: boolean; // Add success prop
 };
 
 // Map content_type to labels and lengths
@@ -35,10 +37,12 @@ const JourneyFields: React.FC<Props> = ({
   handleChange,
   getMaxLength,
   isSubmitting,
+  success,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const contacts = useSelector(selectCircleContacts);
   const contactsStatus = useSelector(selectCircleStatus);
+  const navigate = useNavigate();
 
   // UI state
   const [showContactsModal, setShowContactsModal] = useState(false);
@@ -51,6 +55,16 @@ const JourneyFields: React.FC<Props> = ({
   const [pasteCandidateLen, setPasteCandidateLen] = useState<number>(0);
   const [pasteBestPreset, setPasteBestPreset] = useState<string | null>(null);
 
+  // Get current user info immediately
+  const currentUserName = localStorage.getItem('name') || 'User';
+  const currentUserPic = localStorage.getItem('profile_pic') || '';
+  const currentUserId = localStorage.getItem('user_id')
+    ? Number(localStorage.getItem('user_id'))
+    : null;
+
+  // Set default to self journey immediately
+  const [hasSetDefaultJourney, setHasSetDefaultJourney] = useState(false);
+
   // derive selectedSizeKey from formData.content_type (fallback to short_essay)
   const selectedSizeKey = formData.content_type || 'short_essay';
   const selectedSizeLabel = SIZE_MAP[selectedSizeKey]?.label ?? 'Short Essay';
@@ -62,20 +76,29 @@ const JourneyFields: React.FC<Props> = ({
   // textarea ref
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // current user info
-  const currentUserName = localStorage.getItem('name') || 'User';
-  const currentUserPic = localStorage.getItem('profile_pic') || '';
-  const currentUserId = localStorage.getItem('user_id')
-    ? Number(localStorage.getItem('user_id'))
-    : null;
-
-  // Fixed: Proper default journey setup
+  // NEW: Redirect to blogs page after successful submission
   useEffect(() => {
-    // Only set if we have a current user ID and target_user is not set to it
-    if (currentUserId && formData.target_user !== currentUserId) {
-      handleSelfJourney();
+    if (success) {
+      const timer = setTimeout(() => {
+        navigate('/blogs');
+      }, 1500); // Redirect after 1.5 seconds
+      return () => clearTimeout(timer);
     }
-  }, [currentUserId]); // Only run when currentUserId changes
+  }, [success, navigate]);
+
+  // Set default journey immediately on mount - only once
+  useEffect(() => {
+    if (!hasSetDefaultJourney && currentUserId && formData.target_user === undefined) {
+      // Set self journey immediately
+      handleChange({
+        target: {
+          name: 'target_user',
+          value: currentUserId,
+        },
+      } as unknown as React.ChangeEvent<HTMLInputElement>);
+      setHasSetDefaultJourney(true);
+    }
+  }, [currentUserId, formData.target_user, hasSetDefaultJourney, handleChange]);
 
   // fetch contacts
   useEffect(() => {

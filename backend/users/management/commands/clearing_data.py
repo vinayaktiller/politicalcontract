@@ -29,14 +29,31 @@ class Command(BaseCommand):
             ('pendinguser', 'initiationnotification'),
             ('pendinguser', 'archivedpendinguser'),
             ('pendinguser', 'pendinguser'),
+            ('pendinguser', 'noinitiatoruser'),
+            ('pendinguser', 'pendingverificationnotification'),
+            ('pendinguser', 'pendingrejectionnotification'),
+            ('pendinguser', 'noinitiatorverificationhistory'),
+            ('pendinguser', 'rejectedpendinguser'),
+
+
 
             ('userschema', 'connectionnotification'),
             ('userschema', 'petitioner'),
             ('userschema', 'usertree'),
             ('userschema', 'circle'),
+            ('userschema', 'milestone'),
+            ('userschema', 'profilecache'),
+            ('userschema', 'additionalinfo'),
 
             ('event', 'user_group_participation'),
             ('event', 'group'),
+            ('event', 'group_invitation'),
+
+            ('blog_related', 'contribution'),
+            ('blog_related', 'contribution_conflict'),
+
+
+
         ]
 
         geography_tables = [

@@ -12,6 +12,8 @@ import {
 } from "../blogpage/blogThunks";
 import { setReplyingState, setReplyText } from "../blogpage/blogSlice";
 import { AppDispatch, RootState } from "../../../../store";
+import { Blog, Comment } from "../blogpage/blogTypes"; // Import the types
+import { config } from '../../../Unauthenticated/config';
 import "./BlogDetailPage.css";
 
 const BlogDetailPage: React.FC = () => {
@@ -24,11 +26,14 @@ const BlogDetailPage: React.FC = () => {
   const [commentLoading, setCommentLoading] = useState<boolean>(false);
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
 
+  // Get frontend base URL from config
+  const FRONTEND_BASE_URL = config.FRONTEND_BASE_URL;
+
   // Fetch blog and type from Redux state
   const { blog, blogType } = useSelector((state: RootState) => {
     if (!blogId) return { blog: null, blogType: null };
     for (const type of Object.keys(state.blog.blogs)) {
-      const foundBlog = state.blog.blogs[type].blogs.find(b => b.id === blogId);
+      const foundBlog = state.blog.blogs[type].blogs.find((b: Blog) => b.id === blogId);
       if (foundBlog) return { blog: foundBlog, blogType: type };
     }
     return { blog: null, blogType: null };
@@ -102,6 +107,8 @@ const BlogDetailPage: React.FC = () => {
     } finally {
       setCommentLoading(false);
     }
+
+    
   };
 
   const handleUserClick = (userId: number) => {
@@ -173,7 +180,7 @@ const BlogDetailPage: React.FC = () => {
   };
 
   // Recursively render comments/replies
-  const CommentItem = ({ comment, depth = 0 }: { comment: any; depth?: number }) => {
+  const CommentItem = ({ comment, depth = 0 }: { comment: Comment; depth?: number }) => {
     const [localReplyText, setLocalReplyText] = useState("");
     const isReplying = comment.is_replying || false;
     const hasReplies = comment.replies && comment.replies.length > 0;
@@ -270,7 +277,7 @@ const BlogDetailPage: React.FC = () => {
         )}
         {hasReplies && isExpanded && (
           <div className="BlogDetailPage-comment-replies">
-            {comment.replies.map((reply: any) => (
+            {comment.replies.map((reply: Comment) => (
               <CommentItem key={reply.id} comment={reply} depth={depth + 1} />
             ))}
           </div>
@@ -390,13 +397,12 @@ const BlogDetailPage: React.FC = () => {
               {blog.body.body_type_fields.milestone.photo_id && blog.body.body_type_fields.milestone.type && (
                 <div className="BlogDetailPage-milestone-image-container">
                   <img
-                    src={`http://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/${blog.body.body_type_fields.milestone.type}/${blog.body.body_type_fields.milestone.photo_id}.jpg`}
+                    src={`${FRONTEND_BASE_URL}/${blog.body.body_type_fields.milestone.type}/${blog.body.body_type_fields.milestone.photo_id}.jpg`}
                     alt={blog.body.body_type_fields.milestone.title}
                     className="BlogDetailPage-milestone-image"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      // target.src = "http://localhost:3000/initiation/1.jpg";
-                      target.src = "https://pfs-ui-f7bnfbg9agb4cwcu.canadacentral-01.azurewebsites.net/initiation/1.jpg";
+                      target.src = `${FRONTEND_BASE_URL}/initiation/1.jpg`;
                     }}
                   />
                 </div>
@@ -489,7 +495,7 @@ const BlogDetailPage: React.FC = () => {
               {blog.body.body_type_fields?.location && (
                 <p className="BlogDetailPage-failed-location">
                   <strong>📍</strong>{" "}
-                  {blog.body.body_type_fields.location}
+                    {blog.body.body_type_fields.location}
                 </p>
               )}
               {blog.body.body_type_fields?.target_details && (
@@ -557,7 +563,7 @@ const BlogDetailPage: React.FC = () => {
           {blog.comments.length === 0 ? (
             <p className="BlogDetailPage-no-comments">No comments yet.</p>
           ) : (
-            blog.comments.map((comment: any) => (
+            blog.comments.map((comment: Comment) => (
               <CommentItem key={comment.id} comment={comment} />
             ))
           )}

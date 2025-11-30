@@ -54,11 +54,11 @@ const ProfilePage: React.FC = () => {
           <img
             src={user_tree.profilepic}
             alt="Profile"
-            className="author-photo"
+            className="profile-author-photo"
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="author-photo-placeholder">
+          <div className="profile-author-photo-placeholder">
             {lastInitial}
           </div>
         )}

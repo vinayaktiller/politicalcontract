@@ -5,3 +5,5 @@ from .petitioners import CustomUserManager
 from .Circle import Circle
 from .Connectionnotification import ConnectionNotification
 from .milestone import Milestone
+from .ProfileCache import ProfileCache
+from .AdditionalInfo import AdditionalInfo

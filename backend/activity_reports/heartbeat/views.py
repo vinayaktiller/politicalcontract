@@ -5,18 +5,20 @@ from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta, date
 from ..models import UserMonthlyActivity, DailyActivitySummary
-from users.models import Petitioner
+from users.models import Petitioner, AdditionalInfo
 from .serializers import UserStreakStatusSerializer, MarkActiveSerializer, ActivityHistorySerializer
 from django.db import transaction
 from users.login.authentication import CookieJWTAuthentication
 from rest_framework.permissions import IsAuthenticated
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CheckActivityView(APIView):
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     MAX_STREAK_DAYS = 10  # Limit for streak calculation
     
-
     def get(self, request):
         user_id = request.user.id
         date_str = request.query_params.get('date')
@@ -38,6 +40,17 @@ class CheckActivityView(APIView):
 
         try:
             user = Petitioner.objects.get(id=user_id)
+            # Get or create AdditionalInfo if it doesn't exist
+            additional_info, created = AdditionalInfo.objects.get_or_create(
+                user_id=user_id,
+                defaults={
+                    'active_days': 0,
+                    'last_activity_date': None
+                }
+            )
+            if created:
+                logger.info(f"Created AdditionalInfo for user {user_id}")
+                
         except Petitioner.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -84,7 +97,8 @@ class CheckActivityView(APIView):
             'is_active_today': is_active_today,
             'was_active_yesterday': was_active_yesterday,
             'streak_count': streak_count,
-            'today': today
+            'today': today,
+            'total_active_days': additional_info.active_days
         })
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
@@ -102,6 +116,14 @@ class ActivityHistoryView(APIView):
         
         try:
             user = Petitioner.objects.get(id=user_id)
+            # Get or create AdditionalInfo
+            AdditionalInfo.objects.get_or_create(
+                user_id=user_id,
+                defaults={
+                    'active_days': 0,
+                    'last_activity_date': None
+                }
+            )
         except Petitioner.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -150,6 +172,7 @@ class ActivityHistoryView(APIView):
 class MarkActiveView(APIView):
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
+    
     def post(self, request):
         serializer = MarkActiveSerializer(data=request.data)
         if not serializer.is_valid():
@@ -160,6 +183,17 @@ class MarkActiveView(APIView):
         
         try:
             user = Petitioner.objects.get(id=user_id)
+            # Get or create AdditionalInfo if it doesn't exist
+            additional_info, created = AdditionalInfo.objects.get_or_create(
+                user_id=user_id,
+                defaults={
+                    'active_days': 0,
+                    'last_activity_date': None
+                }
+            )
+            if created:
+                logger.info(f"Created AdditionalInfo for user {user_id} during mark-active")
+                
         except Petitioner.DoesNotExist:
             return Response(
                 {'error': 'User not found'},
@@ -188,8 +222,20 @@ class MarkActiveView(APIView):
             if not created and user.id not in daily.active_users:
                 daily.active_users.append(user.id)
                 daily.save()
+            
+            # Update AdditionalInfo active days and check milestones
+            was_updated = additional_info.update_active_days(date_obj)
+            
+            if was_updated:
+                logger.info(f"Successfully updated active days for user {user_id} to {additional_info.active_days}")
+            else:
+                logger.info(f"User {user_id} was already active on {date_obj}")
         
         return Response(
-            {'status': 'User marked active successfully'},
+            {
+                'status': 'User marked active successfully',
+                'total_active_days': additional_info.active_days,
+                'was_updated': was_updated
+            },
             status=status.HTTP_200_OK
         )

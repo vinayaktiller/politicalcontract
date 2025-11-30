@@ -1,5 +1,5 @@
 from django.db import connection
-from blog.models import BaseBlogModel, Comment
+from blog.models import BaseBlogModel, Comment, UserSharedBlog
 from users.models import UserTree, Circle
 
 from ..serializers.blog_serializers import BlogSerializer, CommentSerializer
@@ -99,7 +99,6 @@ class BlogDataBuilder:
             return model_map[content_type].objects.get(id=blog_id)
         except model_map[content_type].DoesNotExist:
             return None
-
 
     def build_comment_hierarchy(self, blog_id, comments_by_parent, user_map):
         """Build comment hierarchy using serializer"""

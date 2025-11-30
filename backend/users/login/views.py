@@ -87,7 +87,7 @@ class LoginWithGoogle(APIView):
             access_token_kwargs = cookie_kwargs.copy()
             access_token_kwargs.update({
                 'value': tokens['access'],
-                'max_age': 60,  # 1 minute
+                'max_age': 600,  # 1 minute
             })
             if cookie_domain:
                 access_token_kwargs['domain'] = cookie_domain

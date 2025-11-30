@@ -21,6 +21,7 @@ class BlogDistributionService:
         Get all users who should receive updates for a blog:
         - Author's circle contacts
         - Author themselves
+        - People who shared the blog (so they get like/share count updates)
         """
         author_id = blog.userid
         
@@ -28,8 +29,11 @@ class BlogDistributionService:
         author_circles = Circle.objects.filter(userid=author_id)
         circle_user_ids = {circle.otherperson for circle in author_circles if circle.otherperson}
         
+        # Include people who shared this blog (they should get updates too)
+        sharer_ids = set(blog.shares) if blog.shares else set()
+        
         # Include author in the audience
-        audience = list(circle_user_ids.union({author_id}))
+        audience = list(circle_user_ids.union({author_id}).union(sharer_ids))
         
         print(f"[BLOG DISTRIBUTION] Audience for blog {blog.id}: {audience}")
         return audience
@@ -40,6 +44,7 @@ class BlogDistributionService:
         - Author's circle contacts
         - Sharer's circle contacts  
         - Both author and sharer
+        - People who already shared the blog
         """
         author_id = blog.userid
         
@@ -51,11 +56,39 @@ class BlogDistributionService:
         sharer_circles = Circle.objects.filter(userid=sharer_id)
         sharer_circle_ids = {circle.otherperson for circle in sharer_circles if circle.otherperson}
         
-        # Combine both circles + author + sharer
-        audience = author_circle_ids.union(sharer_circle_ids).union({author_id, sharer_id})
+        # Get people who already shared this blog
+        existing_sharers = set(blog.shares) if blog.shares else set()
+        
+        # Combine all audiences: both circles + author + sharer + existing sharers
+        audience = author_circle_ids.union(sharer_circle_ids).union({author_id, sharer_id}).union(existing_sharers)
         audience = list(audience)
         
         print(f"[BLOG DISTRIBUTION] Audience for shared blog {blog.id}: {audience}")
+        return audience
+    
+    def get_audience_for_unshare(self, blog, unsharer_id):
+        """
+        Get audience for unshare event - includes everyone who might have seen the share
+        and needs to know it's been removed
+        """
+        author_id = blog.userid
+        
+        # Get author's circle
+        author_circles = Circle.objects.filter(userid=author_id)
+        author_circle_ids = {circle.otherperson for circle in author_circles if circle.otherperson}
+        
+        # Get unsharer's circle (people who saw the share)
+        unsharer_circles = Circle.objects.filter(userid=unsharer_id)
+        unsharer_circle_ids = {circle.otherperson for circle in unsharer_circles if circle.otherperson}
+        
+        # Get people who still share this blog (they need share count updates)
+        remaining_sharers = set(blog.shares) if blog.shares else set()
+        
+        # Combine: both circles + author + unsharer + remaining sharers
+        audience = author_circle_ids.union(unsharer_circle_ids).union({author_id, unsharer_id}).union(remaining_sharers)
+        audience = list(audience)
+        
+        print(f"[BLOG DISTRIBUTION] Audience for unshare blog {blog.id}: {audience}")
         return audience
     
     def prepare_blog_data(self, blog):
@@ -87,6 +120,7 @@ class BlogDistributionService:
         """
         Send WebSocket message to online users
         """
+        sent_count = 0
         for user_id in user_ids:
             try:
                 user_obj = Petitioner.objects.get(id=user_id)
@@ -96,27 +130,36 @@ class BlogDistributionService:
                         message_data
                     )
                     print(f"[BLOG DISTRIBUTION] Sent to online user {user_id}")
+                    sent_count += 1
                 else:
                     print(f"[BLOG DISTRIBUTION] User {user_id} is offline, storing in BlogLoad")
                     
             except Petitioner.DoesNotExist:
                 print(f"[BLOG DISTRIBUTION] User {user_id} does not exist")
                 continue
+        
+        print(f"[BLOG DISTRIBUTION] Successfully sent to {sent_count} online users")
+        return sent_count
     
     def update_blog_load_for_offline_users(self, user_ids, blog_id, list_type='new_blogs'):
         """
         Update BlogLoad for offline users
         """
+        updated_count = 0
         for user_id in user_ids:
             try:
                 user_obj = Petitioner.objects.get(id=user_id)
                 if not user_obj.is_online:
                     self._update_single_blog_load(user_id, blog_id, list_type)
                     print(f"[BLOG DISTRIBUTION] Updated BlogLoad for offline user {user_id}")
+                    updated_count += 1
                     
             except Petitioner.DoesNotExist:
                 print(f"[BLOG DISTRIBUTION] User {user_id} does not exist")
                 continue
+        
+        print(f"[BLOG DISTRIBUTION] Successfully updated BlogLoad for {updated_count} offline users")
+        return updated_count
     
     def _update_single_blog_load(self, user_id, blog_id, list_type):
         """
@@ -129,6 +172,7 @@ class BlogDistributionService:
                     'new_blogs': [],
                     'modified_blogs': [],
                     'loaded_blogs': [],
+                    'deleted_blogs': [],
                     list_type: [blog_id]
                 }
             )
@@ -138,7 +182,8 @@ class BlogDistributionService:
                 if blog_id not in current_list:
                     current_list.append(blog_id)
                     setattr(blog_load, list_type, current_list)
-                    blog_load.outdated = True
+                    # blog_load.outdated = True
+                    
                     blog_load.save()
                     
         except Exception as e:
@@ -171,10 +216,10 @@ class BlogDistributionService:
         }
         
         # Send to online users
-        self.send_to_online_users(audience, message_data)
+        online_sent = self.send_to_online_users(audience, message_data)
         
         # Update BlogLoad for offline users
-        self.update_blog_load_for_offline_users(audience, blog.id, 'new_blogs')
+        offline_updated = self.update_blog_load_for_offline_users(audience, blog.id, 'new_blogs')
         
         # Also send to blog-specific channel for real-time subscribers
         async_to_sync(self.channel_layer.group_send)(
@@ -182,7 +227,8 @@ class BlogDistributionService:
             message_data
         )
         
-        print(f"[BLOG DISTRIBUTION] Successfully distributed blog {blog.id} to {len(audience)} users")
+        print(f"[BLOG DISTRIBUTION] Successfully distributed blog {blog.id} to {len(audience)} users "
+              f"({online_sent} online, {offline_updated} offline)")
     
     def distribute_blog_share(self, blog, sharer_id):
         """
@@ -204,14 +250,15 @@ class BlogDistributionService:
             "blog": blog_data,
             "shared_by_user_id": sharer_id,
             "original_author_id": blog.userid,
-            "user_id": self.request.user.id
+            "user_id": self.request.user.id,
+            "shares_count": len(blog.shares) if blog.shares else 0
         }
         
         # Send to online users
-        self.send_to_online_users(audience, message_data)
+        online_sent = self.send_to_online_users(audience, message_data)
         
         # Update BlogLoad for offline users
-        self.update_blog_load_for_offline_users(audience, blog.id, 'new_blogs')
+        offline_updated = self.update_blog_load_for_offline_users(audience, blog.id, 'new_blogs')
         
         # Send to blog-specific channel
         async_to_sync(self.channel_layer.group_send)(
@@ -219,30 +266,48 @@ class BlogDistributionService:
             message_data
         )
         
-        print(f"[BLOG DISTRIBUTION] Successfully distributed share for blog {blog.id}")
+        print(f"[BLOG DISTRIBUTION] Successfully distributed share for blog {blog.id} to {len(audience)} users "
+              f"({online_sent} online, {offline_updated} offline)")
     
-    def distribute_blog_unshare(self, blog, sharer_id):
+    def distribute_blog_unshare(self, blog, unsharer_id):
         """
         Distribute a blog unshare event
         """
-        print(f"[BLOG DISTRIBUTION] Distributing blog unshare: {blog.id} by user {sharer_id}")
+        print(f"[BLOG DISTRIBUTION] Distributing blog unshare: {blog.id} by user {unsharer_id}")
         
-        audience = self.get_audience_for_shared_blog(blog, sharer_id)
+        # Get audience for unshare - includes everyone who might have seen the share
+        audience = self.get_audience_for_unshare(blog, unsharer_id)
         
         message_data = {
             "type": "blog_unshared",
             "blog_id": str(blog.id), 
             "action": "unshared",
-            "shared_by_user_id": sharer_id,
+            "shared_by_user_id": unsharer_id,
             "original_author_id": blog.userid,
-            "user_id": self.request.user.id
+            "user_id": self.request.user.id,
+            "shares_count": len(blog.shares) if blog.shares else 0
         }
         
         # Send to online users
-        self.send_to_online_users(audience, message_data)
+        online_sent = self.send_to_online_users(audience, message_data)
         
-        # Update BlogLoad for offline users (mark as modified)
-        self.update_blog_load_for_offline_users(audience, blog.id, 'modified_blogs')
+        # For offline users: if they have no other connection to the blog, mark as deleted
+        # Otherwise mark as modified
+        for user_id in audience:
+            try:
+                user_obj = Petitioner.objects.get(id=user_id)
+                if not user_obj.is_online:
+                    # Check if user has any other connection to this blog
+                    should_delete = self._should_delete_blog_for_user(user_id, blog, unsharer_id)
+                    if should_delete:
+                        self._update_single_blog_load(user_id, blog.id, 'deleted_blogs')
+                        print(f"[BLOG DISTRIBUTION] Marked blog {blog.id} as deleted for offline user {user_id}")
+                    else:
+                        self._update_single_blog_load(user_id, blog.id, 'modified_blogs')
+                        print(f"[BLOG DISTRIBUTION] Marked blog {blog.id} as modified for offline user {user_id}")
+                    
+            except Petitioner.DoesNotExist:
+                continue
         
         # Send to blog-specific channel
         async_to_sync(self.channel_layer.group_send)(
@@ -250,7 +315,41 @@ class BlogDistributionService:
             message_data
         )
         
-        print(f"[BLOG DISTRIBUTION] Successfully distributed unshare for blog {blog.id}")
+        print(f"[BLOG DISTRIBUTION] Successfully distributed unshare for blog {blog.id} to {len(audience)} users "
+              f"({online_sent} online)")
+    
+    def _should_delete_blog_for_user(self, user_id, blog, unsharer_id):
+        """
+        Check if a blog should be deleted (not just modified) for a user when unshared.
+        Returns True if user has no other connection to the blog (not in author's circle, 
+        not the author, not sharing it themselves, not connected to other sharers)
+        """
+        author_id = blog.userid
+        
+        # If user is the author, they should keep the blog
+        if user_id == author_id:
+            return False
+            
+        # If user is sharing the blog themselves, they should keep it
+        if blog.shares and user_id in blog.shares:
+            return False
+            
+        # Check if user is in author's circle
+        author_circles = Circle.objects.filter(userid=author_id, otherperson=user_id)
+        if author_circles.exists():
+            return False
+            
+        # Check if user is connected to any other sharers
+        other_sharers = set(blog.shares) if blog.shares else set()
+        other_sharers.discard(unsharer_id)  # Remove the unsharer
+        
+        for sharer_id in other_sharers:
+            sharer_circles = Circle.objects.filter(userid=sharer_id, otherperson=user_id)
+            if sharer_circles.exists():
+                return False
+                
+        # If none of the above conditions are met, user should no longer see this blog
+        return True
     
     def distribute_blog_interaction(self, blog, interaction_type, action, count, user_id):
         """
@@ -270,16 +369,19 @@ class BlogDistributionService:
         }
         
         # Send to online users
-        self.send_to_online_users(audience, message_data)
+        online_sent = self.send_to_online_users(audience, message_data)
         
         # Update BlogLoad for offline users (mark as modified)
-        self.update_blog_load_for_offline_users(audience, blog.id, 'modified_blogs')
+        offline_updated = self.update_blog_load_for_offline_users(audience, blog.id, 'modified_blogs')
         
         # Send to blog-specific channel
         async_to_sync(self.channel_layer.group_send)(
             f"blog_{blog.id}",
             message_data
         )
+        
+        print(f"[BLOG DISTRIBUTION] Successfully distributed {interaction_type} {action} for blog {blog.id} "
+              f"to {len(audience)} users ({online_sent} online, {offline_updated} offline)")
     
     def distribute_comment_update(self, blog, comment_data, action, user_id):
         """
@@ -298,16 +400,19 @@ class BlogDistributionService:
         }
         
         # Send to online users
-        self.send_to_online_users(audience, message_data)
+        online_sent = self.send_to_online_users(audience, message_data)
         
         # Update BlogLoad for offline users
-        self.update_blog_load_for_offline_users(audience, blog.id, 'modified_blogs')
+        offline_updated = self.update_blog_load_for_offline_users(audience, blog.id, 'modified_blogs')
         
         # Send to blog-specific channel
         async_to_sync(self.channel_layer.group_send)(
             f"blog_{blog.id}",
             message_data
         )
+        
+        print(f"[BLOG DISTRIBUTION] Successfully distributed comment {action} for blog {blog.id} "
+              f"to {len(audience)} users ({online_sent} online, {offline_updated} offline)")
     
     def distribute_comment_like_update(self, blog, comment_id, action, count, user_id):
         """
@@ -327,16 +432,19 @@ class BlogDistributionService:
         }
         
         # Send to online users
-        self.send_to_online_users(audience, message_data)
+        online_sent = self.send_to_online_users(audience, message_data)
         
         # Update BlogLoad for offline users
-        self.update_blog_load_for_offline_users(audience, blog.id, 'modified_blogs')
+        offline_updated = self.update_blog_load_for_offline_users(audience, blog.id, 'modified_blogs')
         
         # Send to blog-specific channel
         async_to_sync(self.channel_layer.group_send)(
             f"blog_{blog.id}",
             message_data
         )
+        
+        print(f"[BLOG DISTRIBUTION] Successfully distributed comment like {action} for comment {comment_id} "
+              f"to {len(audience)} users ({online_sent} online, {offline_updated} offline)")
     
     @staticmethod
     def recursive_convert_objects_to_str(data):

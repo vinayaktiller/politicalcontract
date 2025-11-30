@@ -1,66 +1,120 @@
-/* login.css */
-
-/* Base container */
+/* Full page layout */
 .login-page {
-  box-sizing: border-box;
   min-height: 100vh;
-  background-color: #f5f5f5;
-  padding: 10rem 1rem; /* Increase top padding */
-  display: flex;
-  justify-content: center;
-  align-items: flex-start; /* Align slightly higher */
-}
-
-/* Login card styling */
-.login-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  text-align: center;
-  max-width: 400px;
   width: 100%;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(180deg, #f9fbff, #eef3ff);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
 }
 
-/* Heading styling (if you add a heading later) */
-.login-card h1 {
+/* CENTER SECTION */
+.login-content {
+  margin-top: 1rem;
+  max-width: 650px;
+}
+
+/* Welcome text */
+.welcome-text {
   font-size: 1.5rem;
-  margin-bottom: 1.5rem;
   color: #333;
+  margin-bottom: 0.3rem;
+  font-weight: 600;
 }
 
-/* Google Button wrapper for spacing */
-.google-button-wrapper {
+/* Main title */
+.main-title {
+  font-size: 3.2rem;
+  font-weight: 900;
+  margin-bottom: 2.2rem;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #0066ff, #003d99);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* "Sign in with Google account" text */
+.signin-text {
+  font-size: 1.2rem;
+  color: #444;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+/* Google button wrapper */
+.google-wrapper {
+  margin-bottom: 1.5rem;
   display: flex;
   justify-content: center;
 }
 
-/* Add these to your existing login.css */
-
-.login-card h1 {
-  font-size: 1.8rem;
-  margin-bottom: 0.5rem;
-  color: #2c3e50;
+/* Temporary backend button */
+.backend-btn {
+  padding: 10px 16px;
+  background: #f0f1f5;
+  border: 1px solid #cfd4db;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 0.5rem;
 }
 
-.login-card .highlight {
-  color: #0066cc; /* Or any accent color you prefer */
+.backend-btn:hover {
+  background: #e2e6eb;
 }
 
-.subtext {
-  font-size: 1rem;
-  color: #666;
-  margin-bottom: 1.5rem;
+/* FOOTER SECTION */
+.footer-section {
+  padding-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
-/* Button styling */
 
-/* Responsive tweaks */
-@media (min-width: 768px) {
-  .login-page {
-    padding: 10rem 2rem;
+/* Logo styling */
+.footer-logo {
+  width: 400px;
+  height: 400px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.15);
+}
+
+/* Footer tagline */
+.footer-text {
+  font-size: 1.15rem;
+  color: #333;
+  max-width: 90%;
+  font-weight: 600;
+  opacity: 0.95;
+  letter-spacing: 0.3px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 480px) {
+  .main-title {
+    font-size: 1.8rem;
   }
 
-  .login-card {
-    padding: 2.5rem;
+  .welcome-text {
+    font-size: 1.2rem;
+  }
+
+  .signin-text {
+    font-size: 1.1rem;
+  }
+
+  .footer-text {
+    font-size: 1rem;
+  }
+
+  .footer-logo {
+    width: 300px;
+    height: 300px;
   }
 }
