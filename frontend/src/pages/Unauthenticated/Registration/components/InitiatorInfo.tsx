@@ -317,7 +317,13 @@ const InitiatorInfo: React.FC<FormStepProps> = ({
         Object.fromEntries(formDataToSend.entries())
       );
       alert('Registration successful!');
-      navigate('/waiting');
+      
+      // ONLY CHANGE: Check if initiator_id is 0 and navigate to landing page
+      if (formData.initiator_id === 0) {
+        navigate('/landing');
+      } else {
+        navigate('/waiting');
+      }
     } catch (err) {
       console.error('Submission error:', err);
       alert('Registration failed. Please try again.');

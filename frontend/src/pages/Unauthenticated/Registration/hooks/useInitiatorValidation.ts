@@ -17,8 +17,8 @@ export function useInitiatorValidation() {
     if (id === 0) {
       setInitiatorDetails({
         profilepic: null,
-        name: 'First Member',
-        text: 'YOU ARE THE FIRST MEMBER',
+        name: 'welcome prof kancha iliaiah shepherd',
+        text: 'Thank you for inaugurating this journey towards a public funding system, which aims to dalithize the political class and bring equal political status through equal ownership of political parties and democracy',
       });
       setError('');
      
