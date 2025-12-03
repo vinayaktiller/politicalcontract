@@ -1,19 +1,29 @@
-# views.py
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import ContributionCreateSerializer, ContributionConflictSerializer, ContributionDetailSerializer
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from django.db.models import Q
+
+from .serializers import (
+    ContributionCreateSerializer, 
+    ContributionConflictSerializer, 
+    ContributionDetailSerializer,
+    ContributionListSerializer
+)
 from ..models import Contribution, ContributionConflict
 from users.login.authentication import CookieJWTAuthentication
 from rest_framework.permissions import IsAuthenticated
-from users.models import UserTree  # Import UserTree model
+from users.models import UserTree
+
+from blog.models import MicroConsumption, ShortEssayConsumption, ArticleConsumption
 
 class ContributionCreateView(APIView):
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     http_method_names = ['post']
-
+    
     def post(self, request, *args, **kwargs):
         link = request.data.get('link')
         
@@ -48,9 +58,10 @@ class ContributionCreateView(APIView):
                             'error': 'This URL has already been claimed by another user.',
                             'existing_contribution': contribution_data,
                             'conflict': True,
-                            'disputed_data': {  # Include the disputed data in the response
+                            'disputed_data': {
                                 'title': request.data.get('title'),
                                 'description': request.data.get('discription'),
+                                'type': request.data.get('type', 'none'),
                                 'teammembers': request.data.get('teammembers', [])
                             }
                         },
@@ -90,7 +101,6 @@ class ContributionConflictView(APIView):
         serializer = ContributionConflictSerializer(data=request.data)
         
         if serializer.is_valid():
-            # Ensure the user is the one reporting the conflict
             conflict = serializer.save(
                 reported_by=request.user.id,
                 status='pending'
@@ -98,8 +108,6 @@ class ContributionConflictView(APIView):
             return Response(ContributionConflictSerializer(conflict).data, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-from rest_framework import generics
-from django.db.models import Q
 
 class UserContributionsView(generics.ListAPIView):
     authentication_classes = [CookieJWTAuthentication]
@@ -108,7 +116,7 @@ class UserContributionsView(generics.ListAPIView):
     
     def get_queryset(self):
         user_id = self.request.user.id
-        # Get contributions where user is owner OR team member
         return Contribution.objects.filter(
             Q(owner=user_id) | Q(teammembers__contains=[user_id])
         ).order_by('-created_at')
+

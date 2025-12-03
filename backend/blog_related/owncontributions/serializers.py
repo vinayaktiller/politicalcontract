@@ -9,7 +9,7 @@ class ContributionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contribution
         fields = [
-            'id', 'link', 'title', 'discription', 'owner', 
+            'id', 'link', 'title', 'discription', 'type', 'owner', 
             'teammembers', 'created_at', 'updated_at',
             'owner_details', 'team_member_details'
         ]

@@ -7,9 +7,46 @@
     width: 80%;
     background-color: #333; /* Adjust to your theme color */
     color: #fff;
-    padding: 10px;
+    padding: 0;
     position: relative; /* Added for modal positioning context */
+    height: calc(100vh - 5vh); /* Match the height from Mainbar.css */
+    overflow: hidden;
 } 
+
+/* Scrollable content container */
+.nav-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #666 #333;
+    padding: 10px;
+    position: relative;
+    max-height: 100%;
+}
+
+/* Custom scrollbar styling */
+.nav-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.nav-content::-webkit-scrollbar-track {
+    background: #222;
+    border-radius: 3px;
+}
+
+.nav-content::-webkit-scrollbar-thumb {
+    background: #666;
+    border-radius: 3px;
+    transition: background 0.3s;
+}
+
+.nav-content::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
 
 .navbar-top {
     display: flex;
@@ -30,6 +67,22 @@
 
 .navbar-bottom {
     align-self: flex-start;
+    width: 100%;
+    padding-top: 10px;
+    border-top: 1px solid #444;
+    background-color: #333;
+}
+
+/* Scroll position indicator */
+.scroll-position-indicator {
+    font-size: 0.8rem;
+    color: #aaa;
+    text-align: center;
+    padding: 5px 0;
+    margin-bottom: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    font-family: monospace;
 }
 
 .navbar-bottom button {
@@ -39,6 +92,7 @@
     padding: 10px 20px;
     cursor: pointer;
     transition: background-color 0.3s;
+    width: 100%;
 }
 
 .navbar-bottom button:hover {
@@ -127,6 +181,24 @@
         width: 100%;
     }
     
+    .nav-content {
+        padding: 8px;
+    }
+    
+    .navbar-top a {
+        padding: 8px;
+    }
+    
+    .scroll-position-indicator {
+        font-size: 0.7rem;
+        padding: 4px 0;
+    }
+    
+    .navbar-bottom button {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+    
     .modal-content {
         padding: 1.5rem;
         margin: 1rem;
@@ -144,6 +216,23 @@
 }
 
 @media (max-width: 480px) {
+    .nav-content {
+        padding: 6px;
+    }
+    
+    .navbar-top a {
+        padding: 6px;
+        font-size: 0.9rem;
+    }
+    
+    .scroll-position-indicator {
+        font-size: 0.65rem;
+    }
+    
+    .navbar-bottom {
+        padding-top: 8px;
+    }
+    
     .modal-content {
         padding: 1.25rem;
     }
@@ -161,3 +250,4 @@
         font-size: 0.9rem;
     }
 }
+

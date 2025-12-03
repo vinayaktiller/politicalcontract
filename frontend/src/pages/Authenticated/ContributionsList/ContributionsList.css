@@ -1,31 +1,56 @@
+/* Contributions Page Container - Matching Milestone Style */
 .contributions-container {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  text-align: center;
+  height: 95vh;
+  width: 100%;
+  position: relative;
+  background: #ffffff;
+  box-sizing: border-box;
+  padding: 30px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: auto;
+  overflow-x: hidden;
 }
 
+/* Content Area */
+.contributions-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header - Matching Milestone Header */
 .contributions-header {
   text-align: center;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid #f0f0f0;
+  /* margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem; */
+  border-bottom: 1px solid #eaeaea;
 }
 
 .contributions-header h1 {
-  color: #333;
-  margin: 0.5rem 0;
   font-size: 2.2rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
   font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .contributions-header p {
-  color: #666;
-  margin-top: 0.5rem;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  color: #7f8c8d;
+  max-width: 500px;
+  margin: 0 auto;
+  font-style: italic;
 }
 
+/* Search Controls - Styled Like Milestone View Controls */
 .contributions-actions {
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   display: flex;
   justify-content: center;
 }
@@ -33,224 +58,374 @@
 .search-form {
   display: flex;
   width: 100%;
-  max-width: 500px;
+  max-width: 800px;
+  margin: 0 auto;
+  gap: 15px;
+  flex-wrap: wrap;
+  background: #f5f7fa;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
 .search-input {
-  flex: 1;
+  flex: 2;
+  min-width: 250px;
   padding: 0.9rem 1.2rem;
-  border: 2px solid #90b4e1;
-  border-radius: 8px 0 0 8px;
+  border: 2px solid #dce1e8;
+  border-radius: 8px;
   font-size: 1rem;
   transition: all 0.3s;
+  box-sizing: border-box;
+  background: white;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #c08585;
-  box-shadow: 0 0 0 3px rgba(192, 133, 133, 0.2);
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+.type-filter-select {
+  flex: 1;
+  min-width: 180px;
+  padding: 0.9rem 1.2rem;
+  border: 2px solid #dce1e8;
+  border-radius: 8px;
+  font-size: 1rem;
+  background-color: white;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 36px;
+  box-sizing: border-box;
+}
+
+.type-filter-select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
 }
 
 .search-button {
-  padding: 0 1.2rem;
-  background: linear-gradient(to right, #c08585, #924444);
+  padding: 0 2rem;
+  background: linear-gradient(to right, #3498db, #2980b9);
   color: white;
   border: none;
-  border-radius: 0 8px 8px 0;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 120px;
+  height: 50px;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.search-button:hover {
+  background: linear-gradient(to right, #2980b9, #1c5a7a);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
 }
 
 .search-icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
 }
 
+/* Loading State - Matching Milestone Loader */
 .contributions-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
+  padding: 4rem;
+  flex: 1;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(192, 133, 133, 0.3);
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
   border-radius: 50%;
-  border-top-color: #c08585;
-  animation: spin 1s ease-in-out infinite;
-  margin-bottom: 1rem;
+  width: 60px;
+  height: 60px;
+  animation: spin 1.2s linear infinite;
+  margin-bottom: 1.5rem;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
+/* Error State - Matching Milestone Error Style */
 .contributions-error {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 1rem;
-  background-color: #f8d7da;
-  color: #721c24;
-  border-radius: 8px;
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  margin: 2rem auto;
+  max-width: 600px;
+  border: 1px solid #eaeaea;
+}
+
+.contributions-error h3 {
+  font-size: 1.8rem;
+  color: #e74c3c;
+  margin-bottom: 0.8rem;
+  font-weight: 700;
+}
+
+.contributions-error p {
+  font-size: 1.15rem;
+  color: #7f8c8d;
   margin-bottom: 1.5rem;
-  border-left: 4px solid #dc3545;
+  line-height: 1.6;
 }
 
-.error-icon {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
+/* Empty State - Matching Milestone Empty State */
 .no-contributions {
   text-align: center;
-  padding: 3rem;
-  color: #7f8c8d;
+  padding: 3.5rem 1.5rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  margin: 2rem auto;
+  max-width: 600px;
+  border: 1px solid #eaeaea;
 }
 
 .empty-icon {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 1rem;
-  opacity: 0.5;
+  font-size: 4.5rem;
+  margin-bottom: 1.5rem;
+  color: #f1c40f;
 }
 
+.no-contributions h3 {
+  font-size: 1.8rem;
+  color: #2c3e50;
+  margin-bottom: 0.8rem;
+  font-weight: 700;
+}
+
+.no-contributions p {
+  font-size: 1.15rem;
+  color: #7f8c8d;
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* Grid - Similar to Milestone Grid */
 .contributions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr));
+  gap: 2rem;
   margin-bottom: 2rem;
 }
 
+/* Contribution Card - Matching Milestone Card Style */
 .contribution-card {
   background: white;
   border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 1px solid #eee;
+  overflow: hidden;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  border: 1px solid #eaeaea;
+  padding: 0;
 }
 
 .contribution-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
 }
 
+/* Card Header - Matching Milestone Top Section */
 .card-header {
+  padding: 1.2rem;
+  background: #f5f7fa;
+  border-bottom: 1px solid #eaeaea;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .owner-info {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .owner-avatar {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .owner-name {
   font-weight: 600;
-  color: #444;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+/* Header Right Section */
+.header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  min-width: 0;
+}
+
+/* Contribution Type Badge - Matching Milestone Badge */
+.contribution-type {
+  padding: 0.6rem 1.2rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.5px;
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
 }
 
 .contribution-date {
   color: #7f8c8d;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  text-align: right;
+  font-style: italic;
+}
+
+/* Card Content - Matching Milestone Content */
+.contribution-content {
+  padding: 1.8rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  text-align: left;
 }
 
 .contribution-title {
-  margin: 0 0 1rem;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
+  color: #2c3e50;
+  margin-bottom: 1.2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  font-family: 'Georgia', serif;
+  letter-spacing: 0.3px;
 }
 
 .contribution-title a {
-  color: #333;
+  color: #2c3e50;
   text-decoration: none;
+  display: block;
 }
 
 .contribution-title a:hover {
-  color: #c08585;
+  color: #3498db;
   text-decoration: underline;
 }
 
 .contribution-link {
-  margin: 0 0 1rem;
+  margin: 0 0 1.2rem;
   word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .contribution-link a {
   color: #3498db;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.3s ease;
 }
 
 .contribution-link a:hover {
+  color: #2980b9;
   text-decoration: underline;
 }
 
 .contribution-description {
-  color: #666;
-  margin: 0 0 1rem;
-  line-height: 1.5;
+  color: #5a6a7e;
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
+  font-size: 1.05rem;
 }
 
+/* Team Members Section */
 .team-members {
   margin-top: auto;
+  padding-top: 1.2rem;
+  border-top: 1px dashed #eaeaea;
 }
 
 .team-members h4 {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
-  color: #444;
+  margin: 0 0 0.8rem;
+  font-size: 1rem;
+  color: #2c3e50;
+  font-weight: 600;
 }
 
 .team-members-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .team-member {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  background-color: #f0f4f8;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
+  gap: 0.5rem;
+  background-color: #f5f7fa;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  border: 1px solid #eaeaea;
 }
 
 .member-avatar {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 .member-name {
-  color: #444;
+  color: #5a6a7e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
 }
 
+/* Card Actions - Matching Milestone Button Style */
 .card-actions {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #eaeaea;
   display: flex;
   justify-content: flex-end;
 }
@@ -259,18 +434,21 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background-color: #ff4444;
+  padding: 0.7rem 1.5rem;
+  background: linear-gradient(to right, #e74c3c, #c0392b);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 30px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 .delete-btn:hover {
-  background-color: #cc0000;
+  background: linear-gradient(to right, #c0392b, #a93226);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
 }
 
 .delete-icon {
@@ -278,55 +456,159 @@
   height: 18px;
 }
 
+/* Pagination Controls - Matching Milestone Controls */
 .pagination-controls {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 1rem;
-  margin-top: 2rem;
+  margin-top: 3rem;
+  flex-wrap: wrap;
+  padding-top: 2rem;
+  border-top: 1px solid #eaeaea;
 }
 
 .pagination-btn {
-  padding: 0.5rem 1rem;
-  background-color: #f0f0f0;
-  color: #333;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 0.8rem 1.8rem;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  border: 2px solid #3498db;
+  background: white;
+  color: #3498db;
+  min-width: 100px;
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background-color: #e0e0e0;
+  background: #f0f7ff;
+  transform: translateY(-2px);
 }
 
 .pagination-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .pagination-info {
-  color: #666;
-  font-size: 0.9rem;
+  color: #7f8c8d;
+  font-size: 1rem;
+  font-style: italic;
 }
 
-/* Responsive styles */
+/* Retry Button - Matching Milestone Retry Button */
+.retry-button {
+  padding: 0.8rem 2rem;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid #3498db;
+  background: #3498db;
+  color: white;
+  margin-top: 1rem;
+}
+
+.retry-button:hover {
+  background: #2980b9;
+  border-color: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+/* Responsive Styles */
 @media (max-width: 768px) {
   .contributions-container {
-    padding: 1rem;
+    padding: 20px 15px;
+    height: 95vh;
+  }
+  
+  .contributions-content {
+    padding: 0.5rem;
+  }
+  
+  .contributions-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .contributions-header p {
+    font-size: 1rem;
+  }
+  
+  .search-form {
+    flex-direction: column;
+    gap: 10px;
+    padding: 1.2rem;
+  }
+  
+  .search-input,
+  .type-filter-select {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .search-button {
+    width: 100%;
+    margin-top: 0.5rem;
   }
   
   .contributions-grid {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
   
   .card-header {
     flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .header-right {
     align-items: flex-start;
-    gap: 0.5rem;
   }
   
   .contribution-date {
-    align-self: flex-end;
+    text-align: left;
+  }
+  
+  .pagination-controls {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .pagination-btn {
+    width: 100%;
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 480px) {
+  .contributions-container {
+    padding: 15px 10px;
+  }
+  
+  .contributions-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .contribution-content {
+    padding: 1.2rem;
+  }
+  
+  .contribution-title {
+    font-size: 1.3rem;
+  }
+  
+  .team-members-list {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .team-member {
+    width: 100%;
+    justify-content: flex-start;
   }
 }

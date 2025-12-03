@@ -117,6 +117,9 @@ export interface BlogsSliceState {
   scrollPositions: { // NEW: Add scroll positions to state
     [key: string]: number;
   };
+  myblogscrollPositions: { // NEW: Scroll positions for My Blogs
+    [key: string]: number;
+  };
   mainFetchDone: { // NEW: Track if main fetch has been done for each blog type
     [key: string]: boolean;
   };

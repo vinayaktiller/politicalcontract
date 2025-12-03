@@ -125,6 +125,31 @@
   min-height: 100px;
 }
 
+/* Type select styles - ADDED FOR TYPE FIELD */
+.contribution-form-group select {
+  padding: 0.9rem 1.2rem;
+  border: 3px solid #90b4e1;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s;
+  background-color: #f9f9f9;
+  font-family: inherit;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+.contribution-form-group select:focus {
+  outline: none;
+  border-color: #c08585;
+  box-shadow: 0 0 0 3px rgba(192, 133, 133, 0.2);
+  background-color: white;
+}
+
 .contribution-submit-btn {
   background: linear-gradient(to right, #c08585, #924444);
   color: white;
@@ -667,6 +692,7 @@
   }
   
   .contribution-form-group input,
+  .contribution-form-group select,
   .contribution-form-group textarea {
     padding: 1rem 1.4rem;
     font-size: 1.05rem;

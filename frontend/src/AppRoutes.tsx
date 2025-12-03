@@ -56,6 +56,7 @@ import ReportGenerationPage from "./pages/Authenticated/dashboard/reportgenerati
 
 import BlogDetailPage from "./pages/Authenticated/blogrelated/BlogDetailPage/BlogDetailPage";
 import HeartbeatNetworkPage from "./pages/Authenticated/heartbeat/heartbeatNetwork/HeartbeatNetworkPage";
+import MyBlogsPage from './pages/Authenticated/blogrelated/blogpage/myblog/MyBlogsPage';
 
 const clientId =
   "719395873709-ese7vg45i9gfndador7q6rmq3untnkcr.apps.googleusercontent.com";
@@ -147,6 +148,7 @@ const AppRoutes: React.FC = () => {
             <Route path="milestone-preview" element={<MilestonePreviewPage />} />
 
             {/* Blogs */}
+            <Route path="/my-blogs" element={<MyBlogsPage />} />
             <Route path="blogs" element={<BlogListPage />} />
             <Route path="blog-creator" element={<BlogCreator />} />
             <Route path="blog/:blogId" element={<BlogDetailPage />} />

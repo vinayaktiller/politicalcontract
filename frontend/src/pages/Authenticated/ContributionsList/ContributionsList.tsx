@@ -20,7 +20,8 @@ export interface Contribution {
   id: number;
   title?: string;
   link: string;
-  discription?: string; // (typo in API? maybe should be "description")
+  discription?: string;
+  type: string;
   created_at: string;
   owner_details?: OwnerDetails;
   team_member_details?: TeamMember[];
@@ -37,6 +38,26 @@ interface ContributionsListProps {
   userId?: number | null;
 }
 
+const contributionTypeLabels: { [key: string]: string } = {
+  'article': '📝 Article',
+  'video': '🎬 Video',
+  'podcast': '🎙️ Podcast',
+  'design': '🎨 Design/Artwork',
+  'research': '🔬 Research Paper',
+  'other': '📦 Other',
+  'none': 'Not Specified'
+};
+
+const typeOptions = [
+  { value: '', label: 'All Types' },
+  { value: 'article', label: '📝 Article' },
+  { value: 'video', label: '🎬 Video' },
+  { value: 'podcast', label: '🎙️ Podcast' },
+  { value: 'design', label: '🎨 Design/Artwork' },
+  { value: 'research', label: '🔬 Research Paper' },
+  { value: 'other', label: '📦 Other' }
+];
+
 // ---------------------
 // Component
 // ---------------------
@@ -45,6 +66,7 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ userId = null }) 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<string>("");
 
   const [pagination, setPagination] = useState<Pagination>({
     count: 0,
@@ -61,6 +83,7 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ userId = null }) 
       const params = new URLSearchParams({
         page: page.toString(),
         ...(searchQuery ? { search: searchQuery } : {}),
+        ...(typeFilter ? { type: typeFilter } : {}),
         ...(userId ? { user_id: userId.toString() } : {}),
       });
 
@@ -89,11 +112,15 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ userId = null }) 
 
   useEffect(() => {
     fetchContributions(1);
-  }, [userId, searchQuery]);
+  }, [userId, searchQuery, typeFilter]);
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     fetchContributions(1);
+  };
+
+  const handleTypeFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setTypeFilter(e.target.value);
   };
 
   const handleDelete = async (contributionId: number) => {
@@ -121,150 +148,168 @@ const ContributionsList: React.FC<ContributionsListProps> = ({ userId = null }) 
 
   return (
     <div className="contributions-container">
-      <div className="contributions-header">
-        <h1>{userId ? `Contributions of User #${userId}` : "My Contributions"}</h1>
-        <p>Manage and view all your claimed contributions</p>
-      </div>
+      <div className="contributions-content">
+        <div className="contributions-header">
+          <h1>{userId ? `Contributions of User #${userId}` : "My Contributions"}</h1>
+          <p>Manage and view all your claimed contributions</p>
+        </div>
 
-      <div className="contributions-actions">
-        <form onSubmit={handleSearch} className="search-form">
-          <input
-            type="text"
-            placeholder="Search contributions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
-          <button type="submit" className="search-button">
-            <svg className="search-icon" viewBox="0 0 24 24">
+        <div className="contributions-actions">
+          <form onSubmit={handleSearch} className="search-form">
+            {/* <input
+              type="text"
+              placeholder="Search contributions..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            /> */}
+            <select
+              value={typeFilter}
+              onChange={handleTypeFilterChange}
+              className="type-filter-select"
+            >
+              {typeOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {/* <button type="submit" className="search-button">
+              <svg className="search-icon" viewBox="0 0 24 24">
+                <path
+                  fill="currentColor"
+                  d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"
+                />
+              </svg>
+            </button> */}
+          </form>
+        </div>
+
+        {error && (
+          <div className="contributions-error">
+            <svg className="error-icon" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
-                d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"
+                d="M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"
               />
             </svg>
-          </button>
-        </form>
-      </div>
+            <p>{error}</p>
+          </div>
+        )}
 
-      {error && (
-        <div className="contributions-error">
-          <svg className="error-icon" viewBox="0 0 24 24">
-            <path
-              fill="currentColor"
-              d="M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"
-            />
-          </svg>
-          <p>{error}</p>
-        </div>
-      )}
-
-      {contributions.length === 0 ? (
-        <div className="no-contributions">
-          <svg className="empty-icon" viewBox="0 0 24 24">
-            <path
-              fill="currentColor"
-              d="M20,6H16V4A2,2 0 0,0 14,2H10A2,2 0 0,0 8,4V6H4A2,2 0 0,0 2,8V19A2,2 0 0,0 4,21H20A2,2 0 0,0 22,19V8A2,2 0 0,0 20,6M10,4H14V6H10V4M12,9A2.5,2.5 0 0,1 14.5,11.5A2.5,2.5 0 0,1 12,14A2.5,2.5 0 0,1 9.5,11.5A2.5,2.5 0 0,1 12,9M17,19H7V17.75C7,16.37 9.24,15.25 12,15.25C14.76,15.25 17,16.37 17,17.75V19Z"
-            />
-          </svg>
-          <h3>No contributions found</h3>
-          <p>You haven't claimed any contributions yet.</p>
-        </div>
-      ) : (
-        <>
-          <div className="contributions-grid">
-            {contributions.map((contribution) => (
-              <div key={contribution.id} className="contribution-card">
-                <div className="card-header">
-                  <div className="owner-info">
-                    <img
-                      src={contribution.owner_details?.profile_pic || "/default-avatar.png"}
-                      alt={contribution.owner_details?.name || "Owner"}
-                      className="owner-avatar"
-                    />
-                    <span className="owner-name">{contribution.owner_details?.name}</span>
-                  </div>
-                  <span className="contribution-date">
-                    {new Date(contribution.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-
-                <h3 className="contribution-title">
-                  <a href={contribution.link} target="_blank" rel="noopener noreferrer">
-                    {contribution.title || "Untitled Contribution"}
-                  </a>
-                </h3>
-
-                <p className="contribution-link">
-                  <a href={contribution.link} target="_blank" rel="noopener noreferrer">
-                    {contribution.link}
-                  </a>
-                </p>
-
-                {contribution.discription && (
-                  <p className="contribution-description">{contribution.discription}</p>
-                )}
-
-                {contribution.team_member_details &&
-                  contribution.team_member_details.length > 0 && (
-                    <div className="team-members">
-                      <h4>Team Members:</h4>
-                      <div className="team-members-list">
-                        {contribution.team_member_details.map((member) => (
-                          <div key={member.id} className="team-member">
-                            <img
-                              src={member.profile_pic || "/default-avatar.png"}
-                              alt={member.name}
-                              className="member-avatar"
-                            />
-                            <span className="member-name">{member.name}</span>
-                          </div>
-                        ))}
-                      </div>
+        {contributions.length === 0 ? (
+          <div className="no-contributions">
+            <svg className="empty-icon" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M20,6H16V4A2,2 0 0,0 14,2H10A2,2 0 0,0 8,4V6H4A2,2 0 0,0 2,8V19A2,2 0 0,0 4,21H20A2,2 0 0,0 22,19V8A2,2 0 0,0 20,6M10,4H14V6H10V4M12,9A2.5,2.5 0 0,1 14.5,11.5A2.5,2.5 0 0,1 12,14A2.5,2.5 0 0,1 9.5,11.5A2.5,2.5 0 0,1 12,9M17,19H7V17.75C7,16.37 9.24,15.25 12,15.25C14.76,15.25 17,16.37 17,17.75V19Z"
+              />
+            </svg>
+            <h3>No contributions found</h3>
+            <p>You haven't claimed any contributions yet.</p>
+          </div>
+        ) : (
+          <>
+            <div className="contributions-grid">
+              {contributions.map((contribution) => (
+                <div key={contribution.id} className="contribution-card">
+                  <div className="card-header">
+                    <div className="owner-info">
+                      <img
+                        src={contribution.owner_details?.profile_pic || "/default-avatar.png"}
+                        alt={contribution.owner_details?.name || "Owner"}
+                        className="owner-avatar"
+                      />
+                      <span className="owner-name">{contribution.owner_details?.name}</span>
                     </div>
+                    <div className="header-right">
+                      <span className="contribution-type">
+                        {contributionTypeLabels[contribution.type] || 'Not Specified'}
+                      </span>
+                      <span className="contribution-date">
+                        {new Date(contribution.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <h3 className="contribution-title">
+                    <a href={contribution.link} target="_blank" rel="noopener noreferrer">
+                      {contribution.title || "Untitled Contribution"}
+                    </a>
+                  </h3>
+
+                  <p className="contribution-link">
+                    <a href={contribution.link} target="_blank" rel="noopener noreferrer">
+                      {contribution.link}
+                    </a>
+                  </p>
+
+                  {contribution.discription && (
+                    <p className="contribution-description">{contribution.discription}</p>
                   )}
 
-                <div className="card-actions">
-                  <button
-                    className="delete-btn"
-                    onClick={() => handleDelete(contribution.id)}
-                  >
-                    <svg className="delete-icon" viewBox="0 0 24 24">
-                      <path
-                        fill="currentColor"
-                        d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"
-                      />
-                    </svg>
-                    Delete
-                  </button>
+                  {contribution.team_member_details &&
+                    contribution.team_member_details.length > 0 && (
+                      <div className="team-members">
+                        <h4>Team Members:</h4>
+                        <div className="team-members-list">
+                          {contribution.team_member_details.map((member) => (
+                            <div key={member.id} className="team-member">
+                              <img
+                                src={member.profile_pic || "/default-avatar.png"}
+                                alt={member.name}
+                                className="member-avatar"
+                              />
+                              <span className="member-name">{member.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  <div className="card-actions">
+                    <button
+                      className="delete-btn"
+                      onClick={() => handleDelete(contribution.id)}
+                    >
+                      <svg className="delete-icon" viewBox="0 0 24 24">
+                        <path
+                          fill="currentColor"
+                          d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"
+                        />
+                      </svg>
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          {/* Pagination Controls */}
-          <div className="pagination-controls">
-            <button
-              onClick={() => fetchContributions(pagination.current - 1)}
-              disabled={!pagination.previous}
-              className="pagination-btn"
-            >
-              Previous
-            </button>
+            {/* Pagination Controls */}
+            <div className="pagination-controls">
+              <button
+                onClick={() => fetchContributions(pagination.current - 1)}
+                disabled={!pagination.previous}
+                className="pagination-btn"
+              >
+                Previous
+              </button>
 
-            <span className="pagination-info">
-              Page {pagination.current} of {Math.ceil(pagination.count / 10)}
-            </span>
+              <span className="pagination-info">
+                Page {pagination.current} of {Math.ceil(pagination.count / 10)}
+              </span>
 
-            <button
-              onClick={() => fetchContributions(pagination.current + 1)}
-              disabled={!pagination.next}
-              className="pagination-btn"
-            >
-              Next
-            </button>
-          </div>
-        </>
-      )}
+              <button
+                onClick={() => fetchContributions(pagination.current + 1)}
+                disabled={!pagination.next}
+                className="pagination-btn"
+              >
+                Next
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

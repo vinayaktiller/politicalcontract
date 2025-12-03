@@ -19,25 +19,19 @@ class ContributionListView(APIView):
     pagination_class = ContributionPagination
     
     def get(self, request):
-        # Get the target user ID from query params, default to current user
         target_user_id = request.query_params.get('user_id', request.user.id)
         
-        # Check if the current user has permission to view the target user's contributions
-        # For now, we'll allow users to view their own contributions only
-        # You can modify this logic based on your requirements
         if str(target_user_id) != str(request.user.id):
             return Response(
                 {'error': 'You can only view your own contributions'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Get filter parameters
         search_query = request.query_params.get('search', '')
+        type_filter = request.query_params.get('type', '')
         
-        # Build the queryset
         contributions = Contribution.objects.filter(owner=target_user_id)
         
-        # Apply search filter if provided
         if search_query:
             contributions = contributions.filter(
                 Q(title__icontains=search_query) |
@@ -45,14 +39,14 @@ class ContributionListView(APIView):
                 Q(link__icontains=search_query)
             )
         
-        # Order by creation date (newest first)
+        if type_filter:
+            contributions = contributions.filter(type=type_filter)
+        
         contributions = contributions.order_by('-created_at')
         
-        # Paginate the results
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(contributions, request)
         
-        # Serialize the data
         serializer = ContributionListSerializer(
             page, 
             many=True, 
@@ -69,7 +63,6 @@ class ContributionDetailView(APIView):
         try:
             contribution = Contribution.objects.get(id=contribution_id)
             
-            # Check if the user has permission to view this contribution
             if str(contribution.owner) != str(request.user.id):
                 return Response(
                     {'error': 'You do not have permission to view this contribution'},
@@ -95,7 +88,6 @@ class ContributionDeleteView(APIView):
         try:
             contribution = Contribution.objects.get(id=contribution_id)
             
-            # Check if the user has permission to delete this contribution
             if str(contribution.owner) != str(request.user.id):
                 return Response(
                     {'error': 'You do not have permission to delete this contribution'},

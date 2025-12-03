@@ -99,6 +99,34 @@
   margin: 1rem 0;
 }
 
+/* Disputed data section styles - ADDED FOR TYPE FIELD */
+.disputed-data-section {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #ffc107;
+}
+
+.disputed-data-section h4 {
+  margin-top: 0;
+  color: #856404;
+}
+
+.team-members-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.team-member-id {
+  padding: 4px 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
 .conflict-form {
   display: flex;
   flex-direction: column;
@@ -272,33 +300,6 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-}
-
-.disputed-data-section {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border-left: 4px solid #ffc107;
-}
-
-.disputed-data-section h4 {
-  margin-top: 0;
-  color: #856404;
-}
-
-.team-members-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.team-member-id {
-  padding: 4px 8px;
-  background-color: #e9ecef;
-  border-radius: 4px;
-  font-size: 0.9rem;
 }
 
 /* Tablet Styles */

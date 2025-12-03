@@ -7,6 +7,7 @@ const initialState: BlogsSliceState = {
   error: null,
   needsRefresh: {},
   scrollPositions: {},
+  myblogscrollPositions: {},
   mainFetchDone: {},
 };
 
@@ -22,6 +23,7 @@ const blogSlice = createSlice({
       state.error = null;
       state.needsRefresh = {};
       state.scrollPositions = {};
+      state.myblogscrollPositions = {};
       state.mainFetchDone = {};
     },
     
@@ -191,6 +193,17 @@ const blogSlice = createSlice({
       }
       
       console.log('Added blog to store:', blogType, blog.id);
+    },
+      updateMyBlogsScrollPosition: (state, action: PayloadAction<{ userId: string; position: number }>) => {
+      const { userId, position } = action.payload;
+      state.myblogscrollPositions[userId] = position;
+    },
+    
+    clearMyBlogsScrollPosition: (state, action: PayloadAction<{ userId: string }>) => {
+      const { userId } = action.payload;
+      if (state.myblogscrollPositions[userId]) {
+        delete state.myblogscrollPositions[userId];
+      }
     },
     
     // ✅ Add shared blog handler
@@ -532,6 +545,8 @@ export const {
   addReplyToComment,
   setReplyingState,
   setReplyText,
+  updateMyBlogsScrollPosition,
+  clearMyBlogsScrollPosition,
 } = blogSlice.actions;
 
 export default blogSlice.reducer;

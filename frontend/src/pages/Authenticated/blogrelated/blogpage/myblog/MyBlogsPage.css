@@ -1,0 +1,85 @@
+/* MyBlogsPage.css - Uses BlogListPage styling with minor additions */
+
+/* Import BlogListPage styles */
+@import '../BlogListPage.css';
+
+/* MyBlogsPage specific styles */
+.my-blogs-info-section {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 800px;
+  padding: 0 15px;
+}
+
+.my-blogs-count {
+  color: #666;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.my-blogs-user-id-display {
+  background: #e8f4ff;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  display: inline-block;
+  font-size: 0.85rem;
+  color: #2c5282;
+  font-family: 'Courier New', monospace;
+  margin-top: 0.5rem;
+}
+
+.my-blogs-create-btn {
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.my-blogs-create-btn:hover {
+  background-color: #40a9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.5);
+}
+
+.my-blogs-create-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.4);
+}
+
+/* Responsive adjustments for MyBlogsPage */
+@media (min-width: 768px) {
+  .my-blogs-info-section {
+    margin-bottom: 2rem;
+  }
+  
+  .my-blogs-create-btn {
+    padding: 15px 25px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .my-blogs-info-section {
+    margin-bottom: 1rem;
+    padding: 0 10px;
+  }
+  
+  .my-blogs-user-id-display {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .my-blogs-create-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+}

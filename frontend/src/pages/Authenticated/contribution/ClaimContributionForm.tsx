@@ -26,6 +26,7 @@ interface Contribution {
   id: string;
   link: string;
   title: string;
+  type: string;
   owner: number;
   created_at: string;
   owner_details?: OwnerDetails;
@@ -34,14 +35,26 @@ interface Contribution {
 interface DisputedData {
   title: string;
   description: string;
+  type: string;
   teammembers: number[];
 }
+
+const contributionTypes = [
+  { value: 'none', label: 'Select Type' },
+  { value: 'article', label: '📝 Article' },
+  { value: 'video', label: '🎬 Video' },
+  { value: 'podcast', label: '🎙️ Podcast' },
+  { value: 'design', label: '🎨 Design/Artwork' },
+  { value: 'research', label: '🔬 Research Paper' },
+  { value: 'other', label: '📦 Other' }
+];
 
 const ClaimContributionForm = () => {
   const [formData, setFormData] = useState({
     link: '',
     title: '',
-    discription: ''
+    discription: '',
+    type: 'none'
   });
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [manualIdInput, setManualIdInput] = useState('');
@@ -64,6 +77,7 @@ const ClaimContributionForm = () => {
   const [disputedData, setDisputedData] = useState<DisputedData>({
     title: '',
     description: '',
+    type: 'none',
     teammembers: []
   });
   const [submittingConflict, setSubmittingConflict] = useState(false);
@@ -183,7 +197,6 @@ const ClaimContributionForm = () => {
 
       const response = await api.post('/api/blog_related/contributions/create/', payload);
 
-      // Handle different success messages based on response status
       if (response.status === 200) {
         setSuccessMessage('Contribution claimed successfully! This URL was already being used in blogs and has now been claimed by you.');
       } else if (response.status === 201) {
@@ -191,18 +204,17 @@ const ClaimContributionForm = () => {
       }
       
       setSuccess(true);
-      setFormData({ link: '', title: '', discription: '' });
+      setFormData({ link: '', title: '', discription: '', type: 'none' });
       setTeamMembers([]);
     } catch (err: any) {
       console.error('Error claiming contribution:', err.response?.data || err.message);
       
-      // Handle conflict case
       if (err.response?.status === 409 && err.response.data?.conflict) {
         setExistingContribution(err.response.data.existing_contribution);
-        // Store the disputed data for conflict reporting
         setDisputedData({
           title: formData.title,
           description: formData.discription,
+          type: formData.type,
           teammembers: teamMembers.map(member => member.id)
         });
         setShowConflictModal(true);
@@ -238,9 +250,9 @@ const ClaimContributionForm = () => {
         conflict_type: conflictData.conflict_type,
         explanation: conflictData.explanation,
         evidence_urls: conflictData.evidence_urls,
-        // Include disputed data in the payload
         disputed_title: disputedData.title,
         disputed_description: disputedData.description,
+        disputed_type: disputedData.type,
         disputed_teammembers: disputedData.teammembers
       };
 
@@ -309,6 +321,23 @@ const ClaimContributionForm = () => {
                 required
                 className={error?.includes('URL') ? 'contribution-input-error' : ''}
               />
+            </div>
+
+            <div className="contribution-form-group">
+              <label htmlFor="type">Content Type *</label>
+              <select
+                id="type"
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                required
+              >
+                {contributionTypes.map(type => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="contribution-form-group">
@@ -407,7 +436,7 @@ const ClaimContributionForm = () => {
           <button
             type="submit"
             className="contribution-submit-btn"
-            disabled={isSubmitting || !formData.link}
+            disabled={isSubmitting || !formData.link || formData.type === 'none'}
           >
             {isSubmitting ? (
               <>

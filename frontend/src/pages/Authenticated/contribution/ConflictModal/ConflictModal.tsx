@@ -12,6 +12,7 @@ interface Contribution {
   id: string;
   link: string;
   title: string;
+  type: string;
   owner: number;
   created_at: string;
   owner_details?: OwnerDetails;
@@ -20,6 +21,7 @@ interface Contribution {
 interface DisputedData {
   title: string;
   description: string;
+  type: string;
   teammembers: number[];
 }
 
@@ -41,6 +43,17 @@ interface ConflictModalProps {
   onRemoveEvidenceUrl: (index: number) => void;
   onEvidenceUrlChange: (value: string) => void;
 }
+
+const contributionTypeLabels: { [key: string]: string } = {
+  'article': '📝 Article',
+  'video': '🎬 Video',
+  'podcast': '🎙️ Podcast',
+  'code': '💻 Code/Repository',
+  'design': '🎨 Design/Artwork',
+  'research': '🔬 Research Paper',
+  'other': '📦 Other',
+  'none': 'Not Specified'
+};
 
 const ConflictModal: React.FC<ConflictModalProps> = ({
   show,
@@ -81,6 +94,7 @@ const ConflictModal: React.FC<ConflictModalProps> = ({
               <h4>Existing Claim Details:</h4>
               <p><strong>URL:</strong> {existingContribution.link}</p>
               <p><strong>Title:</strong> {existingContribution.title || 'No title provided'}</p>
+              <p><strong>Type:</strong> {contributionTypeLabels[existingContribution.type] || 'Not specified'}</p>
               <p><strong>Claimed by:</strong></p>
               
               {existingContribution.owner_details && (
@@ -105,6 +119,7 @@ const ConflictModal: React.FC<ConflictModalProps> = ({
               <div className="disputed-data-section">
                 <h4>Your Claim Details:</h4>
                 <p><strong>Your Title:</strong> {disputedData.title || 'No title provided'}</p>
+                <p><strong>Your Type:</strong> {contributionTypeLabels[disputedData.type] || 'Not specified'}</p>
                 <p><strong>Your Description:</strong> {disputedData.description || 'No description provided'}</p>
                 {disputedData.teammembers.length > 0 && (
                   <div>
