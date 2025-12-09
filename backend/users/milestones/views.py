@@ -7,6 +7,9 @@ from .serializers import MilestoneSerializer
 import logging
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+from users.login.authentication import CookieJWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+
 
 
 # Logger for this module
@@ -40,6 +43,8 @@ class UserMilestonesAPIView(APIView):
 
 @method_decorator(csrf_exempt, name='dispatch')  # TEMP for debugging only
 class MarkMilestoneCompletedAPIView(APIView):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
     """
     Diagnostic: logs arrival of all methods. Keep csrf_exempt only for debugging.
     """
