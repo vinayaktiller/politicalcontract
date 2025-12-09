@@ -373,7 +373,7 @@ const MilestonePage: React.FC = () => {
         </div>
       )}
 
-      {showClone && transitionData && (
+      {/* {showClone && transitionData && (
         <div
           ref={cloneRef}
           className="celebration-clone"
@@ -392,7 +392,7 @@ const MilestonePage: React.FC = () => {
             zIndex: 9999,
           }}
         />
-      )}
+      )} */}
     </div>
   );
 };
