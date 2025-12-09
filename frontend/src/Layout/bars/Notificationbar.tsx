@@ -7,6 +7,7 @@ import { Notification } from "../../pages/Authenticated/flowpages/notificationpa
 import { triggerCelebration } from "../../pages/Authenticated/milestone/celebration/celebrationSlice";
 import { removeNotificationByDetails } from "../../pages/Authenticated/flowpages/notificationpages/notification_state/notificationsSlice";
 import { addMilestone } from "../../pages/Authenticated/milestone/milestonesSlice";
+import api from "../../api"; // Use api instance for backend calls
 
 interface NotificationBarProps {
   toggleNotifications: () => void;
@@ -24,24 +25,39 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
     Connection_Status: "/ConnectionStatusNotifications",
     Group_Speaker_Invitation: "/GroupSpeakerInvitation",
     Milestone_Notification: "/MilestoneNotifications",
-    Message_Notification: "/chat" // NEW: Navigate to chat list
+    Message_Notification: "/chat" // Navigate to chat list
   };
 
-  const handleView = (notificationNumber: string) => {
+  const handleView = async (notificationNumber: string) => {
     const notification = notifications.find(n => n.notification_number === notificationNumber);
     if (notification) {
       // Special handling for Milestone notifications
       if (notification.notification_type === "Milestone_Notification") {
-        console.log('Handling Milestone Notification:', notification);
         const milestoneData = notification.notification_data;
-        console.log('Milestone Data:', milestoneData);
+
+        // Add milestone to Redux store
         dispatch(addMilestone(milestoneData));
 
         // Trigger celebration modal
         dispatch(triggerCelebration({
-          ...notification.notification_data,
+          ...milestoneData,
           id: notification.id
         }));
+
+        // Call backend API to mark milestone as completed using api instance (handles auth automatically)
+        try {
+          const response = await api.post('/api/users/milestones/complete/', {
+            milestone_id: milestoneData.milestone_id
+          });
+
+          if (response.status === 200 || response.status === 204) {
+            console.log('Milestone marked as completed successfully');
+          } else {
+            console.error('Failed to mark milestone as completed');
+          }
+        } catch (error) {
+          console.error('Error calling milestone completion API:', error);
+        }
 
         // Remove notification after triggering celebration
         dispatch(removeNotificationByDetails({
@@ -49,12 +65,10 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
           notification_number: notification.notification_number,
         }));
       } 
-      // NEW: Handling for Message notifications
+      // Handling for Message notifications
       else if (notification.notification_type === "Message_Notification") {
-        // Navigate to chat list page
         navigate('/messages/chatlist');
-        
-        // Remove the message notification when clicked
+
         dispatch(removeNotificationByDetails({
           notification_type: notification.notification_type,
           notification_number: notification.notification_number,

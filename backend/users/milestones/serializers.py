@@ -4,4 +4,8 @@ from ..models import Milestone
 class MilestoneSerializer(serializers.ModelSerializer):
     class Meta:
         model = Milestone
-        fields = '__all__'
+        # API RULE: Exclude completed field from API responses
+        fields = [
+            'id', 'user_id', 'title', 'text', 'created_at', 
+            'delivered', 'photo_id', 'photo_url', 'type'
+        ]

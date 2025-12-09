@@ -65,7 +65,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         # Fetch undelivered messages
         await self.fetch_undelivered_messages()
 
-        # Fetch undelivered milestones
+        # Fetch undelivered milestones (CONSUMER RECONNECT FLOW)
         await self.fetch_undelivered_milestones()
 
     async def disconnect(self, close_code):
@@ -128,23 +128,35 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             logger.error(f"Error fetching undelivered messages: {str(e)}")
 
     async def fetch_undelivered_milestones(self):
-        """Fetch undelivered milestones for the user"""
+        """CONSUMER RULE: Fetch undelivered milestones for the user on reconnect"""
         try:
-            from users.models import Milestone  # avoid circular import
+            from users.models import Milestone
 
+            # CRITICAL: Only fetch milestones where delivered=False AND completed=False
             milestones = await sync_to_async(list)(
-                Milestone.objects.filter(user_id=self.user_id, delivered=False)
+                Milestone.objects.filter(
+                    user_id=self.user_id, 
+                    delivered=False,
+                    completed=False  # Add this condition
+                )
             )
+            
+            logger.info(f"Found {len(milestones)} undelivered milestones for user {self.user_id}")
+            
             for milestone in milestones:
+                # Send notification to client
                 await self.send_milestone_notification(milestone)
 
+                # CONSUMER RULE: Immediately update delivered to True
                 milestone.delivered = True
                 await sync_to_async(milestone.save)(update_fields=['delivered'])
+                logger.info(f"Milestone {milestone.id} marked as delivered=True on reconnect")
+                
         except Exception as e:
             logger.error(f"Error fetching undelivered milestones: {str(e)}")
 
     async def send_milestone_notification(self, milestone):
-        """Send milestone notification to client"""
+        """Send milestone notification to client WITHOUT completed field"""
         notification = {
             "notification_type": "Milestone_Notification",
             "notification_message": f"Achievement unlocked: {milestone.title}",
@@ -154,10 +166,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 "title": milestone.title,
                 "text": milestone.text,
                 "created_at": milestone.created_at.isoformat(),
-                "delivered": milestone.delivered,
+                "delivered": milestone.delivered,  # Include delivered status
                 "photo_id": milestone.photo_id,
                 "photo_url": milestone.photo_url,
                 "type": milestone.type
+                # DO NOT INCLUDE completed field
             },
             "notification_number": str(milestone.id),
             "notification_freshness": True,

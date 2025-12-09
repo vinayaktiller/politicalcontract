@@ -3,6 +3,7 @@ from django.db import transaction
 from pendingusers.models.notifications import InitiationNotification
 from users.models.Connectionnotification import ConnectionNotification
 from event.models.group_speaker_invitation_notifiation import GroupSpeakerInvitationNotification
+from users.models import Milestone  # Add this import
 
 from pendingusers.services.send_notification_to_initiator import send_notification_to_initiator
 from users.makingconnections.services.send_notfication_to_connection import send_notification_to_connection
@@ -20,6 +21,7 @@ def handle_user_notifications_on_login(user):
     2. ConnectionNotifications where user is either:
        - connection (receiver) 
        - applicant (sender)
+    3. Milestones for login push
     
     Triggers appropriate notification services based on user's role in notifications.
     
@@ -37,8 +39,9 @@ def handle_user_notifications_on_login(user):
 
         # Process GroupSpeakerInvitationNotifications
         _process_speaker_invitation_notifications(user)
-           
-
+        
+        # LOGIN FLOW: Process milestones for login push
+        _process_milestones_on_login(user)
 
         logger.info(f"Completed notification processing for user {user.id}")
     except Exception as e:
@@ -98,7 +101,6 @@ def _process_connection_notifications(user):
         except Exception as e:
             logger.error(f"Failed to send applicant status for {notification.id}: {str(e)}")
 
-
 def _process_speaker_invitation_notifications(user):
     """Process GroupSpeakerInvitationNotification where user is the invited speaker"""
     # Assuming `speaker` is a Petitioner linked to `user`
@@ -114,3 +116,27 @@ def _process_speaker_invitation_notifications(user):
                 notification.mark_as_seen()
         except Exception as e:
             logger.error(f"Failed to send speaker invitation {notification.id}: {e}")
+
+def _process_milestones_on_login(user):
+    """LOGIN FLOW: Process milestones when user logs in"""
+    logger.info(f"Processing milestones for login push for user {user.id}")
+    try:
+        # LOGIN RULE: Only push if delivered=True AND completed=False
+        milestones = Milestone.objects.filter(
+            user_id=user.id,
+            delivered=True,
+            completed=False
+        )
+        
+        logger.info(f"Found {milestones.count()} milestones for login push for user {user.id}")
+        
+        for milestone in milestones:
+            try:
+                # Send notification without modifying the milestone
+                milestone.send_milestone_notification_stage_2()
+                logger.info(f"Sent login push for milestone {milestone.id}")
+            except Exception as e:
+                logger.error(f"Failed to send login push for milestone {milestone.id}: {str(e)}")
+                
+    except Exception as e:
+        logger.error(f"Error processing milestones on login: {str(e)}")
