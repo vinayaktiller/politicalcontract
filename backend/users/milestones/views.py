@@ -5,6 +5,9 @@ from django.shortcuts import get_list_or_404
 from ..models import Milestone
 from .serializers import MilestoneSerializer
 import logging
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
 
 # Logger for this module
 logger = logging.getLogger(__name__)
@@ -35,51 +38,40 @@ class UserMilestonesAPIView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+@method_decorator(csrf_exempt, name='dispatch')  # TEMP for debugging only
 class MarkMilestoneCompletedAPIView(APIView):
     """
-    NOTIFICATION BAR CLICK API: Mark milestone as completed when user clicks notification.
-    Expects milestone_id in request body.
+    Diagnostic: logs arrival of all methods. Keep csrf_exempt only for debugging.
     """
-    
+
+    def options(self, request, *args, **kwargs):
+        logger.info("OPTIONS received for %s by user=%s", request.path, getattr(request.user, 'id', None))
+        return Response(status=status.HTTP_200_OK)
+
+    def get(self, request, *args, **kwargs):
+        logger.info("GET received for %s (method not allowed for marking complete)", request.path)
+        return Response({'error': 'GET not supported on this endpoint'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
     def post(self, request, *args, **kwargs):
+        logger.info("POST received for %s: user=%s body=%s", request.path, getattr(request.user, 'id', None), request.data)
         milestone_id = request.data.get('milestone_id')
-
-        # Log incoming call for debugging 404s / auth issues
-        logger.info("MarkMilestoneCompleted called: user=%s, milestone_id=%s, body=%s",
-                    getattr(request, 'user', None), milestone_id, request.data)
-
         if not milestone_id:
-            logger.debug("Missing milestone_id in request body")
-            return Response(
-                {'error': 'milestone_id is required in request body.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            logger.debug("Missing milestone_id")
+            return Response({'error': 'milestone_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_id = getattr(request.user, 'id', None)
+        if user_id is None:
+            logger.debug("Unauthenticated request")
+            return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
-            # If the request is unauthenticated, request.user.id may be None.
-            user_id = getattr(request.user, 'id', None)
-            logger.debug("Attempting to find milestone id=%s for user_id=%s", milestone_id, user_id)
-
             milestone = Milestone.objects.get(id=milestone_id, user_id=user_id)
-
-            # NOTIFICATION BAR CLICK RULE: Only update completed, not delivered
             milestone.mark_as_completed()
-            logger.info("Milestone %s marked completed for user %s", milestone_id, user_id)
-
-            return Response(
-                {'success': True, 'message': 'Milestone marked as completed'},
-                status=status.HTTP_200_OK
-            )
-
+            logger.info("Marked milestone %s completed for user %s", milestone_id, user_id)
+            return Response({'success': True}, status=status.HTTP_200_OK)
         except Milestone.DoesNotExist:
-            logger.warning("Milestone not found or does not belong to user: id=%s user_id=%s", milestone_id, user_id)
-            return Response(
-                {'error': 'Milestone not found or does not belong to user'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except ValueError as e:
-            logger.exception("ValueError while marking milestone completed: %s", e)
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            logger.warning("Milestone not found id=%s user=%s", milestone_id, user_id)
+            return Response({'error': 'Milestone not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.exception("Unexpected error marking milestone completed: %s", e)
+            return Response({'error': 'internal error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
