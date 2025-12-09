@@ -2,8 +2,8 @@
 FROM python:3.10-slim
 
 # Prevent Python from writing .pyc files and buffer outputs
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -16,17 +16,17 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY backend/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy application files
-COPY . .
+COPY backend /app
 
 # Create media directory
 RUN mkdir -p /app/media/profile_pics
 
-# Add entrypoint script
-COPY ./docker-entrypoint.sh .
+# Add and set permissions for entrypoint script
+COPY backend/docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
 # Set entrypoint
