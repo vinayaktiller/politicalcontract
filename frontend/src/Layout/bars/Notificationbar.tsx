@@ -1,5 +1,5 @@
 import '../css/NotificationBar.css';
-import React from "react";
+import React, { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { RootState, AppDispatch } from "../../store";
@@ -7,7 +7,7 @@ import { Notification } from "../../pages/Authenticated/flowpages/notificationpa
 import { triggerCelebration } from "../../pages/Authenticated/milestone/celebration/celebrationSlice";
 import { removeNotificationByDetails } from "../../pages/Authenticated/flowpages/notificationpages/notification_state/notificationsSlice";
 import { addMilestone } from "../../pages/Authenticated/milestone/milestonesSlice";
-import api from "../../api"; // Use api instance for backend calls
+import api from "../../api";
 
 interface NotificationBarProps {
   toggleNotifications: () => void;
@@ -18,72 +18,100 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
   const navigate = useNavigate();
   const { notifications, isConnected } = useSelector((state: RootState) => state.notifications);
 
-  // Updated routes - Message notification goes to chat list
   const notificationRoutes: Record<string, string> = {
     Initiation_Notification: "/Initiationnotifications",
     Connection_Notification: "/Connectionnotifications",
     Connection_Status: "/ConnectionStatusNotifications",
     Group_Speaker_Invitation: "/GroupSpeakerInvitation",
     Milestone_Notification: "/MilestoneNotifications",
-    Message_Notification: "/chat" // Navigate to chat list
+    Message_Notification: "/chat"
   };
 
-  const handleView = async (notificationNumber: string) => {
+  const handleView = useCallback(async (notificationNumber: string) => {
     const notification = notifications.find(n => n.notification_number === notificationNumber);
-    if (notification) {
-      // Special handling for Milestone notifications
-      if (notification.notification_type === "Milestone_Notification") {
-        const milestoneData = notification.notification_data;
+    if (!notification) return;
 
-        // Add milestone to Redux store
-        dispatch(addMilestone(milestoneData));
+    // Special handling for Milestone notifications
+    if (notification.notification_type === "Milestone_Notification") {
+      const milestoneData = notification.notification_data;
+      
+      // Add milestone to Redux store first
+      dispatch(addMilestone({
+        ...milestoneData,
+        // Ensure all required fields are present
+        id: milestoneData.id || notification.id,
+        milestone_id: milestoneData.milestone_id || `milestone_${Date.now()}`,
+        title: milestoneData.title || "Milestone Achieved",
+        text: milestoneData.text || "Congratulations on your achievement!",
+        created_at: milestoneData.created_at || new Date().toISOString(),
+        delivered: milestoneData.delivered || false,
+        photo_id: milestoneData.photo_id || null,
+        photo_url: milestoneData.photo_url || null,
+        type: milestoneData.type || "initiation"
+      }));
 
-        // Trigger celebration modal
-        dispatch(triggerCelebration({
-          ...milestoneData,
-          id: notification.id
-        }));
-
-        // Call backend API to mark milestone as completed using api instance (handles auth automatically)
-        try {
-          const response = await api.post('/api/users/milestones/complete/', {
+      // Trigger celebration modal with guaranteed data
+      // Trigger celebration modal with guaranteed data
+      dispatch(triggerCelebration({
+        ...milestoneData,
+        id: notification.id, // Use notification ID for tracking
+        // Ensure celebration data has all required fields
+        milestone_id: milestoneData.milestone_id,
+        user_id: milestoneData.user_id,
+        title: milestoneData.title,
+        text: milestoneData.text,
+        created_at: milestoneData.created_at,
+        delivered: milestoneData.delivered,
+        photo_id: milestoneData.photo_id,
+        photo_url: milestoneData.photo_url,
+        type: milestoneData.type
+      }));
+      // Call backend API to mark milestone as completed
+      try {
+        if (milestoneData.milestone_id) {
+          await api.post('/api/users/milestones/complete/', {
             milestone_id: milestoneData.milestone_id
           });
-
-          if (response.status === 200 || response.status === 204) {
-            console.log('Milestone marked as completed successfully');
-          } else {
-            console.error('Failed to mark milestone as completed');
-          }
-        } catch (error) {
-          console.error('Error calling milestone completion API:', error);
+          console.log('Milestone marked as completed successfully');
         }
-
-        // Remove notification after triggering celebration
-        dispatch(removeNotificationByDetails({
-          notification_type: notification.notification_type,
-          notification_number: notification.notification_number,
-        }));
-      } 
-      // Handling for Message notifications
-      else if (notification.notification_type === "Message_Notification") {
-        navigate('/messages/chatlist');
-
-        dispatch(removeNotificationByDetails({
-          notification_type: notification.notification_type,
-          notification_number: notification.notification_number,
-        }));
-      } 
-      else {
-        const routeBase = notificationRoutes[notification.notification_type];
-        const destination = routeBase 
-          ? `${routeBase}/${notification.id}`
-          : `/notifications/${notification.id}`;
-        navigate(destination);
+      } catch (error) {
+        console.error('Error calling milestone completion API:', error);
       }
-      toggleNotifications();
+
+      // Remove notification after triggering celebration
+      setTimeout(() => {
+        dispatch(removeNotificationByDetails({
+          notification_type: notification.notification_type,
+          notification_number: notification.notification_number,
+        }));
+      }, 100);
+    } 
+    // Handling for Message notifications
+    else if (notification.notification_type === "Message_Notification") {
+      navigate('/messages/chatlist');
+      
+      dispatch(removeNotificationByDetails({
+        notification_type: notification.notification_type,
+        notification_number: notification.notification_number,
+      }));
+    } 
+    else {
+      const routeBase = notificationRoutes[notification.notification_type];
+      const destination = routeBase 
+        ? `${routeBase}/${notification.id}`
+        : `/notifications/${notification.id}`;
+      navigate(destination);
     }
-  };
+    
+    toggleNotifications();
+  }, [dispatch, navigate, notifications, toggleNotifications]);
+
+  // Sort notifications by date (newest first)
+  const sortedNotifications = [...notifications].sort((a, b) => {
+    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return dateB - dateA;
+  });
 
   const classifyNotifications = (notificationGroup: Notification[]) => {
     return notificationGroup.reduce((acc, notification) => {
@@ -95,8 +123,8 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
     }, {} as Record<string, Notification[]>);
   };
 
-  const newNotifications = notifications.filter(n => !n.notification_freshness);
-  const oldNotifications = notifications.filter(n => n.notification_freshness);
+  const newNotifications = sortedNotifications.filter(n => !n.notification_freshness);
+  const oldNotifications = sortedNotifications.filter(n => n.notification_freshness);
   const groupedNewNotifications = classifyNotifications(newNotifications);
   const groupedOldNotifications = classifyNotifications(oldNotifications);
 
@@ -106,7 +134,7 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
         <h3>Notifications {!isConnected && <span className="connecting-dot">●</span>}</h3>
       </div>
 
-      {notifications.length === 0 ? (
+      {sortedNotifications.length === 0 ? (
         <div className="empty-state">
           <p>No notifications available</p>
         </div>
@@ -118,7 +146,7 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
               <ul>
                 {notifications.map(notification => (
                   <li 
-                    key={notification.notification_number} 
+                    key={`${notification.notification_number}-${notification.id}`}
                     className="notification-item unread"
                     onClick={() => handleView(notification.notification_number)}
                   >
@@ -145,7 +173,7 @@ const NotificationBar: React.FC<NotificationBarProps> = ({ toggleNotifications }
               <ul>
                 {notifications.map(notification => (
                   <li 
-                    key={notification.notification_number} 
+                    key={`${notification.notification_number}-${notification.id}`}
                     className="notification-item read"
                     onClick={() => handleView(notification.notification_number)}
                   >
