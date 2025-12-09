@@ -58,8 +58,11 @@ class MarkMilestoneCompletedAPIView(APIView):
         if not milestone_id:
             logger.debug("Missing milestone_id")
             return Response({'error': 'milestone_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        player=request.user.id
+        logger.info(" player %s Marking milestone %s completed for user %s", milestone_id, player)
 
-        user_id = getattr(request.user, 'id', None)
+        # user_id = getattr(request.user, 'id', None)
+        user_id = request.user.id
         if user_id is None:
             logger.debug("Unauthenticated request")
             return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
