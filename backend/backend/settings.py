@@ -389,10 +389,10 @@ CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL' )
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND' )
 CELERY_TIMEZONE = 'Asia/Kolkata'
 CELERY_BEAT_SCHEDULE = {
-    # 'simulate-user-growth': {
-    #     'task': 'users.tasks.add_live_users',
-    #     'schedule':300.0,
-    # },
+    'simulate-user-growth': {
+        'task': 'users.tasks.add_live_users',
+        'schedule':300.0,
+    },
 
     
     'generate-daily-report': {
