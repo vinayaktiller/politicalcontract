@@ -40,7 +40,7 @@ urlpatterns = [
 
     # --- Milestones ---
     path('milestones/', UserMilestonesAPIView.as_view(), name='user_milestones'),  # list user milestones
-    path('milestones/over/', MarkMilestoneCompletedAPIView.as_view(), name='mark_milestone_completed'),  # mark milestone complete
+    # path('milestones/over/', MarkMilestoneCompletedAPIView.as_view(), name='mark_milestone_completed'),  # mark milestone complete
     
     path('milestones/complete/', MarkMilestoneCompletedAPIView.as_view(), name='mark_milestone_completed'),  # mark milestone complete
 
