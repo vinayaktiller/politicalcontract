@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { BlogFormData, ContentType } from '../types';
 import api from '../../../../../api';
 import './ConsumptionFields.css';
+import './BlogTypeCommon.css';
 
 // Map content_type to labels and lengths
 const SIZE_MAP: Record<string, { label: string; chars: number }> = {
@@ -54,8 +55,8 @@ const ConsumptionFields: React.FC<Props> = ({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const footerMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const selectedSizeKey = formData.content_type || 'short_essay';
-  const selectedSizeLabel = SIZE_MAP[selectedSizeKey]?.label ?? 'Short Essay';
+  const selectedSizeKey = formData.content_type || 'micro';
+  const selectedSizeLabel = SIZE_MAP[selectedSizeKey]?.label ?? 'Micro';
   const computedMaxLength = SIZE_MAP[selectedSizeKey]?.chars ?? getMaxLength();
 
   const modalShownForSizeRef = useRef<string | null>(null);

@@ -2,6 +2,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
+import { config } from '../../Unauthenticated/config';
+
+const FRONTEND_BASE_URL = config.FRONTEND_BASE_URL;
 
 interface HomePageProps {
   // optional: pass a flag to show admin card only to admins
@@ -29,7 +32,7 @@ const HomePage: React.FC<HomePageProps> = ({ isAdmin = true }) => {
         >
           <div className="button-icon">
             <img
-              src="http://localhost:3000/emojies/group.png"
+              src={`${FRONTEND_BASE_URL}/emojies/group.png`}
               alt="Create a group"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -50,7 +53,7 @@ const HomePage: React.FC<HomePageProps> = ({ isAdmin = true }) => {
         >
           <div className="button-icon">
             <img
-              src="http://localhost:3000/emojies/question.png"
+              src={`${FRONTEND_BASE_URL}/emojies/question.png`}
               alt="Questions"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -71,7 +74,7 @@ const HomePage: React.FC<HomePageProps> = ({ isAdmin = true }) => {
         >
           <div className="button-icon">
             <img
-              src="http://localhost:3000/emojies/contribution.png"
+              src={`${FRONTEND_BASE_URL}/emojies/contribution.png`}
               alt="Claim contribution"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -95,7 +98,7 @@ const HomePage: React.FC<HomePageProps> = ({ isAdmin = true }) => {
           >
             <div className="button-icon">
               <img
-                src="http://localhost:3000/emojies/admin.png"
+                src={`${FRONTEND_BASE_URL}/emojies/admin.png`}
                 alt="Admin dashboard"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
@@ -113,14 +116,14 @@ const HomePage: React.FC<HomePageProps> = ({ isAdmin = true }) => {
 
         {/* other commented buttons kept for future */}
       </div>
-      <div>
+      {/* <div>
               <button 
                     onClick={() => navigate('/reports/generate')}
                     className="generate-reports-btn"
                   >
                     Generate Reports
                   </button>
-            </div>
+            </div> */}
     </div>
   );
 };

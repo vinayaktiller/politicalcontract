@@ -202,7 +202,7 @@ const BlogCreator: React.FC = () => {
       setFormData(prev => ({
         ...prev,
         content: '',
-        content_type: 'short_essay',
+        content_type: 'micro',
       }));
     }
 

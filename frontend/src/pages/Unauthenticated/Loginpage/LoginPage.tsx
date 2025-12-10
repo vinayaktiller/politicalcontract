@@ -122,9 +122,9 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* TEMP */}
-        <button onClick={checkBackend} className="backend-btn">
+        {/* <button onClick={checkBackend} className="backend-btn">
           Check Backend
-        </button>
+        </button> */}
       </div>
 
       {/* LOGO + FOOTER */}

@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { BlogFormData } from '../types';
 import './SuccessfulExperienceFields.css';
+import './BlogTypeCommon.css';
 
 // Map content_type to labels and lengths
 const SIZE_MAP: Record<string, { label: string; chars: number }> = {
@@ -43,9 +44,9 @@ const SuccessfulExperienceFields: React.FC<Props> = ({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const footerMenuRef = useRef<HTMLDivElement | null>(null);
 
-  // derive selectedSizeKey from formData.content_type (fallback to short_essay)
-  const selectedSizeKey = formData.content_type || 'short_essay';
-  const selectedSizeLabel = SIZE_MAP[selectedSizeKey]?.label ?? 'Short Essay';
+  // derive selectedSizeKey from formData.content_type (fallback to micro)
+  const selectedSizeKey = formData.content_type || 'micro';
+  const selectedSizeLabel = SIZE_MAP[selectedSizeKey]?.label ?? 'Micro';
   const computedMaxLength = SIZE_MAP[selectedSizeKey]?.chars ?? getMaxLength();
 
   // current user info

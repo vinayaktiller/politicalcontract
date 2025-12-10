@@ -4,6 +4,7 @@ import { SizeSelector } from '../components/SizeSelector';
 import { SubmitButton } from '../components/SubmitButton';
 import { adjustTextareaHeight, handleFocusScroll } from '../utils/helpers';
 import './JourneyFields.css';
+import './BlogTypeCommon.css';
 
 interface Props {
   formData: BlogFormData;
@@ -61,7 +62,7 @@ export const JourneyFields: React.FC<Props> = ({
           <div className="panel-footer">
             <div className="footer-left">
               <SizeSelector
-                selectedSize={formData.content_type || 'short_essay'}
+                selectedSize={formData.content_type || 'micro'}
                 contentLength={contentLen}
                 onSizeChange={handleSizeChange}
               />

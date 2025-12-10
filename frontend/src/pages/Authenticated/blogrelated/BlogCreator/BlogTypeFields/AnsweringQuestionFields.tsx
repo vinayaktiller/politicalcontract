@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BlogFormData, ContentType } from '../types';
 import './AnsweringQuestionFields.css';
+import './BlogTypeCommon.css';
 
 // Map content_type to labels and lengths
 const SIZE_MAP: Record<string, { label: string; chars: number }> = {
@@ -51,9 +52,9 @@ const AnsweringQuestionFields: React.FC<Props> = ({
   const [pendingUpgradeKey, setPendingUpgradeKey] = useState<string | null>(null);
   const modalShownForSizeRef = useRef<string | null>(null);
   
-  // derive selectedSizeKey from formData.content_type (fallback to short_essay)
-  const selectedSizeKey = formData.content_type || 'short_essay';
-  const selectedSizeLabel = SIZE_MAP[selectedSizeKey]?.label ?? 'Short Essay';
+  // derive selectedSizeKey from formData.content_type (fallback to micro)
+  const selectedSizeKey = formData.content_type || 'micro';
+  const selectedSizeLabel = SIZE_MAP[selectedSizeKey]?.label ?? 'Micro';
   const computedMaxLength = SIZE_MAP[selectedSizeKey]?.chars ?? getMaxLength();
   const exceedsPreset = contentLen > computedMaxLength;
 

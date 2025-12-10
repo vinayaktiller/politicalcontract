@@ -1,6 +1,7 @@
 // JourneyFields.tsx
 import React, { useEffect, useState, useRef, MutableRefObject } from 'react';
 import './JourneyFields.css'; 
+import './BlogTypeCommon.css';
 import { BlogFormData } from '../types';
 import CircleContactsModal from '../CircleContacts/CircleContactsModal';
 import { useDispatch, useSelector } from 'react-redux';
@@ -65,9 +66,9 @@ const JourneyFields: React.FC<Props> = ({
   // Set default to self journey immediately
   const [hasSetDefaultJourney, setHasSetDefaultJourney] = useState(false);
 
-  // derive selectedSizeKey from formData.content_type (fallback to short_essay)
-  const selectedSizeKey = formData.content_type || 'short_essay';
-  const selectedSizeLabel = SIZE_MAP[selectedSizeKey]?.label ?? 'Short Essay';
+  // derive selectedSizeKey from formData.content_type (fallback to micro)
+  const selectedSizeKey = formData.content_type || 'micro';
+  const selectedSizeLabel = SIZE_MAP[selectedSizeKey]?.label ?? 'Micro';
   const computedMaxLength = SIZE_MAP[selectedSizeKey]?.chars ?? getMaxLength();
 
   // track whether we've already prompted for this size

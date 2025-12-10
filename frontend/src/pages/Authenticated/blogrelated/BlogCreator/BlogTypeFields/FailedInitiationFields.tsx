@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, MutableRefObject } from 'react';
 import { BlogFormData } from '../types';
 import { useAddressSelection } from '../../../../Unauthenticated/Registration/hooks/useAddressSelection';
 import './FailedInitiationFields.css';
+import './BlogTypeCommon.css';
 
 type Props = {
   formData: BlogFormData;
@@ -56,9 +57,9 @@ const FailedInitiationFields: React.FC<Props> = ({
   // Textarea ref
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // derive selectedSizeKey from formData.content_type (fallback to short_essay)
-  const selectedSizeKey = formData.content_type || 'short_essay';
-  const selectedSizeLabel = SIZE_MAP[selectedSizeKey]?.label ?? 'Short Essay';
+  // derive selectedSizeKey from formData.content_type (fallback to micro)
+  const selectedSizeKey = formData.content_type || 'micro';
+  const selectedSizeLabel = SIZE_MAP[selectedSizeKey]?.label ?? 'Micro';
   const computedMaxLength = SIZE_MAP[selectedSizeKey]?.chars ?? getMaxLength();
 
   // Content length handling

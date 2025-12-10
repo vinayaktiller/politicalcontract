@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BlogFormData, ContentType } from '../types';
 import './ReportInsightFields.css';
+import './BlogTypeCommon.css';
 
 type Props = {
   formData: BlogFormData;
