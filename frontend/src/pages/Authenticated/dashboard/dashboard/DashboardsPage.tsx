@@ -9,24 +9,16 @@ import {
   disconnectWebSocket
 } from "./activeusers/activeUsersThunks";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Users,
-  UserCheck,
-  FileText,
-  BarChart2,
-  Calendar,
-  TrendingUp
-} from 'lucide-react';
 
 // Define proper interfaces
 interface ReportItem {
-  id: string;
+  id: string; // Changed from number to string (UUID)
   report_type: 'daily' | 'weekly' | 'monthly';
   formatted_date: string;
   new_users: number;
   country_id?: number;
   country_name?: string;
-  date?: string;
+  date?: string; // Added optional date field for potential fallback
 }
 
 interface ActivityReportItem {
@@ -34,11 +26,10 @@ interface ActivityReportItem {
   report_type: string;
   level?: string;
   formatted_date?: string;
-  active_users?: number;
-  total_activity?: number;
   date?: string;
   week_start_date?: string;
   week_last_date?: string;
+  active_users?: number; // Added this field
 }
 
 const DashboardsPage = () => {
@@ -96,35 +87,38 @@ const DashboardsPage = () => {
         setLoading(true);
         setError(null);
 
-        // Fetch initiation reports
+        // Fetch initiation reports - Use the same endpoint as ReportsListPage
         const reportsResponse = await api.get('api/reports/reports/latest/');
         const reportsData = reportsResponse.data as ReportItem[];
         
         console.log("Latest reports data:", reportsData);
         
-        // Format dates to single line format (DD MMM YYYY)
+        // Format dates to ensure they appear in single line
         const formattedReports = reportsData.map(report => {
-          let formattedDate = report.formatted_date;
+          // If formatted_date exists, use it as is
+          if (report.formatted_date) {
+            return report;
+          }
           
-          // If the API returns a formatted date, ensure it's in single line format
+          // Fallback: format the date from report.date if available
           if (report.date) {
             try {
               const dateObj = new Date(report.date);
-              // Format to "15 Dec 2023" style
-              formattedDate = dateObj.toLocaleDateString('en-US', {
+              const formattedDate = dateObj.toLocaleDateString('en-US', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric'
               });
+              return {
+                ...report,
+                formatted_date: formattedDate
+              };
             } catch (e) {
               console.error('Date formatting error:', e);
             }
           }
           
-          return {
-            ...report,
-            formatted_date: formattedDate
-          };
+          return report;
         });
         
         setLatestReports(formattedReports);
@@ -136,54 +130,62 @@ const DashboardsPage = () => {
         console.log("Activity reports data:", activityData);
         
         // Format activity reports
-        const formattedActivity = activityData.map(report => {
-          let formattedDate = report.formatted_date;
-          
-          // Format to single line date
-          if (report.date) {
-            try {
-              const dateObj = new Date(report.date);
-              formattedDate = dateObj.toLocaleDateString('en-US', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-              });
-            } catch (e) {
-              console.error('Date formatting error:', e);
-            }
-          } else if (report.week_start_date && report.week_last_date) {
-            // For weekly reports, format as "15 Dec - 22 Dec 2023"
-            try {
-              const startDate = new Date(report.week_start_date);
-              const endDate = new Date(report.week_last_date);
-              const startStr = startDate.toLocaleDateString('en-US', {
-                day: 'numeric',
-                month: 'short'
-              });
-              const endStr = endDate.toLocaleDateString('en-US', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-              });
-              formattedDate = `${startStr} - ${endStr}`;
-            } catch (e) {
-              console.error('Date formatting error:', e);
-            }
+        const normalizedActivity = activityData.map((report: ActivityReportItem) => {
+          // If API already provides formatted_date, use it
+          if (report.formatted_date) {
+            return report;
           }
           
-          return {
-            ...report,
-            formatted_date: formattedDate,
-            // Ensure active_users has a default value if not provided
-            active_users: report.active_users || 0
-          };
+          // Otherwise format it
+          if (report.report_type === 'monthly' && report.date) {
+            // For monthly reports: "December 2023"
+            const dateObj = new Date(report.date);
+            const formattedDate = dateObj.toLocaleString('default', { 
+              month: 'long', 
+              year: 'numeric' 
+            });
+            return { 
+              ...report, 
+              formatted_date: formattedDate
+            };
+          } else if (report.report_type === 'weekly' && report.week_start_date && report.week_last_date) {
+            // For weekly reports: "15 Dec - 22 Dec 2023"
+            const startDate = new Date(report.week_start_date);
+            const endDate = new Date(report.week_last_date);
+            const startStr = startDate.toLocaleDateString('en-US', { 
+              day: 'numeric', 
+              month: 'short' 
+            });
+            const endStr = endDate.toLocaleDateString('en-US', { 
+              day: 'numeric', 
+              month: 'short', 
+              year: 'numeric' 
+            });
+            return { 
+              ...report, 
+              formatted_date: `${startStr} - ${endStr}` 
+            };
+          } else if (report.date) {
+            // For daily reports: "15 Dec 2023"
+            const dateObj = new Date(report.date);
+            const formattedDate = dateObj.toLocaleDateString('en-US', { 
+              day: 'numeric', 
+              month: 'short', 
+              year: 'numeric' 
+            });
+            return { 
+              ...report, 
+              formatted_date: formattedDate
+            };
+          }
+          return report;
         });
         
-        setActivityReports(formattedActivity.slice(0, 5));
+        setActivityReports(normalizedActivity.slice(0, 5));
         
       } catch (error) {
         console.error("Error fetching data:", error);
-        setError("Failed to load reports data. Please try again.");
+        setError("Failed to load reports data");
         setLatestReports([]);
         setActivityReports([]);
       } finally {
@@ -207,27 +209,23 @@ const DashboardsPage = () => {
   };
 
   const renderActiveUsers = () => {
-    return (
-      <div className="dashboard-stat-content">
-        <UserCheck size={24} className="stat-icon" />
-        <div className="stat-text">
-          <div className="stat-value">{activeCount}</div>
-          <div className="stat-label">Active Users Today</div>
-        </div>
-      </div>
-    );
+    if (activeLoading) {
+      return <p className="dashboard-stat-label">Loading active users...</p>;
+    }
+    if (activeError) {
+      return <p className="dashboard-stat-label error">Error: {activeError}</p>;
+    }
+    return <p className="dashboard-stat-label">{activeCount} Active users Today</p>;
   };
 
-  const renderOverallReport = () => {
-    return (
-      <div className="dashboard-stat-content">
-        <BarChart2 size={24} className="stat-icon" />
-        <div className="stat-text">
-          <div className="stat-value">Overall</div>
-          <div className="stat-label">Complete Report</div>
-        </div>
-      </div>
-    );
+  const renderTotalPetitioners = () => {
+    if (totalLoading) {
+      return <p className="dashboard-stat-label">Loading total petitioners...</p>;
+    }
+    if (totalError) {
+      return <p className="dashboard-stat-label error">Error: {totalError}</p>;
+    }
+    return <p className="dashboard-stat-label">Petitioners have signed for Political contract</p>;
   };
 
   // Create a rolling digit component
@@ -252,7 +250,7 @@ const DashboardsPage = () => {
 
   // Create the animated count display
   const AnimatedCount = ({ count }: { count: number }) => {
-    const countStr = count.toLocaleString(); // Format with commas
+    const countStr = count.toString();
     
     return (
       <div className="animated-count">
@@ -267,240 +265,138 @@ const DashboardsPage = () => {
     return type.charAt(0).toUpperCase() + type.slice(1);
   };
 
-  const getReportIcon = (type: string) => {
-    switch (type) {
-      case 'daily': return <Calendar size={16} />;
-      case 'weekly': return <TrendingUp size={16} />;
-      case 'monthly': return <BarChart2 size={16} />;
-      default: return <FileText size={16} />;
-    }
-  };
-
   return (
     <div className="dashboard-page">
       {/* Top banner with total petitioners */}
       <div className="dashboard-live-count">
-        <div className="dashboard-stat-value-large">
+        <div className="dashboard-stat-value">
           {totalLoading ? (
-            <div className="loading-count">...</div>
+            '...'
           ) : totalError ? (
-            <div className="error-count">Error</div>
+            'Error'
           ) : (
-            <div className="total-count-display">
-              <Users size={32} className="total-count-icon" />
-              <AnimatedCount count={displayedTotalCount} />
-            </div>
+            <AnimatedCount count={displayedTotalCount} />
           )}
         </div>
         <div className="dashboard-stat-tagline">
-          <p>Petitioners have signed for Political contract</p>
-          <small>Live count updates every minute</small>
+          {renderTotalPetitioners()}
         </div>
       </div>
 
       <div className="dashboard-container">
-        {/* Stat cards */}
-        <div className="stat-cards-container">
-          <div className="dashboard-stat-card" onClick={overallReport}>
-            {renderOverallReport()}
-          </div>
-          
-          <div className="dashboard-stat-card">
-            {activeLoading ? (
-              <div className="dashboard-stat-content">
-                <div className="loading-text">Loading...</div>
-              </div>
-            ) : activeError ? (
-              <div className="dashboard-stat-content">
-                <div className="error-text">Error loading active users</div>
-              </div>
-            ) : (
-              renderActiveUsers()
-            )}
-          </div>
+        {/* Stat card for active users */}
+        <div className="dashboard-stat-card">
+          {renderActiveUsers()}
+        </div>
+
+        {/* Overall report button */}
+        <div className="dashboard-stat-card" onClick={overallReport}>
+          <p className="dashboard-stat-label">Overall Report</p>
         </div>
 
         {/* Loading State */}
         {loading && (
           <div className="dashboard-report-card">
-            <div className="loader-container">
-              <div className="loader-spinner"></div>
-              <p>Loading reports data...</p>
-            </div>
+            <div className="loader">Loading reports...</div>
           </div>
         )}
 
         {/* Error State */}
         {error && !loading && (
           <div className="dashboard-report-card">
-            <div className="error-message">
-              <div className="error-icon">⚠️</div>
-              <p>{error}</p>
-              <button 
-                className="retry-btn"
-                onClick={() => window.location.reload()}
-              >
-                Retry
-              </button>
-            </div>
+            <div className="error-message">{error}</div>
           </div>
         )}
 
         {/* Latest Reports Table - Only show if not loading and no error */}
         {!loading && !error && (
           <>
-            {/* Latest Initiation Reports Table */}
+            {/* Latest Reports Table */}
             <div className="dashboard-report-card">
               <div className="dashboard-report-card-header">
-                <div className="report-card-title">
-                  <FileText size={20} className="report-card-icon" />
-                  <h2>Latest Initiation Reports</h2>
-                </div>
+                <h2>Latest Initiation Reports</h2>
                 <button 
                   className="all-reports-btn"
                   onClick={() => navigate('/reports-list')}
                 >
-                  View All Reports
+                  All Reports
                 </button>
               </div>
-              <div className="report-card-content">
-                <table className="dashboard-report-table">
-                  <thead>
-                    <tr>
-                      <th>Report Type</th>
-                      <th>Date</th>
-                      <th>New Users</th>
-                      <th>View</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {latestReports.length > 0 ? (
-                      latestReports.map(report => (
-                        <tr 
-                          key={report.id} 
-                          className="dashboard-report-row"
-                        >
-                          <td>
-                            <div className="report-type-cell">
-                              {getReportIcon(report.report_type)}
-                              <span>{getReportTypeLabel(report.report_type)} Report</span>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="date-cell">
-                              {report.formatted_date}
-                            </div>
-                          </td>
-                          <td>
-                            <div className="new-users-cell">
-                              <Users size={14} className="users-icon" />
-                              <span className="new-users-count">
-                                {report.new_users.toLocaleString()}
-                              </span>
-                            </div>
-                          </td>
-                          <td>
-                            <button 
-                              className="view-report-btn"
-                              onClick={() => handleReportClick(report.report_type, report.id)}
-                            >
-                              View Details
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={4}>
-                          <div className="no-data-message">
-                            <FileText size={32} />
-                            <p>No initiation reports available</p>
-                          </div>
-                        </td>
+              <table className="dashboard-report-table">
+                <thead>
+                  <tr>
+                    <th>Report Type</th>
+                    <th>Date</th>
+                    <th>New Users</th> {/* Changed from ID to New Users */}
+                  </tr>
+                </thead>
+                <tbody>
+                  {latestReports.length > 0 ? (
+                    latestReports.map(report => (
+                      <tr 
+                        key={report.id} 
+                        onClick={() => handleReportClick(report.report_type, report.id)}
+                        className="dashboard-report-row"
+                      >
+                        <td>{getReportTypeLabel(report.report_type)} Report</td>
+                        <td>{report.formatted_date}</td>
+                        {/* Changed from ID to new_users */}
+                        <td>{report.new_users.toLocaleString()}</td>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3}>No data available</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
 
             {/* Activity Reports */}
             <div className="dashboard-report-card">
               <div className="dashboard-report-card-header">
-                <div className="report-card-title">
-                  <TrendingUp size={20} className="report-card-icon" />
-                  <h2>Recent Activity Reports</h2>
-                </div>
+                <h2>Recent Activity Reports</h2>
                 <button 
                   className="all-reports-btn"
                   onClick={() => navigate('/activity-reports-list')}
                 >
-                  View All Reports
+                  All Reports
                 </button>
               </div>
-              <div className="report-card-content">
-                <table className="dashboard-report-table">
-                  <thead>
-                    <tr>
-                      <th>Report Type</th>
-                      <th>Date</th>
-                      <th>Active Users</th>
-                      <th>View</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activityReports.length > 0 ? (
-                      activityReports.map(report => (
-                        <tr 
-                          key={report.id} 
-                          className="dashboard-report-row"
-                        >
-                          <td>
-                            <div className="report-type-cell">
-                              {getReportIcon(report.report_type)}
-                              <span>{getReportTypeLabel(report.report_type)} Report</span>
-                            </div>
-                          </td>
-                          <td>
-                            <div className="date-cell">
-                              {report.formatted_date || 'N/A'}
-                            </div>
-                          </td>
-                          <td>
-                            <div className="active-users-cell">
-                              <UserCheck size={14} className="active-icon" />
-                              <span className="active-users-count">
-                                {(report.active_users || 0).toLocaleString()}
-                              </span>
-                            </div>
-                          </td>
-                          <td>
-                            <button 
-                              className="view-report-btn"
-                              onClick={() => handleActivityReportClick(
-                                report.report_type, 
-                                report.level || 'country', 
-                                report.id
-                              )}
-                            >
-                              View Details
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={4}>
-                          <div className="no-data-message">
-                            <TrendingUp size={32} />
-                            <p>No activity reports available</p>
-                          </div>
-                        </td>
+              <table className="dashboard-report-table">
+                <thead>
+                  <tr>
+                    <th>Report Type</th>
+                    <th>Date</th>
+                    <th>Active Users</th> {/* Changed from ID to Active Users */}
+                  </tr>
+                </thead>
+                <tbody>
+                  {activityReports.length > 0 ? (
+                    activityReports.map(report => (
+                      <tr 
+                        key={report.id} 
+                        onClick={() => handleActivityReportClick(
+                          report.report_type, 
+                          report.level || 'country', 
+                          report.id
+                        )}
+                        className="dashboard-report-row"
+                      >
+                        <td>{getReportTypeLabel(report.report_type)} Report</td>
+                        <td>{report.formatted_date || 'N/A'}</td>
+                        {/* Changed from ID to active_users */}
+                        <td>{(report.active_users || 0).toLocaleString()}</td>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3}>No data available</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </>
         )}
