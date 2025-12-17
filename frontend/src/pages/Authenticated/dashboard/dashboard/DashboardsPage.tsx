@@ -10,14 +10,37 @@ import {
 } from "./activeusers/activeUsersThunks";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Define proper interfaces
+interface ReportItem {
+  id: string; // Changed from number to string (UUID)
+  report_type: 'daily' | 'weekly' | 'monthly';
+  formatted_date: string;
+  new_users: number;
+  country_id?: number;
+  country_name?: string;
+  date?: string; // Added optional date field for potential fallback
+}
+
+interface ActivityReportItem {
+  id: number;
+  report_type: string;
+  level?: string;
+  formatted_date?: string;
+  date?: string;
+  week_start_date?: string;
+  week_last_date?: string;
+}
+
 const DashboardsPage = () => {
   console.log("[DashboardsPage] Component rendering");
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [latestReports, setLatestReports] = useState<any[]>([]);
-  const [activityReports, setActivityReports] = useState<any[]>([]);
+  const [latestReports, setLatestReports] = useState<ReportItem[]>([]);
+  const [activityReports, setActivityReports] = useState<ActivityReportItem[]>([]);
   const [prevTotalCount, setPrevTotalCount] = useState(0);
   const [displayedTotalCount, setDisplayedTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Get active users state
   const activeUsersState = useSelector((state: RootState) => state.activeUsers);
@@ -60,89 +83,59 @@ const DashboardsPage = () => {
     console.log("[DashboardsPage] useEffect - Fetching reports data");
     const fetchData = async () => {
       try {
-        // Fetch initiation reports
+        setLoading(true);
+        setError(null);
+
+        // Fetch initiation reports - Use the same endpoint as ReportsListPage
         const reportsResponse = await api.get('api/reports/reports/latest/');
-        const reportsData = reportsResponse.data as any[];
+        const reportsData = reportsResponse.data as ReportItem[];
         
-        const normalizedReports = reportsData.map((report: any) => {
-          let formatted_date = 'N/A';
-          
-          try {
-            if (report.report_type === 'monthly') {
-              // For monthly reports, check different possible date formats
-              if (report.date && report.date.length === 7 && report.date.includes('-')) {
-                // Format: "YYYY-MM"
-                const [year, month] = report.date.split('-');
-                const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
-                formatted_date = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
-              } else if (report.date && !isNaN(Date.parse(report.date))) {
-                // Already a valid date string
-                const dateObj = new Date(report.date);
-                formatted_date = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
-              } else {
-                console.warn(`Invalid monthly date format: ${report.date}`);
-              }
-            } else {
-              // For other report types (daily, weekly, etc.)
-              if (report.date && !isNaN(Date.parse(report.date))) {
-                const dateObj = new Date(report.date);
-                formatted_date = dateObj.toLocaleDateString('en-US', { 
-                  day: 'numeric', 
-                  month: 'short', 
-                  year: 'numeric' 
-                });
-              } else {
-                console.warn(`Invalid date format: ${report.date}`);
-              }
-            }
-          } catch (e) {
-            console.error(`Date formatting error for report ${report.id}:`, e, report);
-            formatted_date = 'Invalid Date';
-          }
-          
-          return { ...report, formatted_date };
-        });
-        setLatestReports(normalizedReports);
+        console.log("Latest reports data:", reportsData);
+        
+        // The API already provides formatted_date, so use it directly
+        setLatestReports(reportsData);
         
         // Fetch activity reports
         const activityResponse = await api.get('api/activity_reports/activity-reports/latest/');
-        const activityData = activityResponse.data as any[];
+        const activityData = activityResponse.data as ActivityReportItem[];
         
-        const normalizedActivity = activityData.map((report: any) => {
-          let formatted_date = 'N/A';
-          
-          try {
-            if (report.report_type === 'monthly' && report.date) {
-              if (report.date.length === 7 && report.date.includes('-')) {
-                const [year, month] = report.date.split('-');
-                const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
-                formatted_date = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
-              } else {
-                formatted_date = new Date(report.date).toLocaleString('default', { month: 'long', year: 'numeric' });
-              }
-            } else if (report.report_type === 'weekly' && report.week_start_date && report.week_last_date) {
-              const start = new Date(report.week_start_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-              const end = new Date(report.week_last_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-              formatted_date = `${start} – ${end}`;
-            } else if (report.date) {
-              formatted_date = new Date(report.date).toLocaleDateString('en-US', { 
-                day: 'numeric', 
-                month: 'short', 
-                year: 'numeric' 
-              });
-            }
-          } catch (e) {
-            console.error(`Activity report date error:`, e);
+        console.log("Activity reports data:", activityData);
+        
+        // Format activity reports similarly
+        const normalizedActivity = activityData.map((report: ActivityReportItem) => {
+          // If API already provides formatted_date, use it
+          if (report.formatted_date) {
+            return report;
           }
           
-          return { ...report, formatted_date };
+          // Otherwise format it
+          if (report.report_type === 'monthly' && report.date) {
+            return { 
+              ...report, 
+              formatted_date: new Date(report.date).toLocaleString('default', { month: 'long', year: 'numeric' })
+            };
+          } else if (report.report_type === 'weekly' && report.week_start_date && report.week_last_date) {
+            const start = new Date(report.week_start_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+            const end = new Date(report.week_last_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+            return { ...report, formatted_date: `${start} – ${end}` };
+          } else if (report.date) {
+            return { 
+              ...report, 
+              formatted_date: new Date(report.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+            };
+          }
+          return report;
         });
+        
         setActivityReports(normalizedActivity.slice(0, 5));
         
       } catch (error) {
         console.error("Error fetching data:", error);
+        setError("Failed to load reports data");
         setLatestReports([]);
         setActivityReports([]);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -153,7 +146,7 @@ const DashboardsPage = () => {
     navigate("/reports/overall/country/1");
   };
 
-  const handleReportClick = (reportType: string, id: number) => {
+  const handleReportClick = (reportType: string, id: string) => { // ✅ id is string
     navigate(`/reports/${reportType}/${id}/country`);
   };
 
@@ -214,6 +207,10 @@ const DashboardsPage = () => {
     );
   };
 
+  const getReportTypeLabel = (type: string) => {
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  };
+
   return (
     <div className="dashboard-page">
       {/* Top banner with total petitioners */}
@@ -243,87 +240,110 @@ const DashboardsPage = () => {
           <p className="dashboard-stat-label">Overall Report</p>
         </div>
 
-        {/* Latest Reports Table */}
-        <div className="dashboard-report-card">
-          <div className="dashboard-report-card-header">
-            <h2>Latest Initiation Reports</h2>
-            <button 
-              className="all-reports-btn"
-              onClick={() => navigate('/reports-list')}
-            >
-              All Reports
-            </button>
+        {/* Loading State */}
+        {loading && (
+          <div className="dashboard-report-card">
+            <div className="loader">Loading reports...</div>
           </div>
-          <table className="dashboard-report-table">
-            <thead>
-              <tr>
-                <th>Report Type</th>
-                <th>Date</th>
-                <th>ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {latestReports.length > 0 ? (
-                latestReports.map(report => (
-                  <tr 
-                    key={report.id} 
-                    onClick={() => handleReportClick(report.report_type, report.id)}
-                    className="dashboard-report-row"
-                  >
-                    <td>{report.report_type?.charAt(0).toUpperCase() + report.report_type?.slice(1) || 'N/A'}</td>
-                    <td>{report.formatted_date}</td>
-                    <td>{report.id}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={3}>No data available</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        )}
 
-        {/* Activity Reports */}
-        <div className="dashboard-report-card">
-          <div className="dashboard-report-card-header">
-            <h2>Recent Activity Reports</h2>
-            <button 
-              className="all-reports-btn"
-              onClick={() => navigate('/activity-reports-list')}
-            >
-              All Reports
-            </button>
+        {/* Error State */}
+        {error && !loading && (
+          <div className="dashboard-report-card">
+            <div className="error-message">{error}</div>
           </div>
-          <table className="dashboard-report-table">
-            <thead>
-              <tr>
-                <th>Report Type</th>
-                <th>Date</th>
-                <th>ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activityReports.length > 0 ? (
-                activityReports.map(report => (
-                  <tr 
-                    key={report.id} 
-                    onClick={() => handleActivityReportClick(report.report_type, report.level, report.id)}
-                    className="dashboard-report-row"
-                  >
-                    <td>{report.report_type?.charAt(0).toUpperCase() + report.report_type?.slice(1) || 'N/A'}</td>
-                    <td>{report.formatted_date}</td>
-                    <td>{report.id}</td>
+        )}
+
+        {/* Latest Reports Table - Only show if not loading and no error */}
+        {!loading && !error && (
+          <>
+            {/* Latest Reports Table */}
+            <div className="dashboard-report-card">
+              <div className="dashboard-report-card-header">
+                <h2>Latest Initiation Reports</h2>
+                <button 
+                  className="all-reports-btn"
+                  onClick={() => navigate('/reports-list')}
+                >
+                  All Reports
+                </button>
+              </div>
+              <table className="dashboard-report-table">
+                <thead>
+                  <tr>
+                    <th>Report Type</th>
+                    <th>Date</th>
+                    <th>ID</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={3}>No data available</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {latestReports.length > 0 ? (
+                    latestReports.map(report => (
+                      <tr 
+                        key={report.id} 
+                        onClick={() => handleReportClick(report.report_type, report.id)}
+                        className="dashboard-report-row"
+                      >
+                        <td>{getReportTypeLabel(report.report_type)} Report</td>
+                        <td>{report.formatted_date}</td> {/* Use formatted_date from API */}
+                        <td>{report.id}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3}>No data available</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Activity Reports */}
+            <div className="dashboard-report-card">
+              <div className="dashboard-report-card-header">
+                <h2>Recent Activity Reports</h2>
+                <button 
+                  className="all-reports-btn"
+                  onClick={() => navigate('/activity-reports-list')}
+                >
+                  All Reports
+                </button>
+              </div>
+              <table className="dashboard-report-table">
+                <thead>
+                  <tr>
+                    <th>Report Type</th>
+                    <th>Date</th>
+                    <th>ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activityReports.length > 0 ? (
+                    activityReports.map(report => (
+                      <tr 
+                        key={report.id} 
+                        onClick={() => handleActivityReportClick(
+                          report.report_type, 
+                          report.level || 'country', 
+                          report.id
+                        )}
+                        className="dashboard-report-row"
+                      >
+                        <td>{getReportTypeLabel(report.report_type)} Report</td>
+                        <td>{report.formatted_date || 'N/A'}</td>
+                        <td>{report.id}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3}>No data available</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
