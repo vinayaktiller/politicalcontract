@@ -65,25 +65,38 @@ const DashboardsPage = () => {
         const reportsData = reportsResponse.data as any[];
         
         const normalizedReports = reportsData.map((report: any) => {
-          let dateStr = report.date;
+          let formatted_date = 'N/A';
           
-          if (report.report_type === 'monthly' && dateStr.length === 7) {
-            dateStr = `${dateStr}-01`;
-          }
-          
-          let formatted_date = '';
           try {
             if (report.report_type === 'monthly') {
-              formatted_date = new Date(dateStr).toLocaleString('default', { month: 'long', year: 'numeric' });
+              // For monthly reports, check different possible date formats
+              if (report.date && report.date.length === 7 && report.date.includes('-')) {
+                // Format: "YYYY-MM"
+                const [year, month] = report.date.split('-');
+                const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
+                formatted_date = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+              } else if (report.date && !isNaN(Date.parse(report.date))) {
+                // Already a valid date string
+                const dateObj = new Date(report.date);
+                formatted_date = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+              } else {
+                console.warn(`Invalid monthly date format: ${report.date}`);
+              }
             } else {
-              formatted_date = new Date(dateStr).toLocaleDateString('en-US', { 
-                day: 'numeric', 
-                month: 'short', 
-                year: 'numeric' 
-              });
+              // For other report types (daily, weekly, etc.)
+              if (report.date && !isNaN(Date.parse(report.date))) {
+                const dateObj = new Date(report.date);
+                formatted_date = dateObj.toLocaleDateString('en-US', { 
+                  day: 'numeric', 
+                  month: 'short', 
+                  year: 'numeric' 
+                });
+              } else {
+                console.warn(`Invalid date format: ${report.date}`);
+              }
             }
           } catch (e) {
-            console.error(`Date formatting error:`, e);
+            console.error(`Date formatting error for report ${report.id}:`, e, report);
             formatted_date = 'Invalid Date';
           }
           
@@ -96,22 +109,33 @@ const DashboardsPage = () => {
         const activityData = activityResponse.data as any[];
         
         const normalizedActivity = activityData.map((report: any) => {
-          if (report.report_type === 'monthly' && report.date) {
-            return { 
-              ...report, 
-              formatted_date: new Date(report.date).toLocaleString('default', { month: 'long', year: 'numeric' })
-            };
-          } else if (report.report_type === 'weekly' && report.week_start_date && report.week_last_date) {
-            const start = new Date(report.week_start_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-            const end = new Date(report.week_last_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-            return { ...report, formatted_date: `${start} – ${end}` };
-          } else if (report.date) {
-            return { 
-              ...report, 
-              formatted_date: new Date(report.date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
-            };
+          let formatted_date = 'N/A';
+          
+          try {
+            if (report.report_type === 'monthly' && report.date) {
+              if (report.date.length === 7 && report.date.includes('-')) {
+                const [year, month] = report.date.split('-');
+                const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
+                formatted_date = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
+              } else {
+                formatted_date = new Date(report.date).toLocaleString('default', { month: 'long', year: 'numeric' });
+              }
+            } else if (report.report_type === 'weekly' && report.week_start_date && report.week_last_date) {
+              const start = new Date(report.week_start_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+              const end = new Date(report.week_last_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+              formatted_date = `${start} – ${end}`;
+            } else if (report.date) {
+              formatted_date = new Date(report.date).toLocaleDateString('en-US', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+              });
+            }
+          } catch (e) {
+            console.error(`Activity report date error:`, e);
           }
-          return report;
+          
+          return { ...report, formatted_date };
         });
         setActivityReports(normalizedActivity.slice(0, 5));
         
@@ -246,7 +270,7 @@ const DashboardsPage = () => {
                     onClick={() => handleReportClick(report.report_type, report.id)}
                     className="dashboard-report-row"
                   >
-                    <td>{report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1)}</td>
+                    <td>{report.report_type?.charAt(0).toUpperCase() + report.report_type?.slice(1) || 'N/A'}</td>
                     <td>{report.formatted_date}</td>
                     <td>{report.id}</td>
                   </tr>
@@ -287,8 +311,8 @@ const DashboardsPage = () => {
                     onClick={() => handleActivityReportClick(report.report_type, report.level, report.id)}
                     className="dashboard-report-row"
                   >
-                    <td>{report.report_type.charAt(0).toUpperCase() + report.report_type.slice(1)}</td>
-                    <td>{report.formatted_date || 'N/A'}</td>
+                    <td>{report.report_type?.charAt(0).toUpperCase() + report.report_type?.slice(1) || 'N/A'}</td>
+                    <td>{report.formatted_date}</td>
                     <td>{report.id}</td>
                   </tr>
                 ))
